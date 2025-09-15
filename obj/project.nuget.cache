@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "wSBlRGk7/ZI=",
+  "success": true,
+  "projectFilePath": "c:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ulava\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.9\\microsoft.aspnetcore.openapi.9.0.9.nupkg.sha512",
+    "C:\\Users\\ulava\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
