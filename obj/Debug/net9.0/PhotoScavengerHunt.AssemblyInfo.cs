@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PhotoScavengerHunt")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ab11745fa2bf552a2d34d91d17b96a835b253274")]
 [assembly: System.Reflection.AssemblyProductAttribute("PhotoScavengerHunt")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PhotoScavengerHunt")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

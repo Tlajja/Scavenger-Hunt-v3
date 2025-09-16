@@ -30,3 +30,4 @@ c:\Users\ulava\PhotoScavengerHunt\obj\Debug\net9.0\refint\PhotoScavengerHunt.dll
 c:\Users\ulava\PhotoScavengerHunt\obj\Debug\net9.0\PhotoScavengerHunt.pdb
 c:\Users\ulava\PhotoScavengerHunt\obj\Debug\net9.0\PhotoScavengerHunt.genruntimeconfig.cache
 c:\Users\ulava\PhotoScavengerHunt\obj\Debug\net9.0\ref\PhotoScavengerHunt.dll
+C:\Users\ulava\PhotoScavengerHunt\obj\Debug\net9.0\PhotoScavengerHunt.sourcelink.json

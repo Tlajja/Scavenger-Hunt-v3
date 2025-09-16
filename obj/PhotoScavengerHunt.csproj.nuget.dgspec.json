@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj": {}
+    "C:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj": {}
   },
   "projects": {
-    "c:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj": {
+    "C:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj",
+        "projectUniqueName": "C:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj",
         "projectName": "PhotoScavengerHunt",
-        "projectPath": "c:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj",
+        "projectPath": "C:\\Users\\ulava\\PhotoScavengerHunt\\PhotoScavengerHunt.csproj",
         "packagesPath": "C:\\Users\\ulava\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\ulava\\PhotoScavengerHunt\\obj\\",
+        "outputPath": "C:\\Users\\ulava\\PhotoScavengerHunt\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ulava\\AppData\\Roaming\\NuGet\\NuGet.Config"

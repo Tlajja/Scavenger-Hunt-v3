@@ -1,7 +1,6 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -14,28 +13,55 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// In-memory storage
+var tasks = new List<HuntTask>();
+var submissions = new List<PhotoSubmission>();
+var nextTaskId = 1;
+var nextSubmissionId = 1;
 
-app.MapGet("/weatherforecast", () =>
+// Create a new scavenger hunt task
+app.MapPost("/tasks", (string description, DateTime deadline) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var task = new HuntTask(nextTaskId++, description, deadline);
+    tasks.Add(task);
+    return Results.Created($"/tasks/{task.Id}", task);
+});
+
+// Get all tasks
+app.MapGet("/tasks", () => tasks);
+
+// Submit a photo for a task
+app.MapPost("/submissions", (int taskId, string userName, string photoUrl) =>
+{
+    if (!tasks.Any(t => t.Id == taskId))
+        return Results.NotFound("Task not found");
+
+    var submission = new PhotoSubmission(nextSubmissionId++, taskId, userName, photoUrl, 0);
+    submissions.Add(submission);
+    return Results.Created($"/submissions/{submission.Id}", submission);
+});
+
+// Get all submissions for a task
+app.MapGet("/submissions/{taskId}", (int taskId) =>
+{
+    var taskSubmissions = submissions.Where(s => s.TaskId == taskId);
+    return taskSubmissions;
+});
+
+// Upvote a photo
+app.MapPost("/submissions/{id}/vote", (int id) =>
+{
+    var submission = submissions.FirstOrDefault(s => s.Id == id);
+    if (submission == null) return Results.NotFound();
+
+    var updated = submission with { Votes = submission.Votes + 1 };
+    submissions.Remove(submission);
+    submissions.Add(updated);
+
+    return Results.Ok(updated);
+});
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+record HuntTask(int Id, string Description, DateTime Deadline);
+record PhotoSubmission(int Id, int TaskId, string UserName, string PhotoUrl, int Votes);
