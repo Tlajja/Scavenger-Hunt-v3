@@ -13,16 +13,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// In-memory storage
+// In-memory storage (temporary - instead of a database)
 var tasks = new List<HuntTask>();
 var submissions = new List<PhotoSubmission>();
 var nextTaskId = 1;
 var nextSubmissionId = 1;
 
-// Create a new scavenger hunt task
-app.MapPost("/tasks", (string description, DateTime deadline) =>
+// Create a new task
+app.MapPost("/tasks", (CreateTaskRequest req) =>
 {
-    var task = new HuntTask(nextTaskId++, description, deadline);
+    var task = new HuntTask(nextTaskId++, req.Description, req.Deadline);
     tasks.Add(task);
     return Results.Created($"/tasks/{task.Id}", task);
 });
@@ -64,4 +64,7 @@ app.MapPost("/submissions/{id}/vote", (int id) =>
 app.Run();
 
 record HuntTask(int Id, string Description, DateTime Deadline);
+
+record CreateTaskRequest(string Description, DateTime Deadline);
+
 record PhotoSubmission(int Id, int TaskId, string UserName, string PhotoUrl, int Votes);
