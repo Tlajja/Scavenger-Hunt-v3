@@ -7,8 +7,14 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private static readonly List<HuntTask> tasks = new();
-        private static int nextTaskId = 1;
+        private static readonly List<HuntTask> tasks = new()
+        {
+            new HuntTask(1, "Red car", DateTime.Parse("2025-10-01"), HuntTaskStatus.Open),
+            new HuntTask(2, "Blue mailbox", DateTime.Parse("2025-10-02"), HuntTaskStatus.Open),
+            new HuntTask(3, "Park bench", DateTime.Parse("2025-10-03"), HuntTaskStatus.Open)
+        };
+
+        private static int nextTaskId = tasks.Count + 1;
 
         [HttpPost]
         public IActionResult CreateTask(CreateTaskRequest req)
