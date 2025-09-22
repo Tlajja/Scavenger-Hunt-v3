@@ -8,15 +8,12 @@ namespace PhotoScavengerHunt.Controllers
     public class SubmissionsController : ControllerBase
     {
         private static readonly List<PhotoSubmission> submissions = new();
-        private static readonly List<HuntTask> tasks = new();
         private static int nextSubmissionId = 1;
 
+        // Submit a photo
         [HttpPost]
         public IActionResult SubmitPhoto(int taskId, string userName, string photoUrl)
         {
-            if (!tasks.Any(t => t.Id == taskId))
-                return NotFound("Task not found");
-
             var submission = new PhotoSubmission(
                 Id: nextSubmissionId++,
                 TaskId: taskId,
@@ -26,13 +23,16 @@ namespace PhotoScavengerHunt.Controllers
             );
 
             submissions.Add(submission);
+
             return CreatedAtAction(nameof(GetSubmissionsForTask), new { taskId }, submission);
         }
 
+        // Get all submissions for a specific task
         [HttpGet("{taskId}")]
         public IEnumerable<PhotoSubmission> GetSubmissionsForTask(int taskId) =>
             submissions.Where(s => s.TaskId == taskId);
 
+        // Upvote a photo submission
         [HttpPost("{id}/vote")]
         public IActionResult UpvotePhoto(int id)
         {
