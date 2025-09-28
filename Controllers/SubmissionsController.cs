@@ -12,14 +12,15 @@ namespace PhotoScavengerHunt.Controllers
 
         // Submit a photo
         [HttpPost]
-        public IActionResult SubmitPhoto(int taskId, string userName, string photoUrl)
+        public IActionResult SubmitPhoto(int taskId, int userId, string photoUrl)
         {
             var submission = new PhotoSubmission(
                 Id: nextSubmissionId++,
                 TaskId: taskId,
-                UserName: userName,
+                UserId: userId,
                 PhotoUrl: photoUrl,
-                Votes: 0
+                Votes: 0,
+                Comments: new List<Comment>()
             );
 
             submissions.Add(submission);
@@ -31,6 +32,11 @@ namespace PhotoScavengerHunt.Controllers
         [HttpGet("{taskId}")]
         public IEnumerable<PhotoSubmission> GetSubmissionsForTask(int taskId) =>
             submissions.Where(s => s.TaskId == taskId);
+
+        // Get all submissions by a specific user
+        [HttpGet("user/{userId}")]
+        public IEnumerable<PhotoSubmission> GetSubmissionsByUser(int userId) =>
+            submissions.Where(s => s.UserId == userId);
 
         // Upvote a photo submission
         [HttpPost("{id}/vote")]
@@ -44,6 +50,23 @@ namespace PhotoScavengerHunt.Controllers
             submissions.Add(updated);
 
             return Ok(updated);
+        }
+
+        public class AddCommentRequest
+        {
+            public int UserId { get; set; }
+            public string Text { get; set; } = "";
+        }
+
+        // Add a comment to a photo submission
+        [HttpPost("{id}/comment")]
+        public IActionResult AddComment(int id, [FromBody] AddCommentRequest request)
+        {
+            var submission = submissions.FirstOrDefault(s => s.Id == id);
+            if (submission == null) return NotFound();
+
+            submission.Comments.Add(new Comment(request.UserId, request.Text, DateTime.UtcNow));
+            return Ok(submission.Comments);
         }
     }
 }
