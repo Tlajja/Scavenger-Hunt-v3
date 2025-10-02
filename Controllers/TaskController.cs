@@ -9,9 +9,9 @@ namespace PhotoScavengerHunt.Controllers
     {
         private static readonly List<HuntTask> tasks = new()
         {
-            new HuntTask(1, "Red car", DateTime.Parse("2025-10-01"), HuntTaskStatus.Open),
-            new HuntTask(2, "Blue mailbox", DateTime.Parse("2025-10-02"), HuntTaskStatus.Open),
-            new HuntTask(3, "Park bench", DateTime.Parse("2025-10-03"), HuntTaskStatus.Open)
+            new HuntTask { Id = 1, Description = "Red car", Deadline = DateTime.Parse("2025-10-01"), Status = HuntTaskStatus.Open },
+            new HuntTask { Id = 2, Description = "Blue mailbox", Deadline = DateTime.Parse("2025-10-02"), Status = HuntTaskStatus.Open },
+            new HuntTask { Id = 3, Description = "Park bench", Deadline = DateTime.Parse("2025-10-03"), Status = HuntTaskStatus.Open }
         };
 
         private static int nextTaskId = tasks.Count + 1;
@@ -19,7 +19,14 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public IActionResult CreateTask(CreateTaskRequest req)
         {
-            var task = new HuntTask(nextTaskId++, req.Description, req.Deadline, HuntTaskStatus.Open);
+            var task = new HuntTask
+            {
+                Id = nextTaskId++,
+                Description = req.Description,
+                Deadline = req.Deadline,
+                Status = HuntTaskStatus.Open
+            };
+
             tasks.Add(task);
             return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
         }

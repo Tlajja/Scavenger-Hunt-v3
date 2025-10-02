@@ -1,15 +1,35 @@
 namespace PhotoScavengerHunt.Models
 {
-    public record HuntTask(int Id, string Description, DateTime Deadline, HuntTaskStatus Status);
+    public class HuntTask
+    {
+        public int Id { get; set; }
+        public string Description { get; set; } = "";
+        public DateTime Deadline { get; set; }
+        public HuntTaskStatus Status { get; set; }
+    }
+
     public record CreateTaskRequest(string Description, DateTime Deadline);
-    public record PhotoSubmission(
-        int Id,
-        int TaskId,
-        int UserId,
-        string PhotoUrl,
-        int Votes,
-        List<Comment> Comments // Stores user-linked comments
-    );
+
+    public class PhotoSubmission
+    {
+        public int Id { get; set; }
+        public int TaskId { get; set; }
+        public int UserId { get; set; }
+        public string PhotoUrl { get; set; } = "";
+        public int Votes { get; set; }
+
+        public List<Comment> Comments { get; set; } = new();
+
+        public PhotoSubmission() { }
+
+        public PhotoSubmission(int taskId, int userId, string photoUrl)
+        {
+            TaskId = taskId;
+            UserId = userId;
+            PhotoUrl = photoUrl;
+            Votes = 0;
+        }
+    }
 
     public enum HuntTaskStatus
     {
@@ -25,5 +45,11 @@ namespace PhotoScavengerHunt.Models
         public int Age { get; set; }
     }
 
-    public record Comment(int UserId, string Text, DateTime Timestamp);
+    public class Comment
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+        public string Text { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+    }
 }

@@ -14,14 +14,15 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public IActionResult SubmitPhoto(int taskId, int userId, string photoUrl)
         {
-            var submission = new PhotoSubmission(
-                Id: nextSubmissionId++,
-                TaskId: taskId,
-                UserId: userId,
-                PhotoUrl: photoUrl,
-                Votes: 0,
-                Comments: new List<Comment>()
-            );
+            var submission = new PhotoSubmission
+            {
+                Id = nextSubmissionId++,
+                TaskId = taskId,
+                UserId = userId,
+                PhotoUrl = photoUrl,
+                Votes = 0,
+                Comments = new List<Comment>()
+            };
 
             submissions.Add(submission);
 
@@ -45,11 +46,9 @@ namespace PhotoScavengerHunt.Controllers
             var submission = submissions.FirstOrDefault(s => s.Id == id);
             if (submission == null) return NotFound();
 
-            var updated = submission with { Votes = submission.Votes + 1 };
-            submissions.Remove(submission);
-            submissions.Add(updated);
+            submission.Votes += 1;
 
-            return Ok(updated);
+            return Ok(submission);
         }
 
         public class AddCommentRequest
@@ -65,7 +64,13 @@ namespace PhotoScavengerHunt.Controllers
             var submission = submissions.FirstOrDefault(s => s.Id == id);
             if (submission == null) return NotFound();
 
-            submission.Comments.Add(new Comment(request.UserId, request.Text, DateTime.UtcNow));
+            submission.Comments.Add(new Comment
+            {
+                UserId = request.UserId,
+                Text = request.Text,
+                Timestamp = DateTime.UtcNow
+            });
+
             return Ok(submission.Comments);
         }
     }
