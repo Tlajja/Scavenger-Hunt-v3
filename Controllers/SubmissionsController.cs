@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PhotoScavengerHunt.Models;
+using PhotoScavengerHunt.Features.Photos;
 
 namespace PhotoScavengerHunt.Controllers
 {

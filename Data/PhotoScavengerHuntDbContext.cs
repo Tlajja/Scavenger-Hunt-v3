@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Models;
+using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Features.Tasks;
 
 public class PhotoScavengerHuntDbContext(DbContextOptions<PhotoScavengerHuntDbContext> options) : DbContext(options)
 {

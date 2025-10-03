@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Models;
+using PhotoScavengerHunt.Features.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
