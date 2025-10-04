@@ -1,10 +1,14 @@
-using PhotoScavengerHunt.Models;
+using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Features.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 

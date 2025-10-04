@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PhotoScavengerHunt.Models;
+using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Features.Photos;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -7,49 +8,59 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class SubmissionsController : ControllerBase
     {
-        private static readonly List<PhotoSubmission> submissions = new();
-        private static int nextSubmissionId = 1;
+        private readonly PhotoScavengerHuntDbContext _db;
+
+        public SubmissionsController(PhotoScavengerHuntDbContext db)
+        {
+            _db = db;
+        }
 
         // Submit a photo
         [HttpPost]
-        public IActionResult SubmitPhoto(int taskId, int userId, string photoUrl)
+        public async Task<IActionResult> SubmitPhoto(int taskId, int userId, string photoUrl)
         {
-            var submission = new PhotoSubmission(
-                Id: nextSubmissionId++,
-                TaskId: taskId,
-                UserId: userId,
-                PhotoUrl: photoUrl,
-                Votes: 0,
-                Comments: new List<Comment>()
-            );
+            var submission = new PhotoSubmission
+            {
+                TaskId = taskId,
+                UserId = userId,
+                PhotoUrl = photoUrl,
+                Votes = 0,
+                Comments = new List<Comment>()
+            };
 
-            submissions.Add(submission);
+            _db.Photos.Add(submission);
+            await _db.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetSubmissionsForTask), new { taskId }, submission);
         }
 
         // Get all submissions for a specific task
         [HttpGet("{taskId}")]
-        public IEnumerable<PhotoSubmission> GetSubmissionsForTask(int taskId) =>
-            submissions.Where(s => s.TaskId == taskId);
+        public async Task<IEnumerable<PhotoSubmission>> GetSubmissionsForTask(int taskId) =>
+            await _db.Photos
+                .Include(p => p.Comments)
+                .Where(s => s.TaskId == taskId)
+                .ToListAsync();
 
         // Get all submissions by a specific user
         [HttpGet("user/{userId}")]
-        public IEnumerable<PhotoSubmission> GetSubmissionsByUser(int userId) =>
-            submissions.Where(s => s.UserId == userId);
+        public async Task<IEnumerable<PhotoSubmission>> GetSubmissionsByUser(int userId) =>
+            await _db.Photos
+                .Include(p => p.Comments)
+                .Where(s => s.UserId == userId)
+                .ToListAsync();
 
         // Upvote a photo submission
         [HttpPost("{id}/vote")]
-        public IActionResult UpvotePhoto(int id)
+        public async Task<IActionResult> UpvotePhoto(int id)
         {
-            var submission = submissions.FirstOrDefault(s => s.Id == id);
+            var submission = await _db.Photos.FindAsync(id);
             if (submission == null) return NotFound();
 
-            var updated = submission with { Votes = submission.Votes + 1 };
-            submissions.Remove(submission);
-            submissions.Add(updated);
+            submission.Votes += 1;
+            await _db.SaveChangesAsync();
 
-            return Ok(updated);
+            return Ok(submission);
         }
 
         public class AddCommentRequest
@@ -60,12 +71,24 @@ namespace PhotoScavengerHunt.Controllers
 
         // Add a comment to a photo submission
         [HttpPost("{id}/comment")]
-        public IActionResult AddComment(int id, [FromBody] AddCommentRequest request)
+        public async Task<IActionResult> AddComment(int id, [FromBody] AddCommentRequest request)
         {
-            var submission = submissions.FirstOrDefault(s => s.Id == id);
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
             if (submission == null) return NotFound();
 
-            submission.Comments.Add(new Comment(request.UserId, request.Text, DateTime.UtcNow));
+            var comment = new Comment
+            {
+                UserId = request.UserId,
+                Text = request.Text,
+                Timestamp = DateTime.UtcNow
+            };
+
+            submission.Comments.Add(comment);
+            await _db.SaveChangesAsync();
+
             return Ok(submission.Comments);
         }
     }

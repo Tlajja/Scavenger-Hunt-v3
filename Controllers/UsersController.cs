@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PhotoScavengerHunt.Models;
+using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Features.Users;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -7,30 +8,36 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private static readonly List<UserProfile> users = new();
-        private static int nextUserId = 1;
+        private readonly PhotoScavengerHuntDbContext _db;
+
+        public UsersController(PhotoScavengerHuntDbContext db)
+        {
+            _db = db;
+        }
 
         [HttpPost]
-        public IActionResult CreateUser(string name, int age)
+        public async Task<IActionResult> CreateUser(string name, int age)
         {
             var profile = new UserProfile
             {
-                Id = nextUserId++,
                 Name = name,
                 Age = age
             };
 
-            users.Add(profile);
+            _db.Users.Add(profile);
+            await _db.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetUserById), new { id = profile.Id }, profile);
         }
 
         [HttpGet]
-        public IEnumerable<UserProfile> GetUsers() => users;
+        public async Task<IEnumerable<UserProfile>> GetUsers() =>
+            await _db.Users.ToListAsync();
 
         [HttpGet("{id}")]
-        public IActionResult GetUserById(int id)
+        public async Task<IActionResult> GetUserById(int id)
         {
-            var user = users.FirstOrDefault(u => u.Id == id);
+            var user = await _db.Users.FindAsync(id);
             return user is null ? NotFound() : Ok(user);
         }
     }

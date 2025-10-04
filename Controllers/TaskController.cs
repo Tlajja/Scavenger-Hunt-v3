@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using PhotoScavengerHunt.Models;
+using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Features.Tasks;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -7,30 +8,37 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private static readonly List<HuntTask> tasks = new()
-        {
-            new HuntTask(1, "Red car", DateTime.Parse("2025-10-01"), HuntTaskStatus.Open),
-            new HuntTask(2, "Blue mailbox", DateTime.Parse("2025-10-02"), HuntTaskStatus.Open),
-            new HuntTask(3, "Park bench", DateTime.Parse("2025-10-03"), HuntTaskStatus.Open)
-        };
+        private readonly PhotoScavengerHuntDbContext _db;
 
-        private static int nextTaskId = tasks.Count + 1;
+        public TasksController(PhotoScavengerHuntDbContext db)
+        {
+            _db = db;
+        }
 
         [HttpPost]
-        public IActionResult CreateTask(CreateTaskRequest req)
+        public async Task<IActionResult> CreateTask(CreateTaskRequest req)
         {
-            var task = new HuntTask(nextTaskId++, req.Description, req.Deadline, HuntTaskStatus.Open);
-            tasks.Add(task);
+            var task = new HuntTask
+            {
+                Description = req.Description,
+                Deadline = req.Deadline,
+                Status = HuntTaskStatus.Open
+            };
+
+            _db.Tasks.Add(task);
+            await _db.SaveChangesAsync();
+
             return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
         }
 
         [HttpGet]
-        public IEnumerable<HuntTask> GetTasks() => tasks;
+        public async Task<IEnumerable<HuntTask>> GetTasks() =>
+            await _db.Tasks.ToListAsync();
 
         [HttpGet("{id}")]
-        public IActionResult GetTaskById(int id)
+        public async Task<IActionResult> GetTaskById(int id)
         {
-            var task = tasks.FirstOrDefault(t => t.Id == id);
+            var task = await _db.Tasks.FindAsync(id);
             return task is null ? NotFound() : Ok(task);
         }
     }
