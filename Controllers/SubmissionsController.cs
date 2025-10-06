@@ -19,6 +19,19 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public async Task<IActionResult> SubmitPhoto(int taskId, int userId, string photoUrl)
         {
+            // Validation
+            if (string.IsNullOrWhiteSpace(photoUrl))
+            {
+                return BadRequest("Photo URL cannot be empty.\n");
+            }
+            if(!await _db.Tasks.AnyAsync(t => t.Id == taskId))
+            {
+                return BadRequest("Task does not exist.\n");
+            }
+            if(!await _db.Users.AnyAsync(u => u.Id == userId))
+            {
+                return BadRequest("User does not exist.\n");}
+
             var submission = new PhotoSubmission
             {
                 TaskId = taskId,
@@ -73,6 +86,12 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost("{id}/comment")]
         public async Task<IActionResult> AddComment(int id, [FromBody] AddCommentRequest request)
         {
+            // Validation
+            if (string.IsNullOrWhiteSpace(request.Text))
+            {
+                return BadRequest("Comment text cannot be empty.\n");
+            }
+
             var submission = await _db.Photos
                 .Include(s => s.Comments)
                 .FirstOrDefaultAsync(s => s.Id == id);

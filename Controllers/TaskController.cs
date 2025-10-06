@@ -18,6 +18,16 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTask(CreateTaskRequest req)
         {
+            // Validation
+            if (string.IsNullOrWhiteSpace(req.Description))
+            {
+                return BadRequest("Task description cannot be empty.");
+            }
+            if (req.Deadline <= DateTime.UtcNow)
+            {
+                return BadRequest("Deadline cannot be in the past.");
+            }
+
             var task = new HuntTask
             {
                 Description = req.Description,

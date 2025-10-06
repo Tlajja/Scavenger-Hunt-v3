@@ -18,6 +18,20 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateUser(string name, int age)
         {
+            // Validation
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return BadRequest("Username cannot be empty.\n");
+            }
+            if(await _db.Users.AnyAsync(u => u.Name == name))
+            {
+                return Conflict("Username already exists.\n");
+            }
+            if(age <= 0 || age > 125)
+            {
+                return BadRequest("Incorrect age value.\n");
+            }
+
             var profile = new UserProfile
             {
                 Name = name,
