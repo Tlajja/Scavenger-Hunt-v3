@@ -32,7 +32,39 @@ namespace PhotoScavengerHunt.Controllers
             {
                 Description = req.Description,
                 Deadline = req.Deadline,
-                Status = HuntTaskStatus.Open
+                Status = HuntTaskStatus.Open,
+                AuthorId = 0
+            };
+
+            _db.Tasks.Add(task);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
+        }
+
+        [HttpPost("user")]
+        public async Task<IActionResult> CreateUserTask([FromBody] CreateTaskRequest req)
+        {
+            // Validation
+            if (string.IsNullOrWhiteSpace(req.Description))
+            {
+                return BadRequest("Task description cannot be empty.");
+            }
+            if (req.Deadline <= DateTime.UtcNow)
+            {
+                return BadRequest("Deadline cannot be in the past.");
+            }
+            if (!await _db.Users.AnyAsync(u => u.Id == req.AuthorId))
+            {
+                return BadRequest("User does not exist.");
+            }
+
+            var task = new HuntTask
+            {
+                Description = req.Description,
+                Deadline = req.Deadline,
+                Status = HuntTaskStatus.Open,
+                AuthorId = req.AuthorId
             };
 
             _db.Tasks.Add(task);
@@ -50,6 +82,21 @@ namespace PhotoScavengerHunt.Controllers
         {
             var task = await _db.Tasks.FindAsync(id);
             return task is null ? NotFound() : Ok(task);
+        }
+
+        [HttpDelete("user/{userId}/{taskId}")]
+        public async Task<IActionResult> DeleteUserTask(int userId, int taskId)
+        {
+            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.AuthorId == userId);
+            if (task is null)
+            {
+                return NotFound("Task not found or not created by this user.");
+            }
+
+            _db.Tasks.Remove(task);
+            await _db.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }
