@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
@@ -23,11 +24,15 @@ namespace PhotoScavengerHunt.Controllers
             {
                 return BadRequest("Username cannot be empty.\n");
             }
-            if(await _db.Users.AnyAsync(u => u.Name == name))
+            if (!IsValidUsername(name))
+            {
+                return BadRequest("Username can only contain English letters and numbers.\n");
+            }
+            if (await _db.Users.AnyAsync(u => u.Name == name))
             {
                 return Conflict("Username already exists.\n");
             }
-            if(age <= 0 || age > 125)
+            if (age <= 0 || age > 125)
             {
                 return BadRequest("Incorrect age value.\n");
             }
@@ -53,6 +58,12 @@ namespace PhotoScavengerHunt.Controllers
         {
             var user = await _db.Users.FindAsync(id);
             return user is null ? NotFound() : Ok(user);
+        }
+
+        private bool IsValidUsername(string name)
+        {
+            string pattern = @"^[a-zA-Z0-9]+$";
+            return Regex.IsMatch(name, pattern);
         }
     }
 }
