@@ -82,26 +82,7 @@ namespace PhotoScavengerHunt.Controllers
                 return BadRequest("Username already created for this account.");
             }
 
-/*
             // Validate username
-            if (string.IsNullOrWhiteSpace(request.Username))
-            {
-                return BadRequest("Username cannot be empty.");
-            }
-
-            if (request.Username.Length < 2 || request.Username.Length > 20)
-            {
-                return BadRequest("Username must be between 2 and 20 characters.");
-            }
-
-            // Check for valid characters (only English letters and numbers, no spaces)
-            if (!IsValidUsername(request.Username))
-            {
-                return BadRequest("Username can only contain English letters (a-z, A-Z) and numbers (0-9), with no spaces.");
-            }
-
-            */
-
             if (!ValidationExtensions.IsValidUsername(request.Username))
             {
                 return BadRequest("Username can only contain English letters (a-z, A-Z) and numbers (0-9), with no spaces, and must be between 2 and 20 characters long.");
