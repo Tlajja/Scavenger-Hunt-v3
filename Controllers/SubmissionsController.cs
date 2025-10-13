@@ -98,17 +98,85 @@ namespace PhotoScavengerHunt.Controllers
 
             if (submission == null) return NotFound();
 
+            // Pridedame naują komentarą
             var comment = new Comment
             {
                 UserId = request.UserId,
                 Text = request.Text,
                 Timestamp = DateTime.UtcNow
             };
-
             submission.Comments.Add(comment);
             await _db.SaveChangesAsync();
 
-            return Ok(submission.Comments);
+            // Iteruojame per visus komentarus ir apdorojame juos su foreach
+            var processedComments = new List<Comment>();
+            foreach (var c in submission.Comments)
+            {
+                // Logging į console (galima pašalinti production aplinkoje)
+                Console.WriteLine($"User {c.UserId} commented at {c.Timestamp}: {c.Text}");
+                
+                // Pridedame komentarą į apdorotų komentarų sąrašą
+                processedComments.Add(c);
+            }
+
+            // Grąžinam apdorotus komentarus API atsakyme
+            return Ok(processedComments);
+        }
+
+        // Get comments for a specific submission with foreach processing
+        [HttpGet("{id}/comments")]
+        public async Task<IActionResult> GetCommentsForSubmission(int id)
+        {
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submission == null) return NotFound();
+
+            // Apdorojame komentarus su foreach - galime pridėti papildomą logiką
+            var processedComments = new List<object>();
+            foreach (var comment in submission.Comments)
+            {
+                // Pvz., galime pridėti papildomą informaciją arba formatavimą
+                var processedComment = new
+                {
+                    Id = comment.Id,
+                    UserId = comment.UserId,
+                    Text = comment.Text,
+                    Timestamp = comment.Timestamp,
+                    // Pridedame papildomą lauką - ar komentaras naujas (paskutinės 24 val.)
+                    IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
+                    // Formatavimas - trumpesnis tekstas preview
+                    Preview = comment.Text.Length > 50 ? comment.Text.Substring(0, 50) + "..." : comment.Text
+                };
+                
+                processedComments.Add(processedComment);
+            }
+
+            return Ok(processedComments);
+        }
+
+        // Get comments by specific user with foreach filtering
+        [HttpGet("{id}/comments/user/{userId}")]
+        public async Task<IActionResult> GetCommentsByUser(int id, int userId)
+        {
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (submission == null) return NotFound();
+
+            // Filtruojame komentarus pagal vartotoją su foreach
+            var userComments = new List<Comment>();
+            foreach (var comment in submission.Comments)
+            {
+                if (comment.UserId == userId)
+                {
+                    userComments.Add(comment);
+                }
+            }
+
+            return Ok(userComments);
         }
     }
 }
