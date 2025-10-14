@@ -17,26 +17,26 @@ namespace PhotoScavengerHunt.Controllers
 
         // Submit a photo
         [HttpPost]
-        public async Task<IActionResult> SubmitPhoto(int taskId, int userId, string photoUrl)
+        public async Task<IActionResult> SubmitPhoto([FromBody] PhotoSubmission req)
         {
             // Validation
-            if (string.IsNullOrWhiteSpace(photoUrl))
+            if (req == null || string.IsNullOrWhiteSpace(req.PhotoUrl))
             {
                 return BadRequest("Photo URL cannot be empty.\n");
             }
-            if(!await _db.Tasks.AnyAsync(t => t.Id == taskId))
+            if(!await _db.Tasks.AnyAsync(t => t.Id == req.TaskId))
             {
                 return BadRequest("Task does not exist.\n");
             }
-            if(!await _db.Users.AnyAsync(u => u.Id == userId))
+            if(!await _db.Users.AnyAsync(u => u.Id == req.UserId))
             {
                 return BadRequest("User does not exist.\n");}
 
             var submission = new PhotoSubmission
             {
-                TaskId = taskId,
-                UserId = userId,
-                PhotoUrl = photoUrl,
+                TaskId = req.TaskId,
+                UserId = req.UserId,
+                PhotoUrl = req.PhotoUrl,
                 Votes = 0,
                 Comments = new List<Comment>()
             };
@@ -44,7 +44,7 @@ namespace PhotoScavengerHunt.Controllers
             _db.Photos.Add(submission);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetSubmissionsForTask), new { taskId }, submission);
+            return CreatedAtAction(nameof(GetSubmissionsForTask), new { taskId = submission.TaskId }, submission);
         }
 
         // Get all submissions for a specific task
