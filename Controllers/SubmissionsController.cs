@@ -98,7 +98,6 @@ namespace PhotoScavengerHunt.Controllers
 
             if (submission == null) return NotFound();
 
-            // Pridedame naują komentarą
             var comment = new Comment
             {
                 UserId = request.UserId,
@@ -108,18 +107,14 @@ namespace PhotoScavengerHunt.Controllers
             submission.Comments.Add(comment);
             await _db.SaveChangesAsync();
 
-            // Iteruojame per visus komentarus ir apdorojame juos su foreach
             var processedComments = new List<Comment>();
             foreach (var c in submission.Comments)
             {
-                // Logging į console (galima pašalinti production aplinkoje)
                 Console.WriteLine($"User {c.UserId} commented at {c.Timestamp}: {c.Text}");
                 
-                // Pridedame komentarą į apdorotų komentarų sąrašą
                 processedComments.Add(c);
             }
 
-            // Grąžinam apdorotus komentarus API atsakyme
             return Ok(processedComments);
         }
 
@@ -133,20 +128,16 @@ namespace PhotoScavengerHunt.Controllers
 
             if (submission == null) return NotFound();
 
-            // Apdorojame komentarus su foreach - galime pridėti papildomą logiką
             var processedComments = new List<object>();
             foreach (var comment in submission.Comments)
             {
-                // Pvz., galime pridėti papildomą informaciją arba formatavimą
                 var processedComment = new
                 {
                     Id = comment.Id,
                     UserId = comment.UserId,
                     Text = comment.Text,
                     Timestamp = comment.Timestamp,
-                    // Pridedame papildomą lauką - ar komentaras naujas (paskutinės 24 val.)
                     IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
-                    // Formatavimas - trumpesnis tekstas preview
                     Preview = comment.Text.Length > 50 ? comment.Text.Substring(0, 50) + "..." : comment.Text
                 };
                 
@@ -166,7 +157,7 @@ namespace PhotoScavengerHunt.Controllers
 
             if (submission == null) return NotFound();
 
-            // Filtruojame komentarus pagal vartotoją su foreach
+            // Filtering comments by userId using foreach
             var userComments = new List<Comment>();
             foreach (var comment in submission.Comments)
             {

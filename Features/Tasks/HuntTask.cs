@@ -10,13 +10,12 @@ public class HuntTask
     public HuntTaskStatus Status { get; set; }
     public int AuthorId { get; set; }
 
-    // Optional arguments metodas su numatytosiomis reikšmėmis
     public static HuntTask Create(string description, DateTime? deadline = null, HuntTaskStatus status = HuntTaskStatus.Open)
     {
         return new HuntTask
         {
             Description = description,
-            Deadline = deadline ?? DateTime.UtcNow.AddDays(7), // jei deadline nenurodytas, pridėti 7 dienas
+            Deadline = deadline ?? DateTime.UtcNow.AddDays(7), // If no deadline is provided, set it to 7 days from now
             Status = status
         };
     }
