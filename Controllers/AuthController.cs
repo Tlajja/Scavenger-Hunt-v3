@@ -22,16 +22,16 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.Username))
+            {
+                return BadRequest("Email, password and username are required (cannot be empty).");
+            }
+
             // Validate email format
             if (!IsValidEmail(request.Email))
             {
                 return BadRequest("Invalid email format. Email must be in the format: something@something.something");
-            }
-
-            // Validate password
-            if (string.IsNullOrWhiteSpace(request.Password))
-            {
-                return BadRequest("Password cannot be empty.");
             }
 
             if (request.Password.Length < 6)
@@ -45,6 +45,24 @@ namespace PhotoScavengerHunt.Controllers
                 return Conflict("Email already registered.");
             }
 
+            // Validate username
+            if (!ValidationExtensions.IsValidUsername(request.Username))
+            {
+                return BadRequest("Username can only contain English letters (a-z, A-Z) and numbers (0-9), with no spaces, and must be between 2 and 20 characters long.");
+            }
+
+            // Check if username already exists
+            if (await _db.Users.AnyAsync(u => u.Name == request.Username))
+            {
+                return Conflict("Username already exists. Please choose another.");
+            }
+
+            // Validate age
+            if (request.Age <= 0 || request.Age > 125)
+            {
+                return BadRequest("Invalid age value.");
+            }
+
             // Hash the password
             string passwordHash = HashPassword(request.Password);
 
@@ -53,15 +71,18 @@ namespace PhotoScavengerHunt.Controllers
             {
                 Email = request.Email,
                 PasswordHash = passwordHash,
-                IsRegistered = false // Username not created yet
+                Name = request.Username,
+                Age = request.Age,
+                IsRegistered = true
             };
 
             _db.Users.Add(userProfile);
             await _db.SaveChangesAsync();
 
             return Ok(new { 
-                message = "Registration successful. Please create a username.", 
-                userId = userProfile.Id 
+                message = "Registration successful. You can now log in.", 
+                userId = userProfile.Id,
+                username = userProfile.Name
             });
         }
 

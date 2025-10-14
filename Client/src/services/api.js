@@ -12,11 +12,11 @@ async function safeFetch(url, opts) {
   }
 }
 
-export async function register(email, password) {
+export async function register(email, password, username, age) {
   return await safeFetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Email: email, Password: password })
+    body: JSON.stringify({ Email: email, Password: password, Username: username, Age: age })
   })
 }
 
