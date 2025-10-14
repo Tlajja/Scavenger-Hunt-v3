@@ -160,14 +160,6 @@ namespace PhotoScavengerHunt.Controllers
             return Regex.IsMatch(email, pattern);
         }
 
-        // Helper method to validate username (only English letters and numbers, no spaces)
-        private bool IsValidUsername(string username)
-        {
-            // Only allow a-z, A-Z, and 0-9
-            string pattern = @"^[a-zA-Z0-9]+$";
-            return Regex.IsMatch(username, pattern);
-        }
-
         // Helper method to hash password using SHA256
         private string HashPassword(string password)
         {

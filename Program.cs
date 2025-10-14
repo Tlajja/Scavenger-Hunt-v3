@@ -32,6 +32,26 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("LocalDev");
+
+var clientDist = Path.Combine(builder.Environment.ContentRootPath, "client", "dist");
+if (Directory.Exists(clientDist))
+{
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = new PhysicalFileProvider(clientDist),
+    });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(clientDist),
+    });
+}
+else
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.MapControllers();
 
 app.Run();
