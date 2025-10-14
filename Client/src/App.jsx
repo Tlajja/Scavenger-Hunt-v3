@@ -3,9 +3,10 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Tasks from './pages/Tasks'
+import MyTasks from './pages/MyTasks'
 import SubmitPhoto from './pages/SubmitPhoto'
 import Leaderboard from './pages/Leaderboard'
+import TaskCreate from './pages/TaskCreate'
 
 export default function App() {
   return (
@@ -17,7 +18,8 @@ export default function App() {
             <Link to="/" style={{ marginRight: 12 }}>Home</Link>
             <Link to="/register" style={{ marginRight: 12 }}>Register</Link>
             <Link to="/login" style={{ marginRight: 12 }}>Login</Link>
-            <Link to="/tasks" style={{ marginRight: 12 }}>Tasks</Link>
+            <Link to="/create-task" style={{ marginRight: 12 }}>Create Task</Link>
+            <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
             <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
             <Link to="/leaderboard">Leaderboard</Link>
           </nav>
@@ -26,11 +28,12 @@ export default function App() {
         <main style={{ marginTop: 20 }}>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/mytasks" element={<MyTasks />} />
             <Route path="/submit" element={<SubmitPhoto />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/create-task" element={<TaskCreate />} />
           </Routes>
         </main>
       </div>

@@ -51,3 +51,19 @@ export async function submitPhoto(taskId, userId, photoUrl) {
 export async function getLeaderboard() {
   return await safeFetch('/api/leaderboard', { method: 'GET' })
 }
+
+export async function createTask(description, deadline) {
+  return await safeFetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId: 0 })
+  })
+}
+
+export async function createUserTask(description, deadline, authorId) {
+  return await safeFetch('/api/tasks/user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId: authorId })
+  })
+}
