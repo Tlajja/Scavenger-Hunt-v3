@@ -16,3 +16,4 @@ What the project should have when finished:
 8. Timers and/or notifications - game and voting times.
 9. Storage - user chooses which rounds to save (limited amount, maybe 5 rounds)
 10. Create/join hub - private or public
+
