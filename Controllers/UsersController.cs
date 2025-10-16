@@ -20,13 +20,9 @@ namespace PhotoScavengerHunt.Controllers
         public async Task<IActionResult> CreateUser(string name, int age)
         {
             // Validation
-            if (string.IsNullOrWhiteSpace(name))
+            if(!ValidationExtensions.IsValidUsername(name))
             {
-                return BadRequest("Username cannot be empty.\n");
-            }
-            if (!IsValidUsername(name))
-            {
-                return BadRequest("Username can only contain English letters and numbers.\n");
+                return BadRequest("Username can only contain English letters (a-z, A-Z) and numbers (0-9), with no spaces, and must be between 2 and 20 characters long.\n");
             }
             if (await _db.Users.AnyAsync(u => u.Name == name))
             {
@@ -58,12 +54,6 @@ namespace PhotoScavengerHunt.Controllers
         {
             var user = await _db.Users.FindAsync(id);
             return user is null ? NotFound() : Ok(user);
-        }
-
-        private bool IsValidUsername(string name)
-        {
-            string pattern = @"^[a-zA-Z0-9]+$";
-            return Regex.IsMatch(name, pattern);
         }
     }
 }
