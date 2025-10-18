@@ -28,8 +28,11 @@ namespace PhotoScavengerHunt.Controllers
                 return BadRequest("Deadline cannot be in the past.");
             }
 
-            var task = HuntTask.Create(req.Description, req.Deadline, HuntTaskStatus.Open);
-            task.AuthorId = 0;
+            var task = HuntTaskFactory.Create(
+                description: req.Description,
+                authorId: 0,
+                deadline: req.Deadline,
+                status: HuntTaskStatus.Open);
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
@@ -54,8 +57,11 @@ namespace PhotoScavengerHunt.Controllers
                 return BadRequest("User does not exist.");
             }
 
-            var task = HuntTask.Create(req.Description, req.Deadline, HuntTaskStatus.Open);
-            task.AuthorId = req.AuthorId;
+            var task = HuntTaskFactory.Create(
+                description: req.Description,
+                authorId: req.AuthorId,
+                deadline: req.Deadline,
+                status: HuntTaskStatus.Open);
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
