@@ -147,6 +147,24 @@ namespace PhotoScavengerHunt.Controllers
             return Ok(processedComments);
         }
 
-        
+        [HttpDelete("{submissionId}/comment/{commentId}")]
+        public async Task<IActionResult> DeleteComment(int submissionId, int commentId)
+        {
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
+                .FirstOrDefaultAsync(s => s.Id == submissionId);
+
+            if (submission == null)
+                return NotFound("Submission not found.");
+
+            var commentToRemove = submission.Comments.FirstOrDefault(c => c.Id == commentId);
+            if (commentToRemove == null)
+                return NotFound("Comment not found.");
+
+            submission.Comments.Remove(commentToRemove);
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
