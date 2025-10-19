@@ -76,12 +76,6 @@ namespace PhotoScavengerHunt.Controllers
             return Ok(submission);
         }
 
-        public class AddCommentRequest
-        {
-            public int UserId { get; set; }
-            public string Text { get; set; } = "";
-        }
-
         // Add a comment to a photo submission
         [HttpPost("{id}/comment")]
         public async Task<IActionResult> AddComment(int id, [FromBody] AddCommentRequest request)
