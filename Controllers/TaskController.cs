@@ -23,18 +23,16 @@ namespace PhotoScavengerHunt.Controllers
             {
                 return BadRequest("Task description cannot be empty.");
             }
-            if (req.Deadline <= DateTime.UtcNow)
+            if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
             {
                 return BadRequest("Deadline cannot be in the past.");
             }
 
-            var task = new HuntTask
-            {
-                Description = req.Description,
-                Deadline = req.Deadline,
-                Status = HuntTaskStatus.Open,
-                AuthorId = 0
-            };
+            var task = HuntTaskFactory.Create(
+                description: req.Description,
+                authorId: 0,
+                deadline: req.Deadline,
+                status: HuntTaskStatus.Open);
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();
@@ -50,7 +48,7 @@ namespace PhotoScavengerHunt.Controllers
             {
                 return BadRequest("Task description cannot be empty.");
             }
-            if (req.Deadline <= DateTime.UtcNow)
+            if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
             {
                 return BadRequest("Deadline cannot be in the past.");
             }
@@ -59,13 +57,11 @@ namespace PhotoScavengerHunt.Controllers
                 return BadRequest("User does not exist.");
             }
 
-            var task = new HuntTask
-            {
-                Description = req.Description,
-                Deadline = req.Deadline,
-                Status = HuntTaskStatus.Open,
-                AuthorId = req.AuthorId
-            };
+            var task = HuntTaskFactory.Create(
+                description: req.Description,
+                authorId: req.AuthorId,
+                deadline: req.Deadline,
+                status: HuntTaskStatus.Open);
 
             _db.Tasks.Add(task);
             await _db.SaveChangesAsync();

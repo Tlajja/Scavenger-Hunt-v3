@@ -18,7 +18,6 @@ export default function TaskCreate() {
     setMessage('Creating...')
     const iso = toIsoForServer(deadline)
     if (!description.trim()) { setMessage('Description is required.'); return }
-    if (!iso) { setMessage('Deadline is required.'); return }
     if (!userId) { setMessage('You must be logged in to create a task.'); return }
 
     try {
@@ -48,6 +47,7 @@ export default function TaskCreate() {
       <div style={{ marginBottom: 10 }}>
         <label style={{ display: 'block', marginBottom: 6 }}>Deadline</label>
         <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} style={{ width: '100%' }} />
+        <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Optional — leave blank to set 7 days from now.</div>
       </div>
       <div style={{ marginBottom: 12 }}>
         Creating as user: {localStorage.getItem('username') || userId || 'not logged in'}

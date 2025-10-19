@@ -1,4 +1,6 @@
-﻿namespace PhotoScavengerHunt.Features.Tasks;
+﻿using System;
+
+namespace PhotoScavengerHunt.Features.Tasks;
 
 public class HuntTask
 {

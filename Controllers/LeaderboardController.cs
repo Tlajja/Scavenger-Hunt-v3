@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Features.Users;
+using PhotoScavengerHunt.Features.Leaderboard;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -32,11 +33,7 @@ namespace PhotoScavengerHunt.Controllers
             return Ok(leaderboard);
         }
 
-        public class LeaderboardEntry
-        {
-            public int UserId { get; set; }
-            public string UserName { get; set; } = string.Empty;
-            public int TotalVotes { get; set; }
-        }
+        
+
     }
 }
