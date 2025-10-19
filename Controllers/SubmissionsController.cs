@@ -147,27 +147,6 @@ namespace PhotoScavengerHunt.Controllers
             return Ok(processedComments);
         }
 
-        // Get comments by specific user with foreach filtering
-        [HttpGet("{id}/comments/user/{userId}")]
-        public async Task<IActionResult> GetCommentsByUser(int id, int userId)
-        {
-            var submission = await _db.Photos
-                .Include(s => s.Comments)
-                .FirstOrDefaultAsync(s => s.Id == id);
-
-            if (submission == null) return NotFound();
-
-            // Filtering comments by userId using foreach
-            var userComments = new List<Comment>();
-            foreach (var comment in submission.Comments)
-            {
-                if (comment.UserId == userId)
-                {
-                    userComments.Add(comment);
-                }
-            }
-
-            return Ok(userComments);
-        }
+        
     }
 }
