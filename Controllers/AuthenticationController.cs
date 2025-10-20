@@ -9,11 +9,11 @@ namespace PhotoScavengerHunt.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthenticationController : ControllerBase
     {
         private readonly PhotoScavengerHuntDbContext _db;
 
-        public AuthController(PhotoScavengerHuntDbContext db)
+        public AuthenticationController(PhotoScavengerHuntDbContext db)
         {
             _db = db;
         }

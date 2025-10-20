@@ -1,5 +1,3 @@
-using System;
-
 namespace PhotoScavengerHunt.Features.Photos
 {
     public class AddCommentRequest

@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Leaderboard;
 
 namespace PhotoScavengerHunt.Controllers

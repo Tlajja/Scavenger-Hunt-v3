@@ -1,5 +1,3 @@
-using System;
-
 namespace PhotoScavengerHunt.Features.Tasks
 {
     public static class HuntTaskFactory
