@@ -2,14 +2,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Database
-builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
-    options.UseInMemoryDatabase("PhotoScavengerHuntDb"));
+builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {
