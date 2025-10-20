@@ -1,26 +1,25 @@
 using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Features.Tasks;
-using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Database
+builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
+    options.UseInMemoryDatabase("PhotoScavengerHuntDb"));
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("LocalDev", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyHeader();
     });
 });
-
-builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -30,28 +29,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStaticFiles();
+
 app.UseHttpsRedirection();
-
-app.UseCors("LocalDev");
-
-var clientDist = Path.Combine(builder.Environment.ContentRootPath, "client", "dist");
-if (Directory.Exists(clientDist))
-{
-    app.UseDefaultFiles(new DefaultFilesOptions
-    {
-        FileProvider = new PhysicalFileProvider(clientDist),
-    });
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(clientDist),
-    });
-}
-else
-{
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-}
-
+app.UseCors();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

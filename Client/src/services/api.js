@@ -12,8 +12,9 @@ async function safeFetch(url, opts) {
   }
 }
 
+// Authentication endpoints
 export async function register(email, password, username, age) {
-    return await safeFetch('/api/authentication/register', {
+  return await safeFetch('/api/authentication/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Email: email, Password: password, Username: username, Age: age })
@@ -21,7 +22,7 @@ export async function register(email, password, username, age) {
 }
 
 export async function login(username, password) {
-    return await safeFetch('/api/authentication/login', {
+  return await safeFetch('/api/authentication/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Username: username, Password: password })
@@ -29,27 +30,16 @@ export async function login(username, password) {
 }
 
 export async function createUsername(userId, username, age) {
-    return await safeFetch(`/api/authentication/create-username?userId=${userId}`, {
+  return await safeFetch(`/api/authentication/create-username?userId=${userId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Username: username, Age: age })
   })
 }
 
+// Task endpoints
 export async function getTasks() {
   return await safeFetch('/api/tasks', { method: 'GET' })
-}
-
-export async function submitPhoto(taskId, userId, photoUrl) {
-    return await safeFetch('/api/photosubmissions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ TaskId: taskId, UserId: userId, PhotoUrl: photoUrl })
-  })
-}
-
-export async function getLeaderboard() {
-  return await safeFetch('/api/leaderboard', { method: 'GET' })
 }
 
 export async function createTask(description, deadline) {
@@ -66,4 +56,57 @@ export async function createUserTask(description, deadline, authorId) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId: authorId })
   })
+}
+
+export async function submitPhoto(taskId, userId, photoFile) {
+  const formData = new FormData()
+  formData.append('taskId', taskId)
+  formData.append('userId', userId)
+  formData.append('file', photoFile)
+
+  const response = await fetch('http://localhost:5248/api/photosubmissions/upload', {
+    method: 'POST',
+    body: formData
+  })
+
+  const text = await response.text()
+  let data = null
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = text
+  }
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data: data,
+    text: text
+  }
+}
+
+// NEW: Upload photo file with streaming
+export async function uploadPhotoFile(taskId, userId, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('taskId', taskId)
+  formData.append('userId', userId)
+
+  try {
+    const res = await fetch(`${API_BASE}/api/photoupload/upload`, { 
+      method: 'POST',
+      body: formData
+    })
+    const text = await res.text()
+    let data = null
+    try { data = text ? JSON.parse(text) : null } catch { data = text }
+    return { ok: res.ok, status: res.status, data, text }
+  } catch (err) {
+    return { ok: false, status: 0, data: null, text: 'Network error' }
+  }
+}
+
+// Leaderboard endpoint
+export async function getLeaderboard() {
+  return await safeFetch('/api/leaderboard', { method: 'GET' })
 }

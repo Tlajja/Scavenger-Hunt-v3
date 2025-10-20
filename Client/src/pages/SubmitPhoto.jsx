@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { submitPhoto, getTasks } from '../services/api.js'
 
-
 export default function SubmitPhoto() {
-  const [photoUrl, setPhotoUrl] = useState('')
-  const [message, setMessage] = useState('')  
+  const [photoFile, setPhotoFile] = useState(null)
+  const [message, setMessage] = useState('')
   const [taskId, setTaskId] = useState('')
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -18,14 +17,7 @@ export default function SubmitPhoto() {
       setError('')
       try {
         const res = await getTasks()
-        let data = null
-        if (res instanceof Response) {
-          if (!res.ok) throw new Error(await res.text() || res.statusText)
-          data = await res.json()
-        } else {
-          if (!res.ok) throw new Error(res.text || `Error ${res.status}`)
-          data = res.data
-        }
+        let data = res.data
         if (!mounted) return
         setTasks(Array.isArray(data) ? data : [])
       } catch (err) {
@@ -45,17 +37,18 @@ export default function SubmitPhoto() {
     setMessage('')
     if (!userId) { setMessage('You must be logged in to submit.'); return }
     if (!taskId) { setMessage('Please select a task.'); return }
-    if (!photoUrl.trim()) { setMessage('Photo URL is required.'); return }
+    if (!photoFile) { setMessage('Please select a photo file.'); return }
 
     try {
-      const res = await submitPhoto(Number(taskId), Number(userId), photoUrl.trim())
+      const res = await submitPhoto(Number(taskId), Number(userId), photoFile)
       if (!res.ok) {
         const err = (res.data && (res.data.message || res.data.error)) || res.text || `Error ${res.status}`
         setMessage(`Error: ${err}`)
         return
       }
       setMessage('Submission created.')
-      setPhotoUrl('')
+      setPhotoFile(null)
+      e.target.reset()
     } catch (err) {
       setMessage('Network error')
     }
@@ -78,26 +71,25 @@ export default function SubmitPhoto() {
           <option value="">-- choose a task --</option>
           {tasks.map(t => (
             <option key={t.id ?? t.Id ?? `${t.description}-${t.deadline}`} value={t.id ?? t.Id}>
-              {`${t.id ?? t.Id ?? ''} — ${t.description ?? t.Description ?? '(no description)'}`
-              }
+              {`${t.id ?? t.Id ?? ''} — ${t.description ?? t.Description ?? '(no description)'}`}
             </option>
           ))}
         </select>
       </div>
 
       <div style={{ marginBottom: 10 }}>
-        <label style={{ display: 'block', marginBottom: 6 }}>Photo URL</label>
+        <label style={{ display: 'block', marginBottom: 6 }}>Upload Photo</label>
         <input
-          value={photoUrl}
-          onChange={e => setPhotoUrl(e.target.value)}
-          placeholder="https://example.com/photo.jpg"
+          type="file"
+          accept="image/jpeg,image/png,image/gif"
+          onChange={e => setPhotoFile(e.target.files[0])}
           style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
         />
       </div>
 
       {!userId && <div style={{ color: 'crimson', marginBottom: 10 }}>You must be logged in to submit photos.</div>}
 
-      <button type="submit" disabled={!taskId || !photoUrl.trim() || !userId}>Submit</button>
+      <button type="submit" disabled={!taskId || !photoFile || !userId}>Submit</button>
 
       <div style={{ marginTop: 10 }}>{message}</div>
     </form>
