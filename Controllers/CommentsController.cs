@@ -19,9 +19,12 @@ namespace PhotoScavengerHunt.Controllers
         public async Task<IActionResult> AddComment(int submissionId, [FromBody] AddCommentRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Text))
-                return BadRequest("Comment text cannot be empty.");
+            {
+                return BadRequest("Comment text cannot be empty.\n");
+            }
 
-            var submission = await _db.Photos.Include(s => s.Comments)
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null)
@@ -37,46 +40,64 @@ namespace PhotoScavengerHunt.Controllers
             submission.Comments.Add(comment);
             await _db.SaveChangesAsync();
 
-            return Ok(submission.Comments);
+            var processedComments = new List<Comment>();
+            foreach (var c in submission.Comments)
+            {
+                Console.WriteLine($"User {c.UserId} commented at {c.Timestamp}: {c.Text}");
+                processedComments.Add(c);
+            }
+
+            return Ok(processedComments);
         }
 
         [HttpGet("{submissionId}")]
-        public async Task<IActionResult> GetComments(int submissionId)
+        public async Task<IActionResult> GetCommentsForSubmission(int submissionId)
         {
             var submission = await _db.Photos
                 .Include(s => s.Comments)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null)
-                return NotFound();
+                return NotFound("Submission not found.");
 
-            var result = submission.Comments.Select(c => new
+            var processedComments = new List<object>();
+
+            foreach (var comment in submission.Comments)
             {
-                c.Id,
-                c.UserId,
-                c.Text,
-                c.Timestamp,
-                IsRecent = c.Timestamp > DateTime.UtcNow.AddHours(-24),
-                Preview = c.Text.Length > 50 ? c.Text[..50] + "..." : c.Text
-            });
+                var processedComment = new
+                {
+                    Id = comment.Id,
+                    UserId = comment.UserId,
+                    Text = comment.Text,
+                    Timestamp = comment.Timestamp,
+                    IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
+                    Preview = comment.Text.Length > 50
+                        ? comment.Text.Substring(0, 50) + "..."
+                        : comment.Text
+                };
 
-            return Ok(result);
+                processedComments.Add(processedComment);
+            }
+
+            return Ok(processedComments);
         }
+
 
         [HttpDelete("{submissionId}/{commentId}")]
         public async Task<IActionResult> DeleteComment(int submissionId, int commentId)
         {
-            var submission = await _db.Photos.Include(s => s.Comments)
+            var submission = await _db.Photos
+                .Include(s => s.Comments)
                 .FirstOrDefaultAsync(s => s.Id == submissionId);
 
             if (submission == null)
                 return NotFound("Submission not found.");
 
-            var comment = submission.Comments.FirstOrDefault(c => c.Id == commentId);
-            if (comment == null)
+            var commentToRemove = submission.Comments.FirstOrDefault(c => c.Id == commentId);
+            if (commentToRemove == null)
                 return NotFound("Comment not found.");
 
-            submission.Comments.Remove(comment);
+            submission.Comments.Remove(commentToRemove);
             await _db.SaveChangesAsync();
 
             return NoContent();
