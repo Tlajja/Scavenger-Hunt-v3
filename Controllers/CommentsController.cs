@@ -34,7 +34,8 @@ namespace PhotoScavengerHunt.Controllers
             {
                 UserId = request.UserId,
                 Text = request.Text,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                PhotoSubmissionId = submissionId
             };
 
             submission.Comments.Add(comment);
