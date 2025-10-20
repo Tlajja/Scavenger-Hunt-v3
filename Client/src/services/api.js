@@ -13,7 +13,7 @@ async function safeFetch(url, opts) {
 }
 
 export async function register(email, password, username, age) {
-  return await safeFetch('/api/auth/register', {
+    return await safeFetch('/api/authentication/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Email: email, Password: password, Username: username, Age: age })
@@ -21,7 +21,7 @@ export async function register(email, password, username, age) {
 }
 
 export async function login(username, password) {
-  return await safeFetch('/api/auth/login', {
+    return await safeFetch('/api/authentication/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Username: username, Password: password })
@@ -29,7 +29,7 @@ export async function login(username, password) {
 }
 
 export async function createUsername(userId, username, age) {
-  return await safeFetch(`/api/auth/create-username?userId=${userId}`, {
+    return await safeFetch(`/api/authentication/create-username?userId=${userId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ Username: username, Age: age })
@@ -41,7 +41,7 @@ export async function getTasks() {
 }
 
 export async function submitPhoto(taskId, userId, photoUrl) {
-  return await safeFetch('/api/submissions', {
+    return await safeFetch('/api/photosubmissions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ TaskId: taskId, UserId: userId, PhotoUrl: photoUrl })
