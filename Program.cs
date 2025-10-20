@@ -6,8 +6,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
+    options.UseInMemoryDatabase("PhotoScavengerHuntDb"));
 
 builder.Services.AddCors(options =>
 {
