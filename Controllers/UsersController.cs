@@ -1,7 +1,6 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
+using PhotoScavengerHunt.Services;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -9,51 +8,44 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly UserService _userService;
 
-        public UsersController(PhotoScavengerHuntDbContext db)
+        public UsersController(UserService userService)
         {
-            _db = db;
+            _userService = userService;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateUser(string name, int age)
         {
-            // Validation
-            if(!ValidationExtensions.IsValidUsername(name))
-            {
-                return BadRequest("Username can only contain English letters (a-z, A-Z) and numbers (0-9), with no spaces, and must be between 2 and 20 characters long.\n");
-            }
-            if (await _db.Users.AnyAsync(u => u.Name == name))
-            {
-                return Conflict("Username already exists.\n");
-            }
-            if (age <= 0 || age > 125)
-            {
-                return BadRequest("Incorrect age value.\n");
-            }
+            var result = await _userService.CreateUserAsync(name, age);
 
-            var profile = new UserProfile
-            {
-                Name = name,
-                Age = age
-            };
+            if (!result.Success)
+                return BadRequest(result.Error);
 
-            _db.Users.Add(profile);
-            await _db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetUserById), new { id = profile.Id }, profile);
+            return CreatedAtAction(nameof(GetUserById), new { id = result.User!.Id }, result.User);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<UserProfile>> GetUsers() =>
-            await _db.Users.ToListAsync();
+        public async Task<IActionResult> GetUsers()
+        {
+            var result = await _userService.GetUsersAsync();
+
+            if (!result.Success)
+                return StatusCode(500, result.Error);
+
+            return Ok(result.Users);
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
-            var user = await _db.Users.FindAsync(id);
-            return user is null ? NotFound() : Ok(user);
+            var result = await _userService.GetUserByIdAsync(id);
+
+            if (!result.Success)
+                return NotFound(result.Error);
+
+            return Ok(result.User);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PhotoScavengerHunt.Services;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -6,24 +7,22 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class VotesController : ControllerBase
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly VotesService _votesService;
 
-        public VotesController(PhotoScavengerHuntDbContext db)
+        public VotesController(VotesService votesService)
         {
-            _db = db;
+            _votesService = votesService;
         }
 
         [HttpPost("{submissionId}")]
         public async Task<IActionResult> UpvotePhoto(int submissionId)
         {
-            var submission = await _db.Photos.FindAsync(submissionId);
-            if (submission == null)
-                return NotFound("Submission not found.");
+            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(submissionId);
 
-            submission.Votes += 1;
-            await _db.SaveChangesAsync();
+            if (!success)
+                return BadRequest(new { error = errorMessage });
 
-            return Ok(submission);
+            return Ok(result);
         }
     }
 }
