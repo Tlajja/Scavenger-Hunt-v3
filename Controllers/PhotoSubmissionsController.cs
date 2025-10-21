@@ -59,5 +59,16 @@ namespace PhotoScavengerHunt.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSubmission(int id)
+        {
+            var result = await _service.DeleteSubmissionAsync(id);
+
+            if (!result.Success)
+                return NotFound(new { error = result.Message });
+
+            return NoContent(); // HTTP 204 — sėkmingas ištrynimas be turinio
+        }
     }
 }

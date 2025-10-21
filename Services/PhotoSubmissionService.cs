@@ -106,5 +106,31 @@ namespace PhotoScavengerHunt.Services
                 throw new Exception($"Error fetching submissions for user {userId}: {ex.Message}");
             }
         }
+
+        public async Task<(bool Success, string Message)> DeleteSubmissionAsync(int submissionId)
+        {
+            try
+            {
+                var submission = await _db.Photos.FindAsync(submissionId);
+                if (submission == null)
+                    return (false, "Submission not found.");
+
+                // Ištrinam failą iš serverio, jei jis egzistuoja
+                var filePath = Path.Combine(_env.WebRootPath, submission.PhotoUrl.TrimStart('/'));
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+
+                _db.Photos.Remove(submission);
+                await _db.SaveChangesAsync();
+
+                return (true, "Submission deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error deleting submission: {ex.Message}");
+            }
+        }
     }
 }
