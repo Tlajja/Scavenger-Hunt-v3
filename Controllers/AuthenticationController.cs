@@ -22,7 +22,8 @@ namespace PhotoScavengerHunt.Controllers
             if (!result.Success)
                 return BadRequest(result.Message);
 
-            return Ok(new { message = result.Message, result.Data });
+            dynamic? d = result.Data;
+            return Ok(new { message = result.Message, userId = d?.userId, username = d?.username });
         }
 
         [HttpPost("create-username")]
@@ -32,7 +33,9 @@ namespace PhotoScavengerHunt.Controllers
             if (!result.Success)
                 return BadRequest(result.Message);
 
-            return Ok(new { message = result.Message, result.Data });
+            dynamic? d = result.Data;
+            // CreateUsername returns username; include userId for consistency if available
+            return Ok(new { message = result.Message, userId = userId, username = d?.username });
         }
 
         [HttpPost("login")]
@@ -42,7 +45,8 @@ namespace PhotoScavengerHunt.Controllers
             if (!result.Success)
                 return Unauthorized(result.Message);
 
-            return Ok(new { message = result.Message, result.Data });
+            dynamic? d = result.Data;
+            return Ok(new { message = result.Message, userId = d?.userId, username = d?.username });
         }
     }
 }
