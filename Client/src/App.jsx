@@ -7,6 +7,7 @@ import MyTasks from './pages/MyTasks'
 import SubmitPhoto from './pages/SubmitPhoto'
 import Leaderboard from './pages/Leaderboard'
 import TaskCreate from './pages/TaskCreate'
+import Logout from './pages/Logout'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
             <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
             <Link to="/leaderboard">Leaderboard</Link>
+            <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
           </nav>
         </header>
 
@@ -34,6 +36,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/create-task" element={<TaskCreate />} />
+            <Route path="/logout" element={<Logout />} />
           </Routes>
         </main>
       </div>
