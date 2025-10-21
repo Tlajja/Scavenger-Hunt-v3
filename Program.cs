@@ -9,6 +9,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<CommentService>();
 builder.Services.AddScoped<LeaderboardService>();
+builder.Services.AddScoped<LeaderboardService>();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
