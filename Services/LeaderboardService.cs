@@ -29,8 +29,10 @@ namespace PhotoScavengerHunt.Services
                             .FirstOrDefault() ?? "Unknown",
                         TotalVotes = g.Sum(p => p.Votes)
                     })
-                    .OrderByDescending(e => e.TotalVotes)
                     .ToListAsync();
+
+                // Sort using IComparable<LeaderboardEntry>
+                leaderboard.Sort();
 
                 return leaderboard;
             }

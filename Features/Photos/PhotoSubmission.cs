@@ -1,5 +1,4 @@
-﻿// Features/Photos/PhotoSubmission.cs
-namespace PhotoScavengerHunt.Features.Photos
+﻿namespace PhotoScavengerHunt.Features.Photos
 {
     public class PhotoSubmission
     {

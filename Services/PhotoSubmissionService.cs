@@ -115,7 +115,7 @@ namespace PhotoScavengerHunt.Services
                 if (submission == null)
                     return (false, "Submission not found.");
 
-                // Ištrinam failą iš serverio, jei jis egzistuoja
+                // Delete file from server (if it exists)
                 var filePath = Path.Combine(_env.WebRootPath, submission.PhotoUrl.TrimStart('/'));
                 if (File.Exists(filePath))
                 {

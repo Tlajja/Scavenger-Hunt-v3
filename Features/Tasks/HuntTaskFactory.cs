@@ -18,5 +18,3 @@ namespace PhotoScavengerHunt.Features.Tasks
         }
     }
 }
-
-
