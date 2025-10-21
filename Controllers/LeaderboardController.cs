@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Leaderboard;
+using PhotoScavengerHunt.Services;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -8,30 +8,33 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class LeaderboardController : ControllerBase
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly LeaderboardService _leaderboardService;
+        private readonly ILogger<LeaderboardController> _logger;
 
-        public LeaderboardController(PhotoScavengerHuntDbContext db)
+        public LeaderboardController(LeaderboardService leaderboardService, ILogger<LeaderboardController> logger)
         {
-            _db = db;
+            _leaderboardService = leaderboardService;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<LeaderboardEntry>>> GetLeaderboard()
         {
-            var leaderboard = await _db.Photos
-                .GroupBy(s => s.UserId)
-                .Select(g => new LeaderboardEntry
-                {
-                    UserId = g.Key,
-                    UserName = _db.Users.Where(u => u.Id == g.Key).Select(u => u.Name).FirstOrDefault() ?? "Unknown",
-                    TotalVotes = g.Sum(s => s.Votes)
-                })
-                .OrderByDescending(entry => entry.TotalVotes)
-                .ToListAsync();
-            return Ok(leaderboard);
+            try
+            {
+                var leaderboard = await _leaderboardService.GetLeaderboardAsync();
+                return Ok(leaderboard);
+            }
+            catch (ApplicationException ex)
+            {
+                _logger.LogWarning(ex, "Handled application error in leaderboard retrieval.");
+                return StatusCode(500, new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled exception in GetLeaderboard.");
+                return StatusCode(500, new { Message = "An unexpected error occurred while retrieving the leaderboard." });
+            }
         }
-
-        
-
     }
 }
