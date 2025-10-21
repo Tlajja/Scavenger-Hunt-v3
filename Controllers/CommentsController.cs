@@ -18,11 +18,25 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost("{submissionId}")]
         public async Task<IActionResult> AddComment(int submissionId, [FromBody] AddCommentRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Text))
+            {
+                return BadRequest("Comment text cannot be empty.\n");
+            }
+
             var result = await _service.AddCommentAsync(submissionId, request);
             if (!result.Success)
                 return BadRequest(result.Error);
 
-            return Ok(result.Comments);
+            var comments = result.Comments ?? new List<Comment>();
+
+            var processedComments = new List<Comment>();
+            foreach (var c in comments)
+            {
+                Console.WriteLine($"User {c.UserId} commented at {c.Timestamp}: {c.Text}");
+                processedComments.Add(c);
+            }
+
+            return Ok(processedComments);
         }
 
         [HttpGet("{submissionId}")]
@@ -32,7 +46,35 @@ namespace PhotoScavengerHunt.Controllers
             if (!result.Success)
                 return NotFound(result.Error);
 
-            return Ok(result.Comments);
+            var rawComments = result.Comments ?? new List<object>();
+            var processedComments = new List<object>();
+
+            foreach (var item in rawComments)
+            {
+                if (item is Comment comment)
+                {
+                    var processedComment = new
+                    {
+                        comment.Id,
+                        comment.UserId,
+                        comment.Text,
+                        comment.Timestamp,
+                        IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
+                        Preview = comment.Text?.Length > 50
+                            ? comment.Text.Substring(0, 50) + "..."
+                            : comment.Text
+                    };
+
+                    Console.WriteLine($"User {comment.UserId} commented at {comment.Timestamp}: {comment.Text}");
+                    processedComments.Add(processedComment);
+                }
+                else
+                {
+                    processedComments.Add(item);
+                }
+            }
+
+            return Ok(processedComments);
         }
 
         [HttpDelete("{submissionId}/{commentId}")]
