@@ -5,12 +5,12 @@ namespace PhotoScavengerHunt.Services
 {
     public class TaskService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<TaskService> _logger;
 
-        public TaskService(PhotoScavengerHuntDbContext db, ILogger<TaskService> logger)
+        public TaskService(PhotoScavengerHuntDbContext dbContext, ILogger<TaskService> logger)
         {
-            _db = db;
+            this.dbContext = dbContext;
             _logger = logger;
         }
 
@@ -29,8 +29,8 @@ namespace PhotoScavengerHunt.Services
                     deadline: req.Deadline,
                     status: HuntTaskStatus.Open);
 
-                _db.Tasks.Add(task);
-                await _db.SaveChangesAsync();
+                dbContext.Tasks.Add(task);
+                await dbContext.SaveChangesAsync();
                 return task;
             }
             catch (ArgumentException ex)
@@ -53,7 +53,7 @@ namespace PhotoScavengerHunt.Services
                     throw new ArgumentException("Task description cannot be empty.");
                 if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
                     throw new ArgumentException("Deadline cannot be in the past.");
-                if (!await _db.Users.AnyAsync(u => u.Id == req.AuthorId))
+                if (!await dbContext.Users.AnyAsync(u => u.Id == req.AuthorId))
                     throw new ArgumentException("User does not exist.");
 
                 var task = HuntTaskFactory.Create(
@@ -62,8 +62,8 @@ namespace PhotoScavengerHunt.Services
                     deadline: req.Deadline,
                     status: HuntTaskStatus.Open);
 
-                _db.Tasks.Add(task);
-                await _db.SaveChangesAsync();
+                dbContext.Tasks.Add(task);
+                await dbContext.SaveChangesAsync();
                 return task;
             }
             catch (ArgumentException ex)
@@ -82,7 +82,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _db.Tasks.ToListAsync();
+                return await dbContext.Tasks.ToListAsync();
             }
             catch (Exception ex)
             {
@@ -95,7 +95,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _db.Tasks.FindAsync(id);
+                return await dbContext.Tasks.FindAsync(id);
             }
             catch (Exception ex)
             {
@@ -108,12 +108,12 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.AuthorId == userId);
+                var task = await dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.AuthorId == userId);
                 if (task is null)
                     throw new KeyNotFoundException("Task not found or not created by this user.");
 
-                _db.Tasks.Remove(task);
-                await _db.SaveChangesAsync();
+                dbContext.Tasks.Remove(task);
+                await dbContext.SaveChangesAsync();
             }
             catch (KeyNotFoundException ex)
             {

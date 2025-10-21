@@ -5,24 +5,24 @@ namespace PhotoScavengerHunt.Services
 {
     public class VotesService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
 
-        public VotesService(PhotoScavengerHuntDbContext db)
+        public VotesService(PhotoScavengerHuntDbContext dbContext)
         {
-            _db = db;
+            this.dbContext = dbContext;
         }
 
         public async Task<(bool Success, string? ErrorMessage, PhotoSubmission? Result)> UpvotePhotoAsync(int submissionId)
         {
             try
             {
-                var submission = await _db.Photos.FindAsync(submissionId);
+                var submission = await dbContext.Photos.FindAsync(submissionId);
 
                 if (submission == null)
                     return (false, "Submission not found.", null);
 
                 submission.Votes += 1;
-                await _db.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
 
                 return (true, null, submission);
             }

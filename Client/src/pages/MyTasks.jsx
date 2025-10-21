@@ -49,6 +49,7 @@ export default function MyTasks() {
     }
   }
 
+  if(!userId) return <div style={{ color: 'crimson' }}>You must be logged in to view your tasks.</div>
   if (loading) return <div>Loading your tasks…</div>
   if (error) return <div style={{ color: 'crimson' }}>Error: {error}</div>
   if (!tasks || tasks.length === 0) return <div>No tasks found.</div>

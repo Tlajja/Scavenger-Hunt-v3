@@ -5,11 +5,11 @@ namespace PhotoScavengerHunt.Services
 {
     public class UserService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
 
-        public UserService(PhotoScavengerHuntDbContext db)
+        public UserService(PhotoScavengerHuntDbContext dbContext)
         {
-            _db = db;
+            this.dbContext = dbContext;
         }
 
         public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name, int age)
@@ -19,7 +19,7 @@ namespace PhotoScavengerHunt.Services
                 if (!ValidationExtensions.IsValidUsername(name))
                     return (false, "Invalid username format. Must be 2–20 alphanumeric characters, no spaces.", null);
 
-                if (await _db.Users.AnyAsync(u => u.Name == name))
+                if (await dbContext.Users.AnyAsync(u => u.Name == name))
                     return (false, "Username already exists.", null);
 
                 if (age <= 0 || age > 125)
@@ -31,8 +31,8 @@ namespace PhotoScavengerHunt.Services
                     Age = age
                 };
 
-                _db.Users.Add(profile);
-                await _db.SaveChangesAsync();
+                dbContext.Users.Add(profile);
+                await dbContext.SaveChangesAsync();
 
                 return (true, string.Empty, profile);
             }
@@ -50,7 +50,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var users = await _db.Users.ToListAsync();
+                var users = await dbContext.Users.ToListAsync();
                 return (true, string.Empty, users);
             }
             catch (Exception ex)
@@ -63,7 +63,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var user = await _db.Users.FindAsync(id);
+                var user = await dbContext.Users.FindAsync(id);
                 if (user == null)
                     return (false, "User not found.", null);
 
@@ -79,12 +79,12 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var user = await _db.Users.FindAsync(id);
+                var user = await dbContext.Users.FindAsync(id);
                 if (user == null)
                     return (false, "User not found.");
 
-                _db.Users.Remove(user);
-                await _db.SaveChangesAsync();
+                dbContext.Users.Remove(user);
+                await dbContext.SaveChangesAsync();
 
                 return (true, string.Empty);
             }
