@@ -16,7 +16,6 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                // Validation
                 if (!ValidationExtensions.IsValidUsername(name))
                     return (false, "Invalid username format. Must be 2–20 alphanumeric characters, no spaces.", null);
 
