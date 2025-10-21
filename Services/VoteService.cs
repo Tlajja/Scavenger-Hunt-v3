@@ -28,12 +28,10 @@ namespace PhotoScavengerHunt.Services
             }
             catch (DbUpdateException dbEx)
             {
-                // Handle DB-level errors (constraint violations, etc.)
                 return (false, $"Database error: {dbEx.InnerException?.Message ?? dbEx.Message}", null);
             }
             catch (Exception ex)
             {
-                // Catch-all for unexpected errors
                 return (false, $"Unexpected error: {ex.Message}", null);
             }
         }

@@ -25,7 +25,7 @@ namespace PhotoScavengerHunt.Services
 
                 var task = HuntTaskFactory.Create(
                     description: req.Description,
-                    authorId: req.AuthorId ?? 0,
+                    authorId: req.AuthorId,
                     deadline: req.Deadline,
                     status: HuntTaskStatus.Open);
 
