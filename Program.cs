@@ -12,6 +12,7 @@ builder.Services.AddScoped<LeaderboardService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<VotesService>();
+builder.Services.AddScoped<PhotoSubmissionService>();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
