@@ -75,5 +75,24 @@ namespace PhotoScavengerHunt.Services
                 return (false, $"Error retrieving user: {ex.Message}", null);
             }
         }
+
+        public async Task<(bool Success, string Error)> DeleteUserAsync(int id)
+        {
+            try
+            {
+                var user = await _db.Users.FindAsync(id);
+                if (user == null)
+                    return (false, "User not found.");
+
+                _db.Users.Remove(user);
+                await _db.SaveChangesAsync();
+
+                return (true, string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error deleting user: {ex.Message}");
+            }
+        }
     }
 }
