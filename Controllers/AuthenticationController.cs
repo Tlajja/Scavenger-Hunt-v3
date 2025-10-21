@@ -26,18 +26,6 @@ namespace PhotoScavengerHunt.Controllers
             return Ok(new { message = result.Message, userId = d?.userId, username = d?.username });
         }
 
-        [HttpPost("create-username")]
-        public async Task<IActionResult> CreateUsername(int userId, [FromBody] CreateUsernameRequest request)
-        {
-            var result = await _authService.CreateUsernameAsync(userId, request);
-            if (!result.Success)
-                return BadRequest(result.Message);
-
-            dynamic? d = result.Data;
-            // CreateUsername returns username; include userId for consistency if available
-            return Ok(new { message = result.Message, userId = userId, username = d?.username });
-        }
-
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {

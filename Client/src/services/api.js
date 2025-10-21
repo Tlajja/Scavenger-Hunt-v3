@@ -29,14 +29,6 @@ export async function login(username, password) {
   })
 }
 
-export async function createUsername(userId, username, age) {
-  return await safeFetch(`/api/authentication/create-username?userId=${userId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Username: username, Age: age })
-  })
-}
-
 // Task endpoints
 export async function getTasks() {
   return await safeFetch('/api/tasks', { method: 'GET' })

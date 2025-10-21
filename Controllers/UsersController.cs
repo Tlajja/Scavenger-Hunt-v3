@@ -47,5 +47,16 @@ namespace PhotoScavengerHunt.Controllers
 
             return Ok(result.User);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var result = await _userService.DeleteUserAsync(id);
+
+            if (!result.Success)
+                return NotFound(result.Error);
+
+            return NoContent(); // 204
+        }
     }
 }

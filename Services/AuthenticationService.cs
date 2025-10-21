@@ -95,41 +95,6 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<(bool Success, string Message, object? Data)> CreateUsernameAsync(int userId, CreateUsernameRequest request)
-        {
-            try
-            {
-                var user = await _db.Users.FindAsync(userId);
-                if (user == null)
-                    return (false, "User not found.", null);
-
-                if (user.IsRegistered)
-                    return (false, "Username already created for this account.", null);
-
-                if (!ValidationExtensions.IsValidUsername(request.Username))
-                    return (false, "Invalid username format.", null);
-
-                if (await _db.Users.AnyAsync(u => u.Name == request.Username))
-                    return (false, "Username already exists.", null);
-
-                if (request.Age <= 0 || request.Age > 125)
-                    return (false, "Invalid age value.", null);
-
-                user.Name = request.Username;
-                user.Age = request.Age;
-                user.IsRegistered = true;
-                await _db.SaveChangesAsync();
-
-                return (true, "Username created successfully.", new
-                {
-                    username = user.Name
-                });
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Error creating username: {ex.Message}", null);
-            }
-        }
 
         private bool IsValidEmail(string email)
         {
