@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Services;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -8,91 +8,100 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly TaskService _service;
+        private readonly ILogger<TasksController> _logger;
 
-        public TasksController(PhotoScavengerHuntDbContext db)
+        public TasksController(TaskService service, ILogger<TasksController> logger)
         {
-            _db = db;
+            _service = service;
+            _logger = logger;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateTask(CreateTaskRequest req)
         {
-            // Validation
-            if (string.IsNullOrWhiteSpace(req.Description))
+            try
             {
-                return BadRequest("Task description cannot be empty.");
+                var task = await _service.CreateTaskAsync(req);
+                return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
             }
-            if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
+            catch (ArgumentException ex)
             {
-                return BadRequest("Deadline cannot be in the past.");
+                return BadRequest(ex.Message);
             }
-
-            var task = HuntTaskFactory.Create(
-                description: req.Description,
-                authorId: 0,
-                deadline: req.Deadline,
-                status: HuntTaskStatus.Open);
-
-            _db.Tasks.Add(task);
-            await _db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Internal error during task creation.");
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPost("user")]
-        public async Task<IActionResult> CreateUserTask([FromBody] CreateTaskRequest req)
+        public async Task<IActionResult> CreateUserTask(CreateTaskRequest req)
         {
-            // Validation
-            if (string.IsNullOrWhiteSpace(req.Description))
+            try
             {
-                return BadRequest("Task description cannot be empty.");
+                var task = await _service.CreateUserTaskAsync(req);
+                return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
             }
-            if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
+            catch (ArgumentException ex)
             {
-                return BadRequest("Deadline cannot be in the past.");
+                return BadRequest(ex.Message);
             }
-            if (!await _db.Users.AnyAsync(u => u.Id == req.AuthorId))
+            catch (InvalidOperationException ex)
             {
-                return BadRequest("User does not exist.");
+                _logger.LogError(ex, "Internal error during user task creation.");
+                return StatusCode(500, ex.Message);
             }
-
-            var task = HuntTaskFactory.Create(
-                description: req.Description,
-                authorId: req.AuthorId,
-                deadline: req.Deadline,
-                status: HuntTaskStatus.Open);
-
-            _db.Tasks.Add(task);
-            await _db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<HuntTask>> GetTasks() =>
-            await _db.Tasks.ToListAsync();
+        public async Task<IActionResult> GetTasks()
+        {
+            try
+            {
+                var tasks = await _service.GetTasksAsync();
+                return Ok(tasks);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Error getting tasks.");
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTaskById(int id)
         {
-            var task = await _db.Tasks.FindAsync(id);
-            return task is null ? NotFound() : Ok(task);
+            try
+            {
+                var task = await _service.GetTaskByIdAsync(id);
+                return task is null ? NotFound() : Ok(task);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Error fetching task by ID {TaskId}.", id);
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpDelete("user/{userId}/{taskId}")]
         public async Task<IActionResult> DeleteUserTask(int userId, int taskId)
         {
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == taskId && t.AuthorId == userId);
-            if (task is null)
+            try
             {
-                return NotFound("Task not found or not created by this user.");
+                await _service.DeleteUserTaskAsync(userId, taskId);
+                return NoContent();
             }
-
-            _db.Tasks.Remove(task);
-            await _db.SaveChangesAsync();
-
-            return NoContent();
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Error deleting task {TaskId}.", taskId);
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }
