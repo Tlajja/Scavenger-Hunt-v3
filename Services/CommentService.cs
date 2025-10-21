@@ -5,12 +5,12 @@ namespace PhotoScavengerHunt.Services
 {
     public class CommentService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<CommentService> _logger;
 
-        public CommentService(PhotoScavengerHuntDbContext db, ILogger<CommentService> logger)
+        public CommentService(PhotoScavengerHuntDbContext dbContext, ILogger<CommentService> logger)
         {
-            _db = db;
+            this.dbContext = dbContext;
             _logger = logger;
         }
 
@@ -21,7 +21,7 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Text))
                     return (false, "Comment text cannot be empty.", null);
 
-                var submission = await _db.Photos
+                var submission = await dbContext.Photos
                     .Include(s => s.Comments)
                     .FirstOrDefaultAsync(s => s.Id == submissionId);
 
@@ -37,7 +37,7 @@ namespace PhotoScavengerHunt.Services
                 };
 
                 submission.Comments.Add(comment);
-                await _db.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
 
                 _logger.LogInformation("Comment added by user {UserId} to submission {SubmissionId}", request.UserId, submissionId);
 
@@ -54,7 +54,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await _db.Photos
+                var submission = await dbContext.Photos
                     .Include(s => s.Comments)
                     .FirstOrDefaultAsync(s => s.Id == submissionId);
 
@@ -89,7 +89,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await _db.Photos
+                var submission = await dbContext.Photos
                     .Include(s => s.Comments)
                     .FirstOrDefaultAsync(s => s.Id == submissionId);
 
@@ -101,7 +101,7 @@ namespace PhotoScavengerHunt.Services
                     return (false, "Comment not found.");
 
                 submission.Comments.Remove(commentToRemove);
-                await _db.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
 
                 _logger.LogInformation("Comment {CommentId} deleted from submission {SubmissionId}", commentId, submissionId);
                 return (true, "");

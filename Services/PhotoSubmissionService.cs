@@ -5,12 +5,12 @@ namespace PhotoScavengerHunt.Services
 {
     public class PhotoSubmissionService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly IWebHostEnvironment _env;
 
-        public PhotoSubmissionService(PhotoScavengerHuntDbContext db, IWebHostEnvironment env)
+        public PhotoSubmissionService(PhotoScavengerHuntDbContext dbContext, IWebHostEnvironment env)
         {
-            _db = db;
+            this.dbContext = dbContext;
             _env = env;
         }
 
@@ -30,10 +30,10 @@ namespace PhotoScavengerHunt.Services
                 if (file.Length > 10_000_000)
                     return (false, "File size cannot exceed 10MB.", null, null);
 
-                if (!await _db.Tasks.AnyAsync(t => t.Id == taskId))
+                if (!await dbContext.Tasks.AnyAsync(t => t.Id == taskId))
                     return (false, "Task does not exist.", null, null);
 
-                if (!await _db.Users.AnyAsync(u => u.Id == userId))
+                if (!await dbContext.Users.AnyAsync(u => u.Id == userId))
                     return (false, "User does not exist.", null, null);
 
                 var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
@@ -58,8 +58,8 @@ namespace PhotoScavengerHunt.Services
                     Comments = new List<Comment>()
                 };
 
-                _db.Photos.Add(submission);
-                await _db.SaveChangesAsync();
+                dbContext.Photos.Add(submission);
+                await dbContext.SaveChangesAsync();
 
                 return (true, "Photo uploaded successfully.", photoUrl, submission.Id);
             }
@@ -81,7 +81,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _db.Photos
+                return await dbContext.Photos
                     .Include(p => p.Comments)
                     .Where(s => s.TaskId == taskId)
                     .ToListAsync();
@@ -96,7 +96,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _db.Photos
+                return await dbContext.Photos
                     .Include(p => p.Comments)
                     .Where(s => s.UserId == userId)
                     .ToListAsync();
@@ -111,7 +111,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await _db.Photos.FindAsync(submissionId);
+                var submission = await dbContext.Photos.FindAsync(submissionId);
                 if (submission == null)
                     return (false, "Submission not found.");
 
@@ -122,8 +122,8 @@ namespace PhotoScavengerHunt.Services
                     File.Delete(filePath);
                 }
 
-                _db.Photos.Remove(submission);
-                await _db.SaveChangesAsync();
+                dbContext.Photos.Remove(submission);
+                await dbContext.SaveChangesAsync();
 
                 return (true, "Submission deleted successfully.");
             }

@@ -5,12 +5,12 @@ namespace PhotoScavengerHunt.Services
 {
     public class LeaderboardService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<LeaderboardService> _logger;
 
-        public LeaderboardService(PhotoScavengerHuntDbContext db, ILogger<LeaderboardService> logger)
+        public LeaderboardService(PhotoScavengerHuntDbContext dbContext, ILogger<LeaderboardService> logger)
         {
-            _db = db;
+            this.dbContext = dbContext;
             _logger = logger;
         }
 
@@ -18,12 +18,12 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var leaderboard = await _db.Photos
+                var leaderboard = await dbContext.Photos
                     .GroupBy(p => p.UserId)
                     .Select(g => new LeaderboardEntry
                     {
                         UserId = g.Key,
-                        UserName = _db.Users
+                        UserName = dbContext.Users
                             .Where(u => u.Id == g.Key)
                             .Select(u => u.Name)
                             .FirstOrDefault() ?? "Unknown",

@@ -8,11 +8,11 @@ namespace PhotoScavengerHunt.Services
 {
     public class AuthenticationService
     {
-        private readonly PhotoScavengerHuntDbContext _db;
+        private readonly PhotoScavengerHuntDbContext dbContext;
 
         public AuthenticationService(PhotoScavengerHuntDbContext db)
         {
-            _db = db;
+            dbContext = db;
         }
 
         public async Task<(bool Success, string Message, object? Data)> RegisterAsync(RegisterRequest request)
@@ -28,13 +28,13 @@ namespace PhotoScavengerHunt.Services
                 if (request.Password.Length < 6)
                     return (false, "Password must be at least 6 characters long.", null);
 
-                if (await _db.Users.AnyAsync(u => u.Email == request.Email))
+                if (await dbContext.Users.AnyAsync(u => u.Email == request.Email))
                     return (false, "Email already registered.", null);
 
                 if (!ValidationExtensions.IsValidUsername(request.Username))
                     return (false, "Invalid username format.", null);
 
-                if (await _db.Users.AnyAsync(u => u.Name == request.Username))
+                if (await dbContext.Users.AnyAsync(u => u.Name == request.Username))
                     return (false, "Username already exists.", null);
 
                 if (request.Age <= 0 || request.Age > 125)
@@ -51,8 +51,8 @@ namespace PhotoScavengerHunt.Services
                     IsRegistered = true
                 };
 
-                _db.Users.Add(userProfile);
-                await _db.SaveChangesAsync();
+                dbContext.Users.Add(userProfile);
+                await dbContext.SaveChangesAsync();
 
                 return (true, "Registration successful.", new
                 {
@@ -73,7 +73,7 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
                     return (false, "Username and password are required.", null);
 
-                var user = await _db.Users.FirstOrDefaultAsync(u => u.Name == request.Username);
+                var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Name == request.Username);
                 if (user == null)
                     return (false, "Invalid username or password.", null);
 
