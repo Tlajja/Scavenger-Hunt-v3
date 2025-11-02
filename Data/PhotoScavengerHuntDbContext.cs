@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Features.Hubs;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Features.Users;
@@ -9,6 +10,8 @@ public class PhotoScavengerHuntDbContext(DbContextOptions<PhotoScavengerHuntDbCo
 	public DbSet<PhotoSubmission> Photos => Set<PhotoSubmission>();
 	public DbSet<UserProfile> Users => Set<UserProfile>();
 	public DbSet<Comment> Comments => Set<Comment>();
+	public DbSet<Hub> Hubs => Set<Hub>();
+	public DbSet<HubMember> HubMembers => Set<HubMember>();
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -19,6 +22,24 @@ public class PhotoScavengerHuntDbContext(DbContextOptions<PhotoScavengerHuntDbCo
 			.WithMany(s => s.Comments)
 			.HasForeignKey(c => c.PhotoSubmissionId)
 			.OnDelete(DeleteBehavior.Cascade);
+
+		// Hub relationships
+		modelBuilder.Entity<HubMember>()
+			.HasOne(hm => hm.Hub)
+			.WithMany(h => h.Members)
+			.HasForeignKey(hm => hm.HubId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		modelBuilder.Entity<HubMember>()
+			.HasOne(hm => hm.User)
+			.WithMany()
+			.HasForeignKey(hm => hm.UserId)
+			.OnDelete(DeleteBehavior.Restrict);
+
+		// Ensure JoinCode is unique
+		modelBuilder.Entity<Hub>()
+			.HasIndex(h => h.JoinCode)
+			.IsUnique();
 
 		modelBuilder.Entity<HuntTask>().HasData(
 			new HuntTask { Id = 1, Description = "Red car", Deadline = DateTime.Parse("2025-10-01"), Status = HuntTaskStatus.Open },
