@@ -8,7 +8,8 @@ export default function Logout() {
     // Remove user session info
     localStorage.removeItem('userId')
     localStorage.removeItem('username')
-    // Optionally remove other session keys
+    // Notify app about auth change
+    window.dispatchEvent(new Event('auth-changed'))
     // Redirect to home or login
     navigate('/login', { replace: true })
   }, [navigate])

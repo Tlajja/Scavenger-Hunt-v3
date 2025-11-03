@@ -29,6 +29,7 @@ export default function Login() {
       }
       localStorage.setItem('userId', String(userId))
       localStorage.setItem('username', name)
+      window.dispatchEvent(new Event('auth-changed'))
       setMessage(parsed?.message || 'Login successful.')
       return
     }
@@ -51,6 +52,7 @@ export default function Login() {
 
     localStorage.setItem('userId', String(userId))
     localStorage.setItem('username', name)
+    window.dispatchEvent(new Event('auth-changed'))
     setMessage(payload?.message || 'Login successful.')
   }
 

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -11,6 +11,22 @@ import Logout from './pages/Logout'
 import JoinHub from './pages/JoinHub'
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    typeof window !== 'undefined' && !!localStorage.getItem('userId')
+  )
+
+  useEffect(() => {
+    const updateAuth = () => setIsAuthenticated(!!localStorage.getItem('userId'))
+    // Custom event for same-tab auth changes
+    window.addEventListener('auth-changed', updateAuth)
+    // Storage event for cross-tab updates
+    window.addEventListener('storage', updateAuth)
+    return () => {
+      window.removeEventListener('auth-changed', updateAuth)
+      window.removeEventListener('storage', updateAuth)
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <div style={{ padding: 24, fontFamily: 'system-ui, Arial, sans-serif' }}>
@@ -18,14 +34,24 @@ export default function App() {
           <h1>Photo Scavenger Hunt</h1>
           <nav style={{ marginTop: 12 }}>
             <Link to="/" style={{ marginRight: 12 }}>Home</Link>
-            <Link to="/register" style={{ marginRight: 12 }}>Register</Link>
-            <Link to="/login" style={{ marginRight: 12 }}>Login</Link>
-            <Link to="/create-task" style={{ marginRight: 12 }}>Create Task</Link>
-            <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
-            <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
-            <Link to="/leaderboard" style={{ marginRight: 12 }}>Leaderboard</Link>
-            <Link to="/hubs/join" style={{ marginRight: 12 }}>Join Hub</Link>
-            <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
+
+            {!isAuthenticated && (
+              <>
+                <Link to="/register" style={{ marginRight: 12 }}>Register</Link>
+                <Link to="/login" style={{ marginRight: 12 }}>Login</Link>
+              </>
+            )}
+
+            {isAuthenticated && (
+              <>
+                <Link to="/create-task" style={{ marginRight: 12 }}>Create Task</Link>
+                <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
+                <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
+                <Link to="/leaderboard" style={{ marginRight: 12 }}>Leaderboard</Link>
+                <Link to="/hubs/join" style={{ marginRight: 12 }}>Join Hub</Link>
+                <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
+              </>
+            )}
           </nav>
         </header>
 
