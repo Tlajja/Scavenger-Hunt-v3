@@ -8,11 +8,11 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class CommentsController : ControllerBase
     {
-        private readonly CommentService _service;
+        private readonly CommentService _commentService;
 
-        public CommentsController(CommentService service)
+        public CommentsController(CommentService comService)
         {
-            _service = service;
+            _commentService = comService;
         }
 
         [HttpPost("{submissionId}")]
@@ -23,7 +23,7 @@ namespace PhotoScavengerHunt.Controllers
                 return BadRequest("Comment text cannot be empty.\n");
             }
 
-            var result = await _service.AddCommentAsync(submissionId, request);
+            var result = await _commentService.AddCommentAsync(submissionId, request);
             if (!result.Success)
                 return BadRequest(result.Error);
 
@@ -42,7 +42,7 @@ namespace PhotoScavengerHunt.Controllers
         [HttpGet("{submissionId}")]
         public async Task<IActionResult> GetCommentsForSubmission(int submissionId)
         {
-            var result = await _service.GetCommentsAsync(submissionId);
+            var result = await _commentService.GetCommentsAsync(submissionId);
             if (!result.Success)
                 return NotFound(result.Error);
 
@@ -80,7 +80,7 @@ namespace PhotoScavengerHunt.Controllers
         [HttpDelete("{submissionId}/{commentId}")]
         public async Task<IActionResult> DeleteComment(int submissionId, int commentId)
         {
-            var result = await _service.DeleteCommentAsync(submissionId, commentId);
+            var result = await _commentService.DeleteCommentAsync(submissionId, commentId);
             if (!result.Success)
                 return NotFound(result.Error);
 
