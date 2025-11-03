@@ -12,9 +12,7 @@ export default function JoinHub() {
  const userName = localStorage.getItem('username') || 'Guest'
 
  useEffect(() => {
- // auto-load public hubs on first view
  loadPublicHubs()
- // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [])
 
  async function loadPublicHubs() {
@@ -40,7 +38,6 @@ export default function JoinHub() {
  const hres = await getHubById(resolvedHubId)
  if (hres.ok) hub = hres.data
  }
- // persist membership context locally
  const finalHubId = (hub?.id ?? hub?.Id ?? resolvedHubId) ?? null
  if (finalHubId != null) {
  localStorage.setItem('hubId', String(finalHubId))
