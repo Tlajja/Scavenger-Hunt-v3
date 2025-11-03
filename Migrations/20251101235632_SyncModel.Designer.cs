@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    partial class PhotoScavengerHuntDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251101235632_SyncModel")]
+    partial class SyncModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -20,68 +23,6 @@ namespace PhotoScavengerHunt.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Hubs.Hub", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatorId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsPrivate")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("JoinCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("JoinCode")
-                        .IsUnique();
-
-                    b.ToTable("Hubs");
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Hubs.HubMember", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("HubId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("HubId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("HubMembers");
-                });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
                 {
@@ -118,9 +59,6 @@ namespace PhotoScavengerHunt.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("HubId")
-                        .HasColumnType("int");
 
                     b.Property<string>("PhotoUrl")
                         .IsRequired()
@@ -271,25 +209,6 @@ namespace PhotoScavengerHunt.Migrations
                         });
                 });
 
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Hubs.HubMember", b =>
-                {
-                    b.HasOne("PhotoScavengerHunt.Features.Hubs.Hub", "Hub")
-                        .WithMany("Members")
-                        .HasForeignKey("HubId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhotoScavengerHunt.Features.Users.UserProfile", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Hub");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
                 {
                     b.HasOne("PhotoScavengerHunt.Features.Photos.PhotoSubmission", "PhotoSubmission")
@@ -299,11 +218,6 @@ namespace PhotoScavengerHunt.Migrations
                         .IsRequired();
 
                     b.Navigation("PhotoSubmission");
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Hubs.Hub", b =>
-                {
-                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.PhotoSubmission", b =>
