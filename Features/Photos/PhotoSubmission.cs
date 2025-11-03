@@ -1,6 +1,6 @@
 ﻿namespace PhotoScavengerHunt.Features.Photos
 {
-    public class PhotoSubmission
+    public record PhotoSubmission
     {
         public int Id { get; set; }
         public int TaskId { get; set; }
