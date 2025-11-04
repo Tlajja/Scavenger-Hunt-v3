@@ -23,7 +23,6 @@ public class PhotoScavengerHuntDbContext(DbContextOptions<PhotoScavengerHuntDbCo
 			.HasForeignKey(c => c.PhotoSubmissionId)
 			.OnDelete(DeleteBehavior.Cascade);
 
-		// Hub relationships
 		modelBuilder.Entity<HubMember>()
 			.HasOne(hm => hm.Hub)
 			.WithMany(h => h.Members)

@@ -17,6 +17,8 @@ export default function Logout() {
       localStorage.removeItem('username')
       localStorage.removeItem('authToken')
       localStorage.removeItem('access_token')
+      // Notify app about auth change
+      window.dispatchEvent(new Event('auth-changed'))
     } catch {}
     setIsLoggedIn(false)
     setDone(true)

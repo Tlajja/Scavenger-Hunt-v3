@@ -11,11 +11,9 @@ public class HubMember
     public HubMemberRole Role { get; set; } = HubMemberRole.Member;
     public DateTime JoinedAt { get; set; }
 
-    // Navigation properties - always ignore
     [JsonIgnore]
     public Hub? Hub { get; set; }
     
     [JsonIgnore]
     public UserProfile? User { get; set; }
 }
-

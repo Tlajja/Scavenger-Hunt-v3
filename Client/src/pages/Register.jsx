@@ -39,6 +39,7 @@ export default function Register() {
 
     localStorage.setItem('userId', String(userId))
     localStorage.setItem('username', username)
+    window.dispatchEvent(new Event('auth-changed'))
     setMessage(res.data?.message || 'Registered and username set.')
     setEmail('')
     setUsername('')
