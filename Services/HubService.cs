@@ -45,6 +45,11 @@ namespace PhotoScavengerHunt.Services
                 if (!await dbContext.Users.AnyAsync(u => u.Id == request.CreatorId))
                     return (false, "Creator user does not exist.", null);
 
+                var existingAny = await dbContext.HubMembers
+                    .FirstOrDefaultAsync(hm => hm.UserId == request.CreatorId);
+                if (existingAny != null)
+                    return (false, "You must leave your current hub before creating a new one.", null);
+
                 var joinCode = await GenerateUniqueJoinCodeAsync();
 
                 var hub = new Hub
@@ -106,12 +111,17 @@ namespace PhotoScavengerHunt.Services
                 if (!await dbContext.Users.AnyAsync(u => u.Id == request.UserId))
                     return (false, "User does not exist.", null);
 
-                // Check if user is already a member
-                var existingMember = await dbContext.HubMembers
-                    .FirstOrDefaultAsync(hm => hm.HubId == hub.Id && hm.UserId == request.UserId);
+                // Check if user is already a member of any hub
+                var existingAny = await dbContext.HubMembers
+                    .FirstOrDefaultAsync(hm => hm.UserId == request.UserId);
 
-                if (existingMember != null)
-                    return (false, "User is already a member of this hub.", null);
+                if (existingAny != null)
+                {
+                    if (existingAny.HubId == hub.Id)
+                        return (false, "User is already a member of this hub.", null);
+                    else
+                        return (false, "User is already a member of another hub. Leave it first.", null);
+                }
 
                 var member = new HubMember
                 {
@@ -266,19 +276,44 @@ namespace PhotoScavengerHunt.Services
                     .FirstOrDefaultAsync(hm => hm.HubId == hubId && hm.UserId == userId);
 
                 if (member == null)
-                    return (false, "You are not a member of this hub.");
+                    return (false, "User is not a member of this hub.");
 
-                // Check if user is the only admin
-                var adminCount = await dbContext.HubMembers
-                    .CountAsync(hm => hm.HubId == hubId && hm.Role == HubMemberRole.Admin);
+                var hub = await dbContext.Hubs
+                    .FirstOrDefaultAsync(h => h.Id == hubId);
+                if (hub == null)
+                    return (false, "Hub not found.");
 
-                if (member.Role == HubMemberRole.Admin && adminCount == 1)
-                    return (false, "Cannot leave hub as you are the only admin. Transfer admin role or delete the hub instead.");
+                var otherMembers = await dbContext.HubMembers
+                    .Where(hm => hm.HubId == hubId && hm.UserId != userId)
+                    .OrderBy(hm => hm.JoinedAt)
+                    .ToListAsync();
 
-                dbContext.HubMembers.Remove(member);
-                await dbContext.SaveChangesAsync();
-
-                return (true, string.Empty);
+                if (member.Role == HubMemberRole.Admin)
+                {
+                    if (!otherMembers.Any())
+                    {
+                        // No other members - delete hub
+                        dbContext.HubMembers.Remove(member);
+                        dbContext.Hubs.Remove(hub);
+                        await dbContext.SaveChangesAsync();
+                        return (true, string.Empty);
+                    }
+                    else
+                    {
+                        // Promote next member to admin
+                        var newAdmin = otherMembers.First();
+                        newAdmin.Role = HubMemberRole.Admin;
+                        dbContext.HubMembers.Remove(member);
+                        await dbContext.SaveChangesAsync();
+                        return (true, string.Empty);
+                    }
+                }
+                else
+                {
+                    dbContext.HubMembers.Remove(member);
+                    await dbContext.SaveChangesAsync();
+                    return (true, string.Empty);
+                }
             }
             catch (DbUpdateException ex)
             {

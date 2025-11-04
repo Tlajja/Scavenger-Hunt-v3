@@ -8,18 +8,18 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class PhotoSubmissionsController : ControllerBase
     {
-        private readonly PhotoSubmissionService _service;
+        private readonly PhotoSubmissionService _submissionService;
 
-        public PhotoSubmissionsController(PhotoSubmissionService service)
+        public PhotoSubmissionsController(PhotoSubmissionService submissionService)
         {
-            _service = service;
+            _submissionService = submissionService;
         }
 
         [HttpPost("upload")]
         [RequestSizeLimit(10_000_000)]
         public async Task<IActionResult> UploadPhoto([FromForm] int taskId, [FromForm] int userId, IFormFile file)
         {
-            var result = await _service.UploadPhotoAsync(taskId, userId, file);
+            var result = await _submissionService.UploadPhotoAsync(taskId, userId, file);
 
             if (!result.Success)
                 return BadRequest(new { error = result.Message });
@@ -37,7 +37,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var submissions = await _service.GetSubmissionsForTaskAsync(taskId);
+                var submissions = await _submissionService.GetSubmissionsForTaskAsync(taskId);
                 return Ok(submissions);
             }
             catch (Exception ex)
@@ -51,7 +51,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var submissions = await _service.GetSubmissionsByUserAsync(userId);
+                var submissions = await _submissionService.GetSubmissionsByUserAsync(userId);
                 return Ok(submissions);
             }
             catch (Exception ex)
@@ -63,7 +63,7 @@ namespace PhotoScavengerHunt.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSubmission(int id)
         {
-            var result = await _service.DeleteSubmissionAsync(id);
+            var result = await _submissionService.DeleteSubmissionAsync(id);
 
             if (!result.Success)
                 return NotFound(new { error = result.Message });

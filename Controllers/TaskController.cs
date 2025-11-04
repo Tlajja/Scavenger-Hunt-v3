@@ -8,13 +8,13 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly TaskService _service;
-        private readonly ILogger<TasksController> _logger;
+        private readonly TaskService _taskService;
+        private readonly ILogger<TasksController> _taskLogger;
 
-        public TasksController(TaskService service, ILogger<TasksController> logger)
+        public TasksController(TaskService taskService, ILogger<TasksController> logger)
         {
-            _service = service;
-            _logger = logger;
+            _taskService = taskService;
+            _taskLogger = logger;
         }
 
         [HttpPost]
@@ -22,7 +22,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var task = await _service.CreateTaskAsync(req);
+                var task = await _taskService.CreateTaskAsync(req);
                 return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
             }
             catch (ArgumentException ex)
@@ -31,7 +31,7 @@ namespace PhotoScavengerHunt.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "Internal error during task creation.");
+                _taskLogger.LogError(ex, "Internal error during task creation.");
                 return StatusCode(500, ex.Message);
             }
         }
@@ -41,7 +41,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var task = await _service.CreateUserTaskAsync(req);
+                var task = await _taskService.CreateUserTaskAsync(req);
                 return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, task);
             }
             catch (ArgumentException ex)
@@ -50,7 +50,7 @@ namespace PhotoScavengerHunt.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "Internal error during user task creation.");
+                _taskLogger.LogError(ex, "Internal error during user task creation.");
                 return StatusCode(500, ex.Message);
             }
         }
@@ -60,12 +60,12 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var tasks = await _service.GetTasksAsync();
+                var tasks = await _taskService.GetTasksAsync();
                 return Ok(tasks);
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "Error getting tasks.");
+                _taskLogger.LogError(ex, "Error getting tasks.");
                 return StatusCode(500, ex.Message);
             }
         }
@@ -75,12 +75,12 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var task = await _service.GetTaskByIdAsync(id);
+                var task = await _taskService.GetTaskByIdAsync(id);
                 return task is null ? NotFound() : Ok(task);
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "Error fetching task by ID {TaskId}.", id);
+                _taskLogger.LogError(ex, "Error fetching task by ID {TaskId}.", id);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -90,7 +90,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                await _service.DeleteUserTaskAsync(userId, taskId);
+                await _taskService.DeleteUserTaskAsync(userId, taskId);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
@@ -99,7 +99,7 @@ namespace PhotoScavengerHunt.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogError(ex, "Error deleting task {TaskId}.", taskId);
+                _taskLogger.LogError(ex, "Error deleting task {TaskId}.", taskId);
                 return StatusCode(500, ex.Message);
             }
         }
