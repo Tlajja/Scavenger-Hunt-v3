@@ -9,6 +9,7 @@ import Leaderboard from './pages/Leaderboard'
 import TaskCreate from './pages/TaskCreate'
 import Logout from './pages/Logout'
 import JoinHub from './pages/JoinHub'
+import CreateHub from './pages/CreateHub'
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -49,6 +50,7 @@ export default function App() {
                 <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
                 <Link to="/leaderboard" style={{ marginRight: 12 }}>Leaderboard</Link>
                 <Link to="/hubs/join" style={{ marginRight: 12 }}>Join Hub</Link>
+                <Link to="/hubs/create" style={{ marginRight: 12 }}>Create Hub</Link>
                 <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
               </>
             )}
@@ -66,6 +68,7 @@ export default function App() {
             <Route path="/create-task" element={<TaskCreate />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/hubs/join" element={<JoinHub />} />
+            <Route path="/hubs/create" element={<CreateHub />} />
           </Routes>
         </main>
       </div>

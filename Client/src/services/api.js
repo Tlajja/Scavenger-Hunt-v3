@@ -122,3 +122,19 @@ export async function getHubs(publicOnly = true) {
 export async function getHubById(id) {
  return await safeFetch(`/api/hub/${id}`, { method: 'GET' })
 }
+
+// NEW: Create a hub
+export async function createHub(name, creatorId, isPrivate = false) {
+ return await safeFetch('/api/hub', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({ Name: name, CreatorId: Number(creatorId), IsPrivate: !!isPrivate })
+ })
+}
+
+// NEW: Delete a hub (must be creator)
+export async function deleteHub(hubId, userId) {
+ return await safeFetch(`/api/hub/${hubId}?userId=${Number(userId)}`, {
+ method: 'DELETE'
+ })
+}
