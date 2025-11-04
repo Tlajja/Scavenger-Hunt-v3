@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { createHub, deleteHub, getHubs } from '../services/api.js'
+import { Link } from 'react-router-dom'
+import { createHub, deleteHub, getHubs, getHubById, leaveHub } from '../services/api.js'
 
 export default function CreateHub() {
     const userId = Number(localStorage.getItem('userId') || 0)
@@ -12,7 +13,9 @@ export default function CreateHub() {
     const [loadingList, setLoadingList] = useState(true)
     const [listError, setListError] = useState('')
 
-    const canSubmit = useMemo(() => !!userId && name.trim().length > 0 && !creating, [userId, name, creating])
+    const [userHubId, setUserHubId] = useState(Number(localStorage.getItem('hubId') || 0))
+
+    const canSubmit = useMemo(() => !!userId && name.trim().length > 0 && !creating && !userHubId, [userId, name, creating, userHubId])
 
     useEffect(() => {
         let mounted = true
@@ -20,13 +23,32 @@ export default function CreateHub() {
             setLoadingList(true); setListError('')
             try {
                 const res = await getHubs(false) // get all hubs
-                if (res.ok && Array.isArray(res.data)) {
-                    const hubs = res.data
-                    const mine = hubs.filter(h => (h.creatorId ?? h.CreatorId) === userId)
-                    if (mounted) setMyHubs(mine)
-                } else if (!res.ok) {
-                    if (mounted) setListError((res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`)
+                if (!mounted) return
+                if (!res.ok) {
+                    setListError((res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`)
+                    return
                 }
+
+                const hubs = Array.isArray(res.data) ? res.data : []
+                // filter hubs that the user created
+                const mine = hubs.filter(h => (h.creatorId ?? h.CreatorId) === userId)
+
+                // For each of "mine", fetch full hub details to see membership & roles
+                const enriched = await Promise.all(mine.map(async h => {
+                    const id = h.id ?? h.Id
+                    if (!id) return { ...h, canDelete: false }
+                    try {
+                        const detail = await getHubById(id)
+                        if (!detail.ok || !detail.data) return { ...h, canDelete: false }
+                        const members = detail.data.members ?? detail.data.Members ?? []
+                        const isAdmin = Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId && (m.role ?? m.Role) === 1)
+                        return { ...h, canDelete: !!isAdmin }
+                    } catch {
+                        return { ...h, canDelete: false }
+                    }
+                }))
+
+                if (mounted) setMyHubs(enriched)
             } catch (err) {
                 if (mounted) setListError(String(err))
             } finally {
@@ -40,6 +62,7 @@ export default function CreateHub() {
     async function handleCreate(e) {
         e.preventDefault()
         if (!userId) { setMessage('You must be logged in.'); return }
+        if (userHubId) { setMessage('Leave your current hub before creating a new one.'); return }
         if (!name.trim()) { setMessage('Hub name is required.'); return }
         setCreating(true); setMessage('Creating hub...')
 
@@ -54,6 +77,12 @@ export default function CreateHub() {
         setName('')
         setIsPrivate(false)
         const created = res.data
+        if (created?.id ?? created?.Id) {
+            const createdId = created.id ?? created.Id
+            localStorage.setItem('hubId', String(createdId))
+            localStorage.setItem('hubName', (created.name ?? created.Name) || '')
+            setUserHubId(Number(createdId))
+        }
         if (created) {
             setMyHubs(prev => [{ ...created }, ...prev])
         }
@@ -65,6 +94,13 @@ export default function CreateHub() {
         const hubId = hub.id ?? hub.Id
         if (!hubId) return
         if (!userId) { setMessage('You must be logged in.'); return }
+
+        // guard in UI: require canDelete true
+        if (!hub.canDelete) {
+            setMessage('You are not an admin of this hub and cannot delete it.')
+            return
+        }
+
         const confirmed = window.confirm(`Delete hub "${hub.name ?? hub.Name}"? This cannot be undone.`)
         if (!confirmed) return
         setMessage('Deleting hub...')
@@ -76,17 +112,22 @@ export default function CreateHub() {
         }
         setMessage('Hub deleted.')
         setMyHubs(prev => prev.filter(h => (h.id ?? h.Id) !== hubId))
+        
+        // if deleted hub was current membership, clear it
+        if (Number(localStorage.getItem('hubId') || 0) === hubId) {
+            localStorage.removeItem('hubId'); localStorage.removeItem('hubName'); setUserHubId(0)
+        }
     }
 
     return (
         <div style={{ maxWidth: 560 }}>
             <h2>Create Hub</h2>
-
-            {!userId && (
-                <div style={{ color: 'crimson', marginBottom: 10 }}>
-                    You must be logged in to create a hub.
+            {userHubId ? (
+                <div style={{ marginBottom: 12 }}>
+                    You are currently in hub: <strong>{localStorage.getItem('hubName') || `#${userHubId}`}</strong>.
+                    {' '}Please leave it first on the <Link to="/hubs/join"> Join Hub</Link> page if you want to create a new hub.
                 </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleCreate}>
                 <div style={{ marginBottom: 12 }}>
@@ -96,24 +137,23 @@ export default function CreateHub() {
                         onChange={e => setName(e.target.value)}
                         placeholder="My Awesome Hub"
                         style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-                        disabled={!userId || creating}
+                        disabled={!userId || creating || !!userHubId}
                     />
                 </div>
-
                 <div style={{ marginBottom: 12 }}>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <input
                             type="checkbox"
                             checked={isPrivate}
                             onChange={e => setIsPrivate(e.target.checked)}
-                            disabled={!userId || creating}
+                            disabled={!userId || creating || !!userHubId}
                         />
                         Private hub
                     </label>
                 </div>
 
                 <button type="submit" disabled={!canSubmit}>
-                    {creating ? 'Creating…' : 'Create Hub'}
+                    {creating ? 'Creatingï¿½' : 'Create Hub'}
                 </button>
             </form>
 
@@ -123,7 +163,7 @@ export default function CreateHub() {
 
             <h3>Your Hubs</h3>
             {loadingList ? (
-                <div>Loading…</div>
+                <div>Loadingï¿½</div>
             ) : listError ? (
                 <div style={{ color: 'crimson' }}>{listError}</div>
             ) : myHubs.length === 0 ? (
@@ -135,14 +175,17 @@ export default function CreateHub() {
                         return (
                             <li key={h.id ?? h.Id} style={{ border: '1px solid #eee', padding: 10, marginBottom: 8 }}>
                                 <div style={{ fontWeight: 600 }}>{h.name ?? h.Name}</div>
-                                {}
                                 {isPrivateHub && (
                                     <div style={{ fontSize: 12, color: '#666' }}>
                                         Join Code: {h.joinCode ?? h.JoinCode}
                                     </div>
                                 )}
                                 <div style={{ marginTop: 8 }}>
-                                    <button onClick={() => handleDelete(h)}>Delete</button>
+                                    {h.canDelete ? (
+                                        <button onClick={() => handleDelete(h)}>Delete</button>
+                                    ) : (
+                                        <button disabled title="Only hub admins can delete this hub">Delete (admin only)</button>
+                                    )}
                                 </div>
                             </li>
                         )

@@ -132,6 +132,13 @@ export async function createHub(name, creatorId, isPrivate = false) {
  })
 }
 
+// NEW: leave a hub
+export async function leaveHub(hubId, userId) {
+  return await safeFetch(`/api/hub/${hubId}/leave?userId=${Number(userId)}`, {
+    method: 'DELETE'
+  })
+}
+
 // NEW: Delete a hub (must be creator)
 export async function deleteHub(hubId, userId) {
  return await safeFetch(`/api/hub/${hubId}?userId=${Number(userId)}`, {

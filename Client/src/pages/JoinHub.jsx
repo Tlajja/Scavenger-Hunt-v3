@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { joinHub, getHubs, getHubById } from '../services/api.js'
+import { joinHub, getHubs, getHubById, leaveHub } from '../services/api.js'
 
 export default function JoinHub() {
     const [joinCode, setJoinCode] = useState('')
@@ -10,10 +10,135 @@ export default function JoinHub() {
 
     const userId = Number(localStorage.getItem('userId') || 0)
     const userName = localStorage.getItem('username') || 'Guest'
+    const [userHubId, setUserHubId] = useState(Number(localStorage.getItem('hubId') || 0))
+    const [userHubName, setUserHubName] = useState(localStorage.getItem('hubName') || '')
 
     useEffect(() => {
         loadPublicHubs()
     }, [])
+
+    useEffect(() => {
+        let mounted = true
+        async function resolveName() {
+            if (userHubId && !userHubName) {
+                try {
+                    const res = await getHubById(userHubId)
+                    if (!mounted) return
+                    if (res.ok) {
+                        const h = res.data
+                        const name = (h?.name ?? h?.Name) || ''
+                        if (name) {
+                            setUserHubName(name)
+                            localStorage.setItem('hubName', name)
+                        }
+                    }
+                } catch {}
+            }
+        }
+        resolveName()
+        return () => { mounted = false }
+    }, [userHubId, userHubName])
+
+    // validate that stored hubId actually belongs to the current user;
+    // if not clear membership info
+    useEffect(() => {
+        let mounted = true
+        async function validateLocalMembership() {
+            if (!userHubId) return
+            if (!userId) {
+                localStorage.removeItem('hubId')
+                localStorage.removeItem('hubName')
+                if (!mounted) return
+                setUserHubId(0)
+                setUserHubName('')
+                return
+            }
+
+            try {
+                const res = await getHubById(userHubId)
+                if (!mounted) return
+                if (!res.ok) {
+                    // hub missing on server â€” clear local state
+                    localStorage.removeItem('hubId')
+                    localStorage.removeItem('hubName')
+                    setUserHubId(0)
+                    setUserHubName('')
+                    return
+                }
+                const hub = res.data
+                const members = hub?.members ?? hub?.Members ?? []
+                const isMember = Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId)
+
+                if (!isMember) {
+                    // current user is not a member -> clear stale local data
+                    localStorage.removeItem('hubId')
+                    localStorage.removeItem('hubName')
+                    setUserHubId(0)
+                    setUserHubName('')
+                    setMessage('Cleared stale hub membership (not a member on server).')
+                    return
+                }
+
+                // ensure name is present
+                const name = hub?.name ?? hub?.Name ?? ''
+                if (name) {
+                    setUserHubName(name)
+                    localStorage.setItem('hubName', name)
+                }
+            } catch {
+            }
+        }
+
+        validateLocalMembership()
+        return () => { mounted = false }
+    }, [userHubId, userId])
+
+    // attempt to recover membership from server after login / auth changes
+    useEffect(() => {
+        let mounted = true
+        async function recoverMembership() {
+            // if user is logged in but client has no hub info, try to find which hub the user belongs to
+            if (!userId || userHubId > 0) return
+
+            try {
+                // ask server for hubs (not only public) and then fetch each hub's details (members)
+                const res = await getHubs(false)
+                if (!mounted || !res.ok || !Array.isArray(res.data)) return
+
+                for (const h of res.data) {
+                    const id = h?.id ?? h?.Id
+                    if (!id) continue
+                    // fetch full hub (includes members)
+                    const detail = await getHubById(id)
+                    if (!mounted || !detail.ok) continue
+                    const hub = detail.data
+                    const members = hub?.members ?? hub?.Members ?? []
+                    if (Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId)) {
+                        const name = hub.name ?? hub.Name ?? ''
+                        localStorage.setItem('hubId', String(id))
+                        localStorage.setItem('hubName', name)
+                        setUserHubId(Number(id))
+                        setUserHubName(name)
+                        setMessage('Restored hub membership from server.')
+                        break
+                    }
+                }
+            } catch {
+            }
+        }
+        // run once on mount / when userId changes
+        recoverMembership()
+
+        // also respond to cross-tab or explicit auth change events
+        const onAuth = () => setTimeout(recoverMembership, 50)
+        window.addEventListener('auth-changed', onAuth)
+        window.addEventListener('storage', onAuth)
+        return () => {
+            mounted = false
+            window.removeEventListener('auth-changed', onAuth)
+            window.removeEventListener('storage', onAuth)
+        }
+    }, [userId, userHubId])
 
     async function loadPublicHubs() {
         const res = await getHubs(true)
@@ -21,6 +146,7 @@ export default function JoinHub() {
     }
 
     async function performJoin(code) {
+        if (userHubId) { setMessage('Leave the current hub before joining another.'); return }
         setJoining(true)
         try {
             const res = await joinHub(code, userId)
@@ -42,12 +168,14 @@ export default function JoinHub() {
             const finalHubId = (hub?.id ?? hub?.Id ?? resolvedHubId) ?? null
             if (finalHubId != null) {
                 localStorage.setItem('hubId', String(finalHubId))
-                const hubName = hub?.name ?? hub?.Name
-                if (hubName) localStorage.setItem('hubName', hubName)
+                const hubName = hub?.name ?? hub?.Name ?? ''
+                localStorage.setItem('hubName', hubName)
+                setUserHubId(Number(finalHubId))
+                setUserHubName(hubName)
             }
 
             setJoinedHub(hub)
-            setMessage(`Joined hub${hub?.name ? `: ${hub.name}` : ''}`)
+            setMessage(`Joined hub${(hub?.name ?? userHubName) ? `: ${hub?.name ?? userHubName}` : ''}`)
         } catch {
             setMessage('Network error')
         } finally {
@@ -65,17 +193,53 @@ export default function JoinHub() {
     }
 
     async function handleQuickJoin(h) {
+        if (userHubId) { setMessage('Leave current hub before joining another.'); return }
         if (!userId) { setMessage('You must be logged in to join a hub.'); return }
         const code = (h?.joinCode ?? h?.JoinCode ?? '').trim()
         if (!code) { setMessage('This hub cannot be joined automatically.'); return }
         await performJoin(code)
     }
 
+    async function handleLeave() {
+        if (!userId || !userHubId) return
+        if (!confirm('Leave current hub?')) return
+        setMessage('Leaving hub...')
+        const res = await leaveHub(userHubId, userId)
+        if (!res.ok) {
+            const errMsg = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
+            // If server reports user is not a member, clear local membership to avoid stale UI
+            if ((errMsg || '').toString().toLowerCase().includes('not a member')) {
+                localStorage.removeItem('hubId')
+                localStorage.removeItem('hubName')
+                setUserHubId(0)
+                setUserHubName('')
+                setJoinedHub(null)
+                setMessage('You were not a member on the server; cleared local membership.')
+                return
+            }
+
+            setMessage(`Error: ${errMsg}`)
+            return
+        }
+        localStorage.removeItem('hubId')
+        localStorage.removeItem('hubName')
+        setUserHubId(0)
+        setUserHubName('')
+        setJoinedHub(null)
+        setMessage('Left hub.')
+    }
+
     return (
         <div style={{ maxWidth: 520 }}>
             <h2>Join a Hub</h2>
 
-            {}
+            {userHubId > 0 ? (
+                <div style={{ marginBottom: 12 }}>
+                    You are currently in hub: <strong>{userHubName || `#${userHubId}`}</strong>
+                    <button onClick={handleLeave}>Leave Hub</button>
+                </div>
+            ) : null}
+
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: 12 }}>
                     <label style={{ display: 'block', marginBottom: 6 }}>Join Code</label>
@@ -95,7 +259,7 @@ export default function JoinHub() {
                 )}
 
                 <button type="submit" disabled={!userId || joining}>
-                    {joining ? 'Joining…' : 'Join Hub by Code'}
+                    {joining ? 'Joiningï¿½' : 'Join Hub by Code'}
                 </button>
             </form>
 
@@ -120,7 +284,6 @@ export default function JoinHub() {
                         {publicHubs.map(h => (
                             <li key={h.id ?? h.Id} style={{ border: '1px solid #eee', padding: 10, marginBottom: 8 }}>
                                 <div style={{ fontWeight: 600 }}>{h.name ?? h.Name}</div>
-                                {}
                                 <div style={{ marginTop: 8 }}>
                                     <button onClick={() => handleQuickJoin(h)} disabled={!userId || joining}>
                                         Join
@@ -136,7 +299,6 @@ export default function JoinHub() {
                 <div style={{ marginTop: 20, padding: 12, border: '1px solid #e0e0e0' }}>
                     <div style={{ fontWeight: 600 }}>Joined Hub</div>
                     <div>Name: {joinedHub.name ?? joinedHub.Name}</div>
-                    {}
                 </div>
             )}
         </div>

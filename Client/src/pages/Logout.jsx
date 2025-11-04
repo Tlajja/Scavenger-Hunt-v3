@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Logout() {
   const [done, setDone] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const token = localStorage.getItem('authToken') || localStorage.getItem('access_token')
@@ -17,11 +18,16 @@ export default function Logout() {
       localStorage.removeItem('username')
       localStorage.removeItem('authToken')
       localStorage.removeItem('access_token')
+      localStorage.removeItem('hubId')
+      localStorage.removeItem('hubName')
       // Notify app about auth change
       window.dispatchEvent(new Event('auth-changed'))
+
+      localStorage.setItem('__logout_ts', String(Date.now()))
     } catch {}
     setIsLoggedIn(false)
     setDone(true)
+    
   }
 
   return (
