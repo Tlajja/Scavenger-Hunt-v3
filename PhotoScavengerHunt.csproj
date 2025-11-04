@@ -17,4 +17,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'PhotoScavengerHunt'">
+      <Compile Remove="PhotoScavengerHunt.Tests\**" />
+      <Content Remove="PhotoScavengerHunt.Tests\**" />
+      <EmbeddedResource Remove="PhotoScavengerHunt.Tests\**" />
+      <None Remove="PhotoScavengerHunt.Tests\**" />
+  </ItemGroup>
+
 </Project>
