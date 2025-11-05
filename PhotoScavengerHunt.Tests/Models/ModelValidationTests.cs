@@ -1,8 +1,6 @@
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
-using PhotoScavengerHunt.Features.Hubs;
 using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Features.Leaderboard;
 using Xunit;
 using System.Text.Json;
 
@@ -74,5 +72,84 @@ namespace PhotoScavengerHunt.Tests.Models
             Assert.Equal(2, (int)HuntTaskStatus.Completed);
         }
     }
+    public class PhotoSubmissionTests
+    {
+        [Fact]
+        public void PhotoSubmission_DefaultValues_AreCorrect()
+        {
+            // Act
+            var photo = new PhotoSubmission();
+
+            // Assert
+            Assert.Equal(0, photo.Id);
+            Assert.Equal(0, photo.TaskId);
+            Assert.Equal(0, photo.UserId);
+            Assert.Null(photo.HubId);
+            Assert.Equal(string.Empty, photo.PhotoUrl);
+            Assert.Equal(0, photo.Votes);
+            Assert.NotNull(photo.Comments);
+            Assert.Empty(photo.Comments);
+        }
+
+        [Fact]
+        public void PhotoSubmission_HubId_CanBeNull()
+        {
+            // Arrange & Act
+            var photo = new PhotoSubmission { HubId = null };
+
+            // Assert
+            Assert.Null(photo.HubId);
+        }
+
+        [Fact]
+        public void PhotoSubmission_HubId_CanBeSet()
+        {
+            // Arrange & Act
+            var photo = new PhotoSubmission { HubId = 5 };
+
+            // Assert
+            Assert.Equal(5, photo.HubId);
+        }
+    }
+
+     public class CommentTests
+    {
+        [Fact]
+        public void Comment_DefaultValues_AreCorrect()
+        {
+            // Act
+            var comment = new Comment();
+
+            // Assert
+            Assert.Equal(0, comment.Id);
+            Assert.Equal(0, comment.UserId);
+            Assert.Equal("", comment.Text);
+            Assert.Equal(default(DateTime), comment.Timestamp);
+            Assert.Equal(0, comment.PhotoSubmissionId);
+            Assert.Null(comment.PhotoSubmission);
+        }
+
+        [Fact]
+        public void Comment_JsonSerialization_ExcludesPhotoSubmission()
+        {
+            // Arrange
+            var comment = new Comment
+            {
+                Id = 1,
+                UserId = 1,
+                Text = "Test comment",
+                Timestamp = DateTime.UtcNow,
+                PhotoSubmissionId = 1,
+                PhotoSubmission = new PhotoSubmission()
+            };
+
+            // Act
+            var json = JsonSerializer.Serialize(comment);
+
+            // Assert
+            Assert.DoesNotContain("\"photoSubmission\"", json.ToLower());
+        }
+    }
+
 
 }

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
-using PhotoScavengerHunt.Features.Hubs;
 using PhotoScavengerHunt.Features.Photos;
 using Moq;
 
@@ -31,6 +30,8 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
         protected void SeedTestData()
         {
             // Clear any existing data first
+            DbContext.Comments.RemoveRange(DbContext.Comments);
+            DbContext.Photos.RemoveRange(DbContext.Photos);
             DbContext.Tasks.RemoveRange(DbContext.Tasks);
             DbContext.Users.RemoveRange(DbContext.Users);
             DbContext.SaveChanges();
@@ -48,13 +49,25 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 new HuntTask { Id = 201, Description = "Test Task 2", Deadline = new DateTime(2026, 2, 1, 12, 0, 0, DateTimeKind.Utc), Status = HuntTaskStatus.Open, AuthorId = 101 }
             };
 
+            var photos = new[]
+            {
+                new PhotoSubmission { Id = 400, TaskId = 200, UserId = 100, PhotoUrl = "/test/photo1.jpg", Votes = 5 },
+                new PhotoSubmission { Id = 401, TaskId = 200, UserId = 101, PhotoUrl = "/test/photo2.jpg", Votes = 3 }
+            };
+            
             DbContext.Users.AddRange(users);
             DbContext.SaveChanges();
-            
+
             DbContext.Tasks.AddRange(tasks);
             DbContext.SaveChanges();
-        
+
+            DbContext.Photos.AddRange(photos);
+            DbContext.SaveChanges();
+
         }
+
+
+
 
         protected Mock<ILogger<T>> CreateMockLogger<T>()
         {
