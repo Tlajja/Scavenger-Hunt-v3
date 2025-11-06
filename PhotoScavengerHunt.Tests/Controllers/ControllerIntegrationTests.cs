@@ -109,5 +109,81 @@ namespace PhotoScavengerHunt.Tests.Controllers
             Assert.IsType<NotFoundObjectResult>(result);
         }
     }
-    
+
+    public class AuthenticationControllerTests : DatabaseTestBase
+    {
+        private readonly AuthenticationController _controller;
+        private readonly AuthenticationService _service;
+
+        public AuthenticationControllerTests()
+        {
+            _service = new AuthenticationService(DbContext);
+            _controller = new AuthenticationController(_service);
+            SeedTestData();
+        }
+
+        [Fact]
+        public async Task Register_ValidRequest_ReturnsOk()
+        {
+            // Arrange
+            var request = new RegisterRequest(
+                Email: "controller@test.com",
+                Password: "password123",
+                Username: "ControllerUser",
+                Age: 25
+            );
+
+            // Act
+            var result = await _controller.Register(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = okResult.Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public async Task Register_InvalidRequest_ReturnsBadRequest()
+        {
+            // Arrange
+            var request = new RegisterRequest("", "pass", "user", 25);
+
+            // Act
+            var result = await _controller.Register(request);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task Login_ValidCredentials_ReturnsOk()
+        {
+            // Arrange - First register
+            await _service.RegisterAsync(new RegisterRequest(
+                "login@test.com", "password123", "LoginUser", 25));
+            
+            var request = new LoginRequest("LoginUser", "password123");
+
+            // Act
+            var result = await _controller.Login(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = okResult.Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
+        {
+            // Arrange
+            var request = new LoginRequest("NonExistent", "wrongpass");
+
+            // Act
+            var result = await _controller.Login(request);
+
+            // Assert
+            Assert.IsType<UnauthorizedObjectResult>(result);
+        }
+    }
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Features.Hubs;
 using PhotoScavengerHunt.Features.Photos;
 using Moq;
 
@@ -16,15 +17,16 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
         
         protected DatabaseTestBase()
         {
-            // Using a unique database name for each test to ensure isolation
+            // Use a unique database name for each test to ensure isolation
             var options = new DbContextOptionsBuilder<PhotoScavengerHuntDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
             DbContext = new PhotoScavengerHuntDbContext(options);
             
+            // Ensure database is created but DO NOT call EnsureCreated
+            // as it would apply seed data from OnModelCreating
         }
-
 
         // Seed the database with predictable test data
         protected void SeedTestData()
@@ -54,20 +56,16 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 new PhotoSubmission { Id = 400, TaskId = 200, UserId = 100, PhotoUrl = "/test/photo1.jpg", Votes = 5 },
                 new PhotoSubmission { Id = 401, TaskId = 200, UserId = 101, PhotoUrl = "/test/photo2.jpg", Votes = 3 }
             };
-            
+
             DbContext.Users.AddRange(users);
             DbContext.SaveChanges();
-
+            
             DbContext.Tasks.AddRange(tasks);
             DbContext.SaveChanges();
-
+            
             DbContext.Photos.AddRange(photos);
             DbContext.SaveChanges();
-
         }
-
-
-
 
         protected Mock<ILogger<T>> CreateMockLogger<T>()
         {
