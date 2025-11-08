@@ -25,10 +25,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_ReturnsEntriesSortedByVotes()
         {
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count); // Seed data has 2 users with submissions
             
@@ -42,10 +40,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_IncludesUserNames()
         {
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             Assert.Equal("TestUser1", result[0].UserName);
             Assert.Equal("TestUser2", result[1].UserName);
         }
@@ -53,14 +49,12 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_EmptyDatabase_ReturnsEmpty()
         {
-            // Arrange - Clear all photos
+            // Clear all photos
             DbContext.Photos.RemoveRange(DbContext.Photos);
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             Assert.NotNull(result);
             Assert.Empty(result);
         }
@@ -68,7 +62,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_AggregatesMultipleSubmissions()
         {
-            // Arrange - Add another submission for user 100
+            // Add another submission for user 100
             DbContext.Photos.Add(new PhotoSubmission
             {
                 TaskId = 201,
@@ -78,18 +72,16 @@ namespace PhotoScavengerHunt.Tests.Services
             });
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             var user100Entry = result.First(e => e.UserId == 100);
-            Assert.Equal(15, user100Entry.TotalVotes); // 5 + 10
+            Assert.Equal(15, user100Entry.TotalVotes); 
         }
 
         [Fact]
         public async Task GetLeaderboardAsync_UnknownUser_ShowsUnknown()
         {
-            // Arrange - Add submission for non-existent user
+            // Add submission for non-existent user
             DbContext.Photos.Add(new PhotoSubmission
             {
                 TaskId = 200,
@@ -99,10 +91,8 @@ namespace PhotoScavengerHunt.Tests.Services
             });
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             var unknownEntry = result.First(e => e.UserId == 99999);
             Assert.Equal("Unknown", unknownEntry.UserName);
         }
@@ -110,17 +100,15 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_SameVotes_SortsByName()
         {
-            // Arrange - Make both users have same votes
+            // Make both users have same votes
             var photo1 = await DbContext.Photos.FindAsync(400);
             var photo2 = await DbContext.Photos.FindAsync(401);
             photo1!.Votes = 5;
             photo2!.Votes = 5;
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             Assert.Equal(2, result.Count);
             // Should be sorted alphabetically when votes are equal
             Assert.True(string.Compare(
@@ -132,7 +120,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public void LeaderboardEntry_CompareTo_SortsCorrectly()
         {
-            // Arrange
             var entries = new List<LeaderboardEntry>
             {
                 new LeaderboardEntry(1, "Alice", 10),
@@ -141,20 +128,17 @@ namespace PhotoScavengerHunt.Tests.Services
                 new LeaderboardEntry(4, "David", 20)
             };
 
-            // Act
             entries.Sort();
 
-            // Assert
             Assert.Equal(4, entries[0].UserId); // David (20 votes)
             Assert.Equal(2, entries[1].UserId); // Bob (15 votes)
-            Assert.Equal(1, entries[2].UserId); // Alice (10 votes, alphabetically before Charlie)
+            Assert.Equal(1, entries[2].UserId); // Alice (10 votes)
             Assert.Equal(3, entries[3].UserId); // Charlie (10 votes)
         }
 
         [Fact]
         public void LeaderboardEntry_CompareTo_SameNameAndVotes_SortsByUserId()
         {
-            // Arrange
             var entries = new List<LeaderboardEntry>
             {
                 new LeaderboardEntry(2, "Alice", 10),
@@ -162,10 +146,8 @@ namespace PhotoScavengerHunt.Tests.Services
                 new LeaderboardEntry(3, "Alice", 10)
             };
 
-            // Act
             entries.Sort();
 
-            // Assert
             Assert.Equal(1, entries[0].UserId);
             Assert.Equal(2, entries[1].UserId);
             Assert.Equal(3, entries[2].UserId);
@@ -174,7 +156,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_ZeroVotes_IncludedInLeaderboard()
         {
-            // Arrange - Add submission with 0 votes
+            // Submission with 0 votes
             DbContext.Photos.Add(new PhotoSubmission
             {
                 TaskId = 200,
@@ -184,10 +166,8 @@ namespace PhotoScavengerHunt.Tests.Services
             });
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetLeaderboardAsync();
 
-            // Assert
             Assert.Contains(result, e => e.UserId == 102 && e.TotalVotes == 0);
         }
     }

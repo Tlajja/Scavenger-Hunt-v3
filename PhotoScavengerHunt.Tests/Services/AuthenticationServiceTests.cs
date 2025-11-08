@@ -19,7 +19,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task RegisterAsync_ValidRequest_ReturnsSuccess()
         {
-            // Arrange
             var request = new RegisterRequest(
                 Email: "newuser@test.com",
                 Password: "password123",
@@ -27,10 +26,8 @@ namespace PhotoScavengerHunt.Tests.Services
                 Age: 25
             );
 
-            // Act
             var result = await _service.RegisterAsync(request);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Equal("Registration successful.", result.Message);
             Assert.NotNull(result.Data);
@@ -59,13 +56,10 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task RegisterAsync_InvalidInput_ReturnsError(
             string email, string password, string username, int age, string expectedError)
         {
-            // Arrange
             var request = new RegisterRequest(email, password, username, age);
 
-            // Act
             var result = await _service.RegisterAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal(expectedError, result.Message);
             Assert.Null(result.Data);
@@ -74,7 +68,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task RegisterAsync_DuplicateEmail_ReturnsError()
         {
-            // Arrange
             var request = new RegisterRequest(
                 Email: "test1@test.com", // Already exists in seed data
                 Password: "password123",
@@ -82,10 +75,8 @@ namespace PhotoScavengerHunt.Tests.Services
                 Age: 25
             );
 
-            // Act
             var result = await _service.RegisterAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Email already registered.", result.Message);
         }
@@ -93,7 +84,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task RegisterAsync_DuplicateUsername_ReturnsError()
         {
-            // Arrange
             var request = new RegisterRequest(
                 Email: "unique@test.com",
                 Password: "password123",
@@ -101,10 +91,8 @@ namespace PhotoScavengerHunt.Tests.Services
                 Age: 25
             );
 
-            // Act
             var result = await _service.RegisterAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Username already exists.", result.Message);
         }
@@ -112,7 +100,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
         {
-            // Arrange - First register a user
+            // First register a user
             var registerRequest = new RegisterRequest(
                 Email: "login@test.com",
                 Password: "password123",
@@ -123,10 +111,8 @@ namespace PhotoScavengerHunt.Tests.Services
 
             var loginRequest = new LoginRequest("LoginUser", "password123");
 
-            // Act
             var result = await _service.LoginAsync(loginRequest);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Equal("Login successful.", result.Message);
             Assert.NotNull(result.Data);
@@ -145,13 +131,10 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task LoginAsync_MissingCredentials_ReturnsError(
             string username, string password, string expectedError)
         {
-            // Arrange
             var request = new LoginRequest(username, password);
 
-            // Act
             var result = await _service.LoginAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal(expectedError, result.Message);
         }
@@ -159,13 +142,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task LoginAsync_NonExistentUser_ReturnsError()
         {
-            // Arrange
             var request = new LoginRequest("NonExistent", "password123");
 
-            // Act
             var result = await _service.LoginAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Invalid username or password.", result.Message);
         }
@@ -173,13 +153,11 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task LoginAsync_UnregisteredUser_ReturnsError()
         {
-            // Arrange - TestUser3 is not registered in seed data
+            // TestUser3 is not registered in seed data
             var request = new LoginRequest("TestUser3", "anypassword");
 
-            // Act
             var result = await _service.LoginAsync(request);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Please complete registration first.", result.Message);
         }
@@ -187,7 +165,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task LoginAsync_WrongPassword_ReturnsError()
         {
-            // Arrange - Register a user first
+            // Register a user first
             var registerRequest = new RegisterRequest(
                 Email: "wrongpass@test.com",
                 Password: "correctpass",
@@ -198,10 +176,8 @@ namespace PhotoScavengerHunt.Tests.Services
 
             var loginRequest = new LoginRequest("WrongPassUser", "wrongpass");
 
-            // Act
             var result = await _service.LoginAsync(loginRequest);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Invalid username or password.", result.Message);
         }
@@ -209,18 +185,16 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task PasswordHashing_IsDeterministic()
         {
-            // Arrange
             var request1 = new RegisterRequest("hash1@test.com", "samepass", "HashUser1", 25);
             var request2 = new RegisterRequest("hash2@test.com", "samepass", "HashUser2", 25);
 
-            // Act
             await _service.RegisterAsync(request1);
             await _service.RegisterAsync(request2);
 
             var user1 = await DbContext.Users.FirstAsync(u => u.Name == "HashUser1");
             var user2 = await DbContext.Users.FirstAsync(u => u.Name == "HashUser2");
 
-            // Assert - Same password should produce same hash
+            // Same password should produce same hash
             Assert.Equal(user1.PasswordHash, user2.PasswordHash);
         }
     }

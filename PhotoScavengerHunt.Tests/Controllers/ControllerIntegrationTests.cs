@@ -26,7 +26,6 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task Register_ValidRequest_ReturnsOk()
         {
-            // Arrange
             var request = new RegisterRequest(
                 Email: "controller@test.com",
                 Password: "password123",
@@ -34,10 +33,8 @@ namespace PhotoScavengerHunt.Tests.Controllers
                 Age: 25
             );
 
-            // Act
             var result = await _controller.Register(request);
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var value = okResult.Value;
             Assert.NotNull(value);
@@ -46,29 +43,24 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task Register_InvalidRequest_ReturnsBadRequest()
         {
-            // Arrange
             var request = new RegisterRequest("", "pass", "user", 25);
 
-            // Act
             var result = await _controller.Register(request);
 
-            // Assert
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
         public async Task Login_ValidCredentials_ReturnsOk()
         {
-            // Arrange - First register
+            // First register
             await _service.RegisterAsync(new RegisterRequest(
                 "login@test.com", "password123", "LoginUser", 25));
             
             var request = new LoginRequest("LoginUser", "password123");
 
-            // Act
             var result = await _controller.Login(request);
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var value = okResult.Value;
             Assert.NotNull(value);
@@ -77,13 +69,10 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task Login_InvalidCredentials_ReturnsUnauthorized()
         {
-            // Arrange
             var request = new LoginRequest("NonExistent", "wrongpass");
 
-            // Act
             var result = await _controller.Login(request);
 
-            // Assert
             Assert.IsType<UnauthorizedObjectResult>(result);
         }
     }
@@ -105,17 +94,14 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateTask_ValidRequest_ReturnsCreatedAtAction()
         {
-            // Arrange
             var request = new CreateTaskRequest(
                 Description: "Controller Task",
                 Deadline: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
                 AuthorId: 100
             );
 
-            // Act
             var result = await _controller.CreateTask(request);
 
-            // Assert
             var createdResult = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(nameof(_controller.GetTaskById), createdResult.ActionName);
         }
@@ -123,23 +109,18 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateTask_EmptyDescription_ReturnsBadRequest()
         {
-            // Arrange
             var request = new CreateTaskRequest("", DateTime.UtcNow.AddDays(1), 100);
 
-            // Act
             var result = await _controller.CreateTask(request);
 
-            // Assert
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
         [Fact]
         public async Task GetTasks_ReturnsOkWithTasks()
         {
-            // Act
             var result = await _controller.GetTasks();
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var tasks = Assert.IsAssignableFrom<IEnumerable<HuntTask>>(okResult.Value);
             Assert.NotEmpty(tasks);
@@ -148,10 +129,8 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task GetTaskById_ValidId_ReturnsOk()
         {
-            // Act
             var result = await _controller.GetTaskById(200);
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var task = Assert.IsType<HuntTask>(okResult.Value);
             Assert.Equal(200, task.Id);
@@ -160,30 +139,24 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task GetTaskById_InvalidId_ReturnsNotFound()
         {
-            // Act
             var result = await _controller.GetTaskById(99999);
 
-            // Assert
             Assert.IsType<NotFoundResult>(result);
         }
 
         [Fact]
         public async Task DeleteUserTask_ValidRequest_ReturnsNoContent()
         {
-            // Act
             var result = await _controller.DeleteUserTask(100, 200);
 
-            // Assert
             Assert.IsType<NoContentResult>(result);
         }
 
         [Fact]
         public async Task DeleteUserTask_InvalidTask_ReturnsNotFound()
         {
-            // Act
             var result = await _controller.DeleteUserTask(100, 99999);
 
-            // Assert
             Assert.IsType<NotFoundObjectResult>(result);
         }
     }
@@ -203,10 +176,8 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task UpvotePhoto_ValidSubmission_ReturnsOk()
         {
-            // Act
             var result = await _controller.UpvotePhoto(400);
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult.Value);
         }
@@ -214,10 +185,8 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task UpvotePhoto_InvalidSubmission_ReturnsBadRequest()
         {
-            // Act
             var result = await _controller.UpvotePhoto(99999);
 
-            // Assert
             Assert.IsType<BadRequestObjectResult>(result);
         }
     }
@@ -239,10 +208,8 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task GetLeaderboard_ReturnsOkWithEntries()
         {
-            // Act
             var result = await _controller.GetLeaderboard();
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
             var entries = Assert.IsAssignableFrom<List<LeaderboardEntry>>(okResult.Value);
             Assert.NotEmpty(entries);

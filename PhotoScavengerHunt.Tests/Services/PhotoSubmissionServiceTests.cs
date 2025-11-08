@@ -49,13 +49,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [InlineData("test.gif", "image/gif")]
         public async Task UploadPhotoAsync_ValidFile_ReturnsSuccess(string fileName, string contentType)
         {
-            // Arrange
             var file = CreateMockFile(fileName, "fake image content", contentType);
 
-            // Act
             var result = await _service.UploadPhotoAsync(200, 100, file);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Equal("Photo uploaded successfully.", result.Message);
             Assert.NotNull(result.PhotoUrl);
@@ -66,10 +63,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_NullFile_ReturnsError()
         {
-            // Act
             var result = await _service.UploadPhotoAsync(200, 100, null!);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("No file uploaded.", result.Message);
         }
@@ -80,13 +75,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [InlineData("test.exe", "application/octet-stream")]
         public async Task UploadPhotoAsync_InvalidFileType_ReturnsError(string fileName, string contentType)
         {
-            // Arrange
             var file = CreateMockFile(fileName, "content", contentType);
 
-            // Act
             var result = await _service.UploadPhotoAsync(200, 100, file);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Contains("Only image files", result.Message);
         }
@@ -94,7 +86,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_FileTooLarge_ReturnsError()
         {
-            // Arrange
             var largeContent = new string('x', 10_000_001); // > 10MB
             var bytes = Encoding.UTF8.GetBytes(largeContent);
             var stream = new MemoryStream(bytes);
@@ -104,10 +95,8 @@ namespace PhotoScavengerHunt.Tests.Services
             file.Setup(f => f.Length).Returns(bytes.Length);
             file.Setup(f => f.ContentType).Returns("image/jpeg");
 
-            // Act
             var result = await _service.UploadPhotoAsync(200, 100, file.Object);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Contains("File size cannot exceed 10MB", result.Message);
         }
@@ -115,13 +104,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_NonExistentTask_ReturnsError()
         {
-            // Arrange
             var file = CreateMockFile("test.jpg", "content", "image/jpeg");
 
-            // Act
             var result = await _service.UploadPhotoAsync(99999, 100, file);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Task does not exist.", result.Message);
         }
@@ -129,13 +115,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_NonExistentUser_ReturnsError()
         {
-            // Arrange
             var file = CreateMockFile("test.jpg", "content", "image/jpeg");
 
-            // Act
             var result = await _service.UploadPhotoAsync(200, 99999, file);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("User does not exist.", result.Message);
         }
@@ -143,26 +126,21 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_CreatesUploadsDirectory()
         {
-            // Arrange
             var uploadsPath = Path.Combine(_testUploadsPath, "uploads");
             Assert.False(Directory.Exists(uploadsPath));
 
             var file = CreateMockFile("test.jpg", "content", "image/jpeg");
 
-            // Act
             await _service.UploadPhotoAsync(200, 100, file);
 
-            // Assert
             Assert.True(Directory.Exists(uploadsPath));
         }
 
         [Fact]
         public async Task GetSubmissionsForTaskAsync_ReturnsSubmissions()
         {
-            // Act
             var result = await _service.GetSubmissionsForTaskAsync(200);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count); // Seed data has 2 submissions for task 200
             Assert.All(result, s => Assert.Equal(200, s.TaskId));
@@ -171,10 +149,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetSubmissionsForTaskAsync_NoSubmissions_ReturnsEmpty()
         {
-            // Act
             var result = await _service.GetSubmissionsForTaskAsync(201);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Empty(result);
         }
@@ -182,10 +158,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetSubmissionsByUserAsync_ReturnsUserSubmissions()
         {
-            // Act
             var result = await _service.GetSubmissionsByUserAsync(100);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Single(result);
             Assert.All(result, s => Assert.Equal(100, s.UserId));
@@ -194,10 +168,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetSubmissionsByUserAsync_NoSubmissions_ReturnsEmpty()
         {
-            // Act
             var result = await _service.GetSubmissionsByUserAsync(102);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Empty(result);
         }
@@ -205,10 +177,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteSubmissionAsync_ValidId_DeletesSubmission()
         {
-            // Act
             var result = await _service.DeleteSubmissionAsync(400);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Equal("Submission deleted successfully.", result.Message);
 
@@ -219,10 +189,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteSubmissionAsync_InvalidId_ReturnsError()
         {
-            // Act
             var result = await _service.DeleteSubmissionAsync(99999);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Submission not found.", result.Message);
         }
@@ -230,13 +198,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_SavesWithCommentsCollection()
         {
-            // Arrange
             var file = CreateMockFile("test.jpg", "content", "image/jpeg");
 
-            // Act
             var result = await _service.UploadPhotoAsync(200, 100, file);
 
-            // Assert
             var submission = await DbContext.Photos
                 .Include(p => p.Comments)
                 .FirstAsync(p => p.Id == result.SubmissionId);

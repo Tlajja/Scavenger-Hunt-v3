@@ -7,9 +7,7 @@ using Moq;
 
 namespace PhotoScavengerHunt.Tests.Infrastructure
 {
-    /// <summary>
-    /// Base class for tests that provides in-memory database setup
-    /// </summary>
+    // Base class for tests that provides in-memory database setup
     public abstract class DatabaseTestBase : IDisposable
     {
         protected PhotoScavengerHuntDbContext DbContext { get; private set; }
@@ -22,14 +20,9 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 .Options;
 
             DbContext = new PhotoScavengerHuntDbContext(options);
-            
-            // Ensure database is created but DO NOT call EnsureCreated
-            // as it would apply seed data from OnModelCreating
         }
 
-        /// <summary>
-        /// Seeds the database with predictable test data
-        /// </summary>
+        // Seeds the database with predictable test data
         protected void SeedTestData()
         {
             // Clear any existing data first

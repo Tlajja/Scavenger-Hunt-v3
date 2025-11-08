@@ -19,14 +19,11 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task CreateUserAsync_ValidInput_ReturnsSuccess()
         {
-            // Arrange
             var name = "NewTestUser";
             var age = 28;
 
-            // Act
             var result = await _service.CreateUserAsync(name, age);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Empty(result.Error);
             Assert.NotNull(result.User);
@@ -38,35 +35,31 @@ namespace PhotoScavengerHunt.Tests.Services
         [Theory]
         [InlineData("ab", 25)] // Min length (2 chars)
         [InlineData("ABCDEFGHIJ0123456789", 25)] // Max length (20 chars)
-        [InlineData("User123", 25)] // Alphanumeric
+        [InlineData("User123", 25)] 
         [InlineData("ABC", 1)] // Min age
         [InlineData("User", 125)] // Max age
         public async Task CreateUserAsync_ValidEdgeCases_ReturnsSuccess(string name, int age)
         {
-            // Act
             var result = await _service.CreateUserAsync(name, age);
 
-            // Assert
             Assert.True(result.Success);
             Assert.NotNull(result.User);
         }
 
         [Theory]
-        [InlineData("a", 25, "Invalid username format")] // Too short
-        [InlineData("ABCDEFGHIJ01234567890", 25, "Invalid username format")] // Too long (21 chars)
-        [InlineData("user name", 25, "Invalid username format")] // Contains space
-        [InlineData("user-name", 25, "Invalid username format")] // Contains hyphen
-        [InlineData("user_name", 25, "Invalid username format")] // Contains underscore
-        [InlineData("user@name", 25, "Invalid username format")] // Contains special char
-        [InlineData("", 25, "Invalid username format")] // Empty
-        [InlineData("   ", 25, "Invalid username format")] // Whitespace only
+        [InlineData("a", 25, "Invalid username format")]
+        [InlineData("ABCDEFGHIJ01234567890", 25, "Invalid username format")] 
+        [InlineData("user name", 25, "Invalid username format")] 
+        [InlineData("user-name", 25, "Invalid username format")] 
+        [InlineData("user_name", 25, "Invalid username format")] 
+        [InlineData("user@name", 25, "Invalid username format")] 
+        [InlineData("", 25, "Invalid username format")] 
+        [InlineData("   ", 25, "Invalid username format")] 
         public async Task CreateUserAsync_InvalidUsername_ReturnsError(
             string name, int age, string expectedErrorSubstring)
         {
-            // Act
             var result = await _service.CreateUserAsync(name, age);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Contains(expectedErrorSubstring, result.Error);
             Assert.Null(result.User);
@@ -80,10 +73,8 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateUserAsync_InvalidAge_ReturnsError(
             string name, int age, string expectedError)
         {
-            // Act
             var result = await _service.CreateUserAsync(name, age);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal(expectedError, result.Error);
         }
@@ -91,14 +82,11 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task CreateUserAsync_DuplicateName_ReturnsError()
         {
-            // Arrange - TestUser1 already exists in seed data
             var name = "TestUser1";
             var age = 30;
 
-            // Act
             var result = await _service.CreateUserAsync(name, age);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("Username already exists.", result.Error);
         }
@@ -106,10 +94,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetUsersAsync_ReturnsAllUsers()
         {
-            // Act
             var result = await _service.GetUsersAsync();
 
-            // Assert
             Assert.True(result.Success);
             Assert.NotNull(result.Users);
             Assert.True(result.Users.Count >= 3); // At least seed data
@@ -120,16 +106,13 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetUsersAsync_EmptyDatabase_ReturnsEmpty()
         {
-            // Arrange - Remove all data including dependencies first
             DbContext.Photos.RemoveRange(DbContext.Photos);
             DbContext.Tasks.RemoveRange(DbContext.Tasks);
             DbContext.Users.RemoveRange(DbContext.Users);
             await DbContext.SaveChangesAsync();
 
-            // Act
             var result = await _service.GetUsersAsync();
 
-            // Assert
             Assert.True(result.Success);
             Assert.NotNull(result.Users);
             Assert.Empty(result.Users);
@@ -138,10 +121,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetUserByIdAsync_ValidId_ReturnsUser()
         {
-            // Act
             var result = await _service.GetUserByIdAsync(100);
 
-            // Assert
             Assert.True(result.Success);
             Assert.NotNull(result.User);
             Assert.Equal(100, result.User.Id);
@@ -151,10 +132,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetUserByIdAsync_InvalidId_ReturnsError()
         {
-            // Act
             var result = await _service.GetUserByIdAsync(99999);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("User not found.", result.Error);
             Assert.Null(result.User);
@@ -163,14 +142,11 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteUserAsync_ValidId_ReturnsSuccess()
         {
-            // Act
             var result = await _service.DeleteUserAsync(100);
 
-            // Assert
             Assert.True(result.Success);
             Assert.Empty(result.Error);
 
-            // Verify user is deleted
             var user = await DbContext.Users.FindAsync(100);
             Assert.Null(user);
         }
@@ -178,10 +154,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteUserAsync_InvalidId_ReturnsError()
         {
-            // Act
             var result = await _service.DeleteUserAsync(99999);
 
-            // Assert
             Assert.False(result.Success);
             Assert.Equal("User not found.", result.Error);
         }
@@ -189,18 +163,14 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task CreateUserAsync_IsPersisted()
         {
-            // Arrange
             var name = "PersistentUser";
             var age = 32;
 
-            // Act
             var createResult = await _service.CreateUserAsync(name, age);
             var userId = createResult.User!.Id;
 
-            // Re-query from database
             var getResult = await _service.GetUserByIdAsync(userId);
 
-            // Assert
             Assert.NotNull(getResult.User);
             Assert.Equal(name, getResult.User.Name);
             Assert.Equal(age, getResult.User.Age);
@@ -209,7 +179,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public void ValidationExtensions_IsValidUsername_ValidInputs_ReturnsTrue()
         {
-            // Arrange & Act & Assert
             Assert.True(ValidationExtensions.IsValidUsername("ab"));
             Assert.True(ValidationExtensions.IsValidUsername("User123"));
             Assert.True(ValidationExtensions.IsValidUsername("ABCDEFGHIJ0123456789"));
@@ -220,15 +189,14 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public void ValidationExtensions_IsValidUsername_InvalidInputs_ReturnsFalse()
         {
-            // Arrange & Act & Assert
-            Assert.False(ValidationExtensions.IsValidUsername("a")); // Too short
-            Assert.False(ValidationExtensions.IsValidUsername("ABCDEFGHIJ01234567890")); // Too long
-            Assert.False(ValidationExtensions.IsValidUsername("user name")); // Space
-            Assert.False(ValidationExtensions.IsValidUsername("user-name")); // Hyphen
-            Assert.False(ValidationExtensions.IsValidUsername("user_name")); // Underscore
-            Assert.False(ValidationExtensions.IsValidUsername("")); // Empty
-            Assert.False(ValidationExtensions.IsValidUsername("   ")); // Whitespace
-            Assert.False(ValidationExtensions.IsValidUsername(null!)); // Null
+            Assert.False(ValidationExtensions.IsValidUsername("a")); 
+            Assert.False(ValidationExtensions.IsValidUsername("ABCDEFGHIJ01234567890")); 
+            Assert.False(ValidationExtensions.IsValidUsername("user name")); 
+            Assert.False(ValidationExtensions.IsValidUsername("user-name")); 
+            Assert.False(ValidationExtensions.IsValidUsername("user_name")); 
+            Assert.False(ValidationExtensions.IsValidUsername("")); 
+            Assert.False(ValidationExtensions.IsValidUsername("   ")); 
+            Assert.False(ValidationExtensions.IsValidUsername(null!)); 
         }
 
         [Fact]
@@ -238,13 +206,8 @@ namespace PhotoScavengerHunt.Tests.Services
             // This test documents the current behavior
             var result1 = await _service.CreateUserAsync("CaseTest", 25);
             
-            // Act
             var result2 = await _service.CreateUserAsync("CASETEST", 25);
 
-            // Assert - The behavior depends on database collation
-            // This test will pass regardless of case sensitivity
-            // If case-insensitive: result2.Success will be false
-            // If case-sensitive: result2.Success will be true
             Assert.True(result1.Success);
         }
     }
