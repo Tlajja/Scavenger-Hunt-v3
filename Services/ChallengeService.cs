@@ -27,15 +27,12 @@ namespace PhotoScavengerHunt.Services
                 if (existingAny != null)
                     return (false, "You must leave your current challenge before creating a new one.", null);
 
-                var challenge = new Challenge
-                {
-                    Name = request.Name,
-                    TaskId = request.TaskId,
-                    CreatorId = request.CreatorId,
-                    Deadline = request.Deadline,
-                    IsPrivate = request.IsPrivate,
-                    CreatedAt = DateTime.UtcNow
-                };
+                var challenge = ChallengeFactory.Create(
+                   name: request.Name,
+                   taskId: request.TaskId,
+                   creatorId: request.CreatorId,
+                   isPrivate: request.IsPrivate,
+                   deadline: request.Deadline);
 
                 _dbContext.Challenges.Add(challenge);
                 await _dbContext.SaveChangesAsync();

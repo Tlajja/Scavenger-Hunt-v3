@@ -41,8 +41,8 @@ public class PhotoScavengerHuntDbContext : DbContext
 
         // Example seed data for tasks and users
         modelBuilder.Entity<HuntTask>().HasData(
-            new HuntTask { Id = 1, Description = "Red car", Deadline = DateTime.Parse("2025-10-01"), Status = HuntTaskStatus.Open },
-            new HuntTask { Id = 2, Description = "Blue mailbox", Deadline = DateTime.Parse("2025-10-02"), Status = HuntTaskStatus.Open }
+            new HuntTask { Id = 1, Description = "Red car"},
+            new HuntTask { Id = 2, Description = "Blue mailbox"}
         );
 
         modelBuilder.Entity<UserProfile>().HasData(

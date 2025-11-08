@@ -4,6 +4,6 @@ public record CreateChallengeRequest(
     string Name,
     int TaskId,
     int CreatorId,
-    DateTime Deadline,
+    DateTime? Deadline,
     bool IsPrivate = false
 );

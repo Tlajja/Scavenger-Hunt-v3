@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    partial class PhotoScavengerHuntDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251108180226_AddChallengesStatus")]
+    partial class AddChallengesStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -53,7 +56,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Challenges", (string)null);
+                    b.ToTable("Challenges");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.ChallengeParticipant", b =>
@@ -82,7 +85,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChallengeParticipants", (string)null);
+                    b.ToTable("ChallengeParticipants");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
@@ -110,7 +113,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasIndex("PhotoSubmissionId");
 
-                    b.ToTable("Comments", (string)null);
+                    b.ToTable("Comments");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.PhotoSubmission", b =>
@@ -139,7 +142,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Photos", (string)null);
+                    b.ToTable("Photos");
 
                     b.HasData(
                         new
@@ -177,7 +180,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tasks", (string)null);
+                    b.ToTable("Tasks");
 
                     b.HasData(
                         new
@@ -222,7 +225,7 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
 
                     b.HasData(
                         new
