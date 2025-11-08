@@ -1,6 +1,7 @@
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Features.Leaderboard;
 using Xunit;
 using System.Text.Json;
 
@@ -72,6 +73,7 @@ namespace PhotoScavengerHunt.Tests.Models
             Assert.Equal(2, (int)HuntTaskStatus.Completed);
         }
     }
+
     public class PhotoSubmissionTests
     {
         [Fact]
@@ -112,7 +114,7 @@ namespace PhotoScavengerHunt.Tests.Models
         }
     }
 
-     public class CommentTests
+    public class CommentTests
     {
         [Fact]
         public void Comment_DefaultValues_AreCorrect()
@@ -151,5 +153,149 @@ namespace PhotoScavengerHunt.Tests.Models
         }
     }
 
+    public class LeaderboardEntryTests
+    {
+        [Fact]
+        public void LeaderboardEntry_Constructor_SetsProperties()
+        {
+            // Act
+            var entry = new LeaderboardEntry(1, "TestUser", 10);
 
+            // Assert
+            Assert.Equal(1, entry.UserId);
+            Assert.Equal("TestUser", entry.UserName);
+            Assert.Equal(10, entry.TotalVotes);
+        }
+
+        [Fact]
+        public void LeaderboardEntry_CompareTo_SortsByVotesDescending()
+        {
+            // Arrange
+            var entry1 = new LeaderboardEntry(1, "User1", 10);
+            var entry2 = new LeaderboardEntry(2, "User2", 20);
+
+            // Act
+            var result = entry1.CompareTo(entry2);
+
+            // Assert
+            Assert.True(result > 0); // entry1 should come after entry2 (20 > 10)
+        }
+
+        [Fact]
+        public void LeaderboardEntry_CompareTo_SameVotes_SortsByNameAscending()
+        {
+            // Arrange
+            var entry1 = new LeaderboardEntry(1, "Bob", 10);
+            var entry2 = new LeaderboardEntry(2, "Alice", 10);
+
+            // Act
+            var result = entry1.CompareTo(entry2);
+
+            // Assert
+            Assert.True(result > 0); // Bob should come after Alice
+        }
+
+        [Fact]
+        public void LeaderboardEntry_CompareTo_SameVotesAndName_SortsByUserIdAscending()
+        {
+            // Arrange
+            var entry1 = new LeaderboardEntry(2, "Alice", 10);
+            var entry2 = new LeaderboardEntry(1, "Alice", 10);
+
+            // Act
+            var result = entry1.CompareTo(entry2);
+
+            // Assert
+            Assert.True(result > 0); // UserId 2 should come after UserId 1
+        }
+    }
+
+    public class RequestModelTests
+    {
+        [Fact]
+        public void CreateTaskRequest_Record_WorksCorrectly()
+        {
+            // Arrange
+            var deadline = new DateTime(2026, 1, 1);
+
+            // Act
+            var request = new CreateTaskRequest("Task description", deadline, 1);
+
+            // Assert
+            Assert.Equal("Task description", request.Description);
+            Assert.Equal(deadline, request.Deadline);
+            Assert.Equal(1, request.AuthorId);
+        }
+
+        [Fact]
+        public void AddCommentRequest_Record_WorksCorrectly()
+        {
+            // Act
+            var request = new AddCommentRequest(1, "Comment text");
+
+            // Assert
+            Assert.Equal(1, request.UserId);
+            Assert.Equal("Comment text", request.Text);
+        }
+
+        [Fact]
+        public void RegisterRequest_Record_WorksCorrectly()
+        {
+            // Act
+            var request = new RegisterRequest(
+                "test@test.com", 
+                "password123", 
+                "TestUser", 
+                25
+            );
+
+            // Assert
+            Assert.Equal("test@test.com", request.Email);
+            Assert.Equal("password123", request.Password);
+            Assert.Equal("TestUser", request.Username);
+            Assert.Equal(25, request.Age);
+        }
+
+        [Fact]
+        public void LoginRequest_Record_WorksCorrectly()
+        {
+            // Act
+            var request = new LoginRequest("TestUser", "password123");
+
+            // Assert
+            Assert.Equal("TestUser", request.Username);
+            Assert.Equal("password123", request.Password);
+        }
+    }
+
+    public class ValidationExtensionsTests
+    {
+        [Theory]
+        [InlineData("ab", true)]
+        [InlineData("ABCDEFGHIJ0123456789", true)]
+        [InlineData("User123", true)]
+        [InlineData("a", false)]
+        [InlineData("ABCDEFGHIJ01234567890", false)]
+        [InlineData("user name", false)]
+        [InlineData("", false)]
+        public void IsValidUsername_VariousInputs_ReturnsExpectedResult(
+            string? username, bool expected)
+        {
+            // Act
+            var result = ValidationExtensions.IsValidUsername(username!);
+
+            // Assert
+            Assert.Equal(expected, result);
+        }
+        
+        [Fact]
+        public void IsValidUsername_NullInput_ReturnsFalse()
+        {
+            // Act
+            var result = ValidationExtensions.IsValidUsername(null!);
+
+            // Assert
+            Assert.False(result);
+        }
+    }
 }

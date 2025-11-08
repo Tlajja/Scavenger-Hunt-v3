@@ -121,7 +121,6 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task GetUsersAsync_EmptyDatabase_ReturnsEmpty()
         {
             // Arrange - Remove all data including dependencies first
-            DbContext.HubMembers.RemoveRange(DbContext.HubMembers);
             DbContext.Photos.RemoveRange(DbContext.Photos);
             DbContext.Tasks.RemoveRange(DbContext.Tasks);
             DbContext.Users.RemoveRange(DbContext.Users);
@@ -164,11 +163,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteUserAsync_ValidId_ReturnsSuccess()
         {
-            // Arrange - Remove hub members first to avoid foreign key constraint
-            var hubMembers = await DbContext.HubMembers.Where(hm => hm.UserId == 100).ToListAsync();
-            DbContext.HubMembers.RemoveRange(hubMembers);
-            await DbContext.SaveChangesAsync();
-
             // Act
             var result = await _service.DeleteUserAsync(100);
 

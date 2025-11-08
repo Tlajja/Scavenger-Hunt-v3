@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
-using PhotoScavengerHunt.Features.Hubs;
 using PhotoScavengerHunt.Features.Photos;
 using Moq;
 
@@ -28,7 +27,9 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
             // as it would apply seed data from OnModelCreating
         }
 
-        // Seed the database with predictable test data
+        /// <summary>
+        /// Seeds the database with predictable test data
+        /// </summary>
         protected void SeedTestData()
         {
             // Clear any existing data first

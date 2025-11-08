@@ -4,12 +4,90 @@ using PhotoScavengerHunt.Controllers;
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Moq;
 using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Controllers
 {
+    public class AuthenticationControllerTests : DatabaseTestBase
+    {
+        private readonly AuthenticationController _controller;
+        private readonly AuthenticationService _service;
+
+        public AuthenticationControllerTests()
+        {
+            _service = new AuthenticationService(DbContext);
+            _controller = new AuthenticationController(_service);
+            SeedTestData();
+        }
+
+        [Fact]
+        public async Task Register_ValidRequest_ReturnsOk()
+        {
+            // Arrange
+            var request = new RegisterRequest(
+                Email: "controller@test.com",
+                Password: "password123",
+                Username: "ControllerUser",
+                Age: 25
+            );
+
+            // Act
+            var result = await _controller.Register(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = okResult.Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public async Task Register_InvalidRequest_ReturnsBadRequest()
+        {
+            // Arrange
+            var request = new RegisterRequest("", "pass", "user", 25);
+
+            // Act
+            var result = await _controller.Register(request);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task Login_ValidCredentials_ReturnsOk()
+        {
+            // Arrange - First register
+            await _service.RegisterAsync(new RegisterRequest(
+                "login@test.com", "password123", "LoginUser", 25));
+            
+            var request = new LoginRequest("LoginUser", "password123");
+
+            // Act
+            var result = await _controller.Login(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = okResult.Value;
+            Assert.NotNull(value);
+        }
+
+        [Fact]
+        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
+        {
+            // Arrange
+            var request = new LoginRequest("NonExistent", "wrongpass");
+
+            // Act
+            var result = await _controller.Login(request);
+
+            // Assert
+            Assert.IsType<UnauthorizedObjectResult>(result);
+        }
+    }
+
     public class TasksControllerTests : DatabaseTestBase
     {
         private readonly TasksController _controller;
@@ -110,80 +188,64 @@ namespace PhotoScavengerHunt.Tests.Controllers
         }
     }
 
-    public class AuthenticationControllerTests : DatabaseTestBase
+    public class VotesControllerTests : DatabaseTestBase
     {
-        private readonly AuthenticationController _controller;
-        private readonly AuthenticationService _service;
+        private readonly VotesController _controller;
+        private readonly VotesService _service;
 
-        public AuthenticationControllerTests()
+        public VotesControllerTests()
         {
-            _service = new AuthenticationService(DbContext);
-            _controller = new AuthenticationController(_service);
+            _service = new VotesService(DbContext);
+            _controller = new VotesController(_service);
             SeedTestData();
         }
 
         [Fact]
-        public async Task Register_ValidRequest_ReturnsOk()
+        public async Task UpvotePhoto_ValidSubmission_ReturnsOk()
         {
-            // Arrange
-            var request = new RegisterRequest(
-                Email: "controller@test.com",
-                Password: "password123",
-                Username: "ControllerUser",
-                Age: 25
-            );
-
             // Act
-            var result = await _controller.Register(request);
+            var result = await _controller.UpvotePhoto(400);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var value = okResult.Value;
-            Assert.NotNull(value);
+            Assert.NotNull(okResult.Value);
         }
 
         [Fact]
-        public async Task Register_InvalidRequest_ReturnsBadRequest()
+        public async Task UpvotePhoto_InvalidSubmission_ReturnsBadRequest()
         {
-            // Arrange
-            var request = new RegisterRequest("", "pass", "user", 25);
-
             // Act
-            var result = await _controller.Register(request);
+            var result = await _controller.UpvotePhoto(99999);
 
             // Assert
             Assert.IsType<BadRequestObjectResult>(result);
         }
+    }
 
-        [Fact]
-        public async Task Login_ValidCredentials_ReturnsOk()
+    public class LeaderboardControllerTests : DatabaseTestBase
+    {
+        private readonly LeaderboardController _controller;
+        private readonly LeaderboardService _service;
+
+        public LeaderboardControllerTests()
         {
-            // Arrange - First register
-            await _service.RegisterAsync(new RegisterRequest(
-                "login@test.com", "password123", "LoginUser", 25));
-            
-            var request = new LoginRequest("LoginUser", "password123");
-
-            // Act
-            var result = await _controller.Login(request);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var value = okResult.Value;
-            Assert.NotNull(value);
+            var logger = CreateMockLogger<LeaderboardService>();
+            _service = new LeaderboardService(DbContext, logger.Object);
+            var controllerLogger = CreateMockLogger<LeaderboardController>();
+            _controller = new LeaderboardController(_service, controllerLogger.Object);
+            SeedTestData();
         }
 
         [Fact]
-        public async Task Login_InvalidCredentials_ReturnsUnauthorized()
+        public async Task GetLeaderboard_ReturnsOkWithEntries()
         {
-            // Arrange
-            var request = new LoginRequest("NonExistent", "wrongpass");
-
             // Act
-            var result = await _controller.Login(request);
+            var result = await _controller.GetLeaderboard();
 
             // Assert
-            Assert.IsType<UnauthorizedObjectResult>(result);
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var entries = Assert.IsAssignableFrom<List<LeaderboardEntry>>(okResult.Value);
+            Assert.NotEmpty(entries);
         }
     }
 }
