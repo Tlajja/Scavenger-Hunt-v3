@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
+using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -22,17 +23,20 @@ namespace PhotoScavengerHunt.Services
                 if (!await _dbContext.Users.AnyAsync(u => u.Id == request.CreatorId))
                     return (false, "Creator user does not exist.", null);
 
-                var existingAny = await _dbContext.ChallengeParticipants
-                    .FirstOrDefaultAsync(cp => cp.UserId == request.CreatorId);
-                if (existingAny != null)
-                    return (false, "You must leave your current challenge before creating a new one.", null);
+                // Check if user already created a challenge (admin role)
+                var adminCount = await _dbContext.ChallengeParticipants
+                    .Where(cp => cp.UserId == request.CreatorId && cp.Role == ChallengeRole.Admin)
+                    .CountAsync();
+
+                if (adminCount >= 1)
+                    throw new ChallengeLimitException("A user can create only one challenge at a time.");
 
                 var challenge = ChallengeFactory.Create(
-                   name: request.Name,
-                   taskId: request.TaskId,
-                   creatorId: request.CreatorId,
-                   isPrivate: request.IsPrivate,
-                   deadline: request.Deadline);
+                    name: request.Name,
+                    taskId: request.TaskId,
+                    creatorId: request.CreatorId,
+                    isPrivate: request.IsPrivate,
+                    deadline: request.Deadline);
 
                 _dbContext.Challenges.Add(challenge);
                 await _dbContext.SaveChangesAsync();
@@ -51,6 +55,10 @@ namespace PhotoScavengerHunt.Services
                 challenge.Participants = new List<ChallengeParticipant>();
                 return (true, string.Empty, challenge);
             }
+            catch (ChallengeLimitException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 return (false, $"Unexpected error: {ex.Message}", null);
@@ -68,11 +76,18 @@ namespace PhotoScavengerHunt.Services
                 if (!await _dbContext.Users.AnyAsync(u => u.Id == request.UserId))
                     return (false, "User does not exist.", null);
 
+                var count = await _dbContext.ChallengeParticipants
+                    .Where(cp => cp.UserId == request.UserId)
+                    .CountAsync();
+
+                if (count >= 6)
+                    throw new ChallengeLimitException("A user can participate in at most 6 challenges at a time.");
+
                 var existingAny = await _dbContext.ChallengeParticipants
-                    .FirstOrDefaultAsync(cp => cp.UserId == request.UserId);
+                    .FirstOrDefaultAsync(cp => cp.UserId == request.UserId && cp.ChallengeId == request.ChallengeId);
 
                 if (existingAny != null)
-                    return (false, "User is already a participant in a challenge. Leave it first.", null);
+                    return (false, "User is already a participant in this challenge.", null);
 
                 var participant = new ChallengeParticipant
                 {
@@ -89,6 +104,10 @@ namespace PhotoScavengerHunt.Services
                 participant.User = null;
 
                 return (true, string.Empty, participant);
+            }
+            catch (ChallengeLimitException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
