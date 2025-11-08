@@ -8,7 +8,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<CommentService>();
-builder.Services.AddScoped<HubService>();
+builder.Services.AddScoped<ChallengeService>();
 builder.Services.AddScoped<LeaderboardService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<UserService>();
