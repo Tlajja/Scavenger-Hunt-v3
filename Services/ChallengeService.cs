@@ -31,6 +31,15 @@ namespace PhotoScavengerHunt.Services
                 if (adminCount >= 1)
                     throw new ChallengeLimitException("A user can create only one challenge at a time.");
 
+                // Validate deadline (max 7 days ahead)
+                if (request.Deadline.HasValue)
+                {
+                    var now = DateTime.UtcNow;
+                    var maxDeadline = now.AddDays(7);
+                    if (request.Deadline.Value > maxDeadline)
+                        return (false, "Deadline cannot be more than 7 days from now.", null);
+                }
+
                 var challenge = ChallengeFactory.Create(
                     name: request.Name,
                     taskId: request.TaskId,
