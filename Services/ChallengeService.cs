@@ -13,243 +13,194 @@ namespace PhotoScavengerHunt.Services
             _dbContext = dbContext;
         }
 
-        public async Task<(bool Success, string Error, Challenge? Challenge)> CreateChallengeAsync(CreateChallengeRequest request)
+        public async Task<Challenge> CreateChallengeAsync(CreateChallengeRequest request)
         {
-            try
+            if (string.IsNullOrWhiteSpace(request.Name))
+                throw new ChallengeValidationException("Challenge name cannot be empty.");
+
+            if (!await _dbContext.Users.AnyAsync(u => u.Id == request.CreatorId))
+                throw new ChallengeNotFoundException("Creator user does not exist.");
+
+            if (!await _dbContext.Tasks.AnyAsync(t => t.Id == request.TaskId))
+                throw new ChallengeNotFoundException("Task does not exist.");
+
+            // Check if user already created a challenge (admin role)
+            var adminCount = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.UserId == request.CreatorId && cp.Role == ChallengeRole.Admin)
+                .CountAsync();
+
+            if (adminCount >= 1)
+                throw new ChallengeLimitException("A user can create only one challenge at a time.");
+
+            // Validate deadline (must be in future, max 7 days ahead)
+            if (request.Deadline.HasValue)
             {
-                if (string.IsNullOrWhiteSpace(request.Name))
-                    return (false, "Challenge name cannot be empty.", null);
-
-                if (!await _dbContext.Users.AnyAsync(u => u.Id == request.CreatorId))
-                    return (false, "Creator user does not exist.", null);
-
-                // Check if user already created a challenge (admin role)
-                var adminCount = await _dbContext.ChallengeParticipants
-                    .Where(cp => cp.UserId == request.CreatorId && cp.Role == ChallengeRole.Admin)
-                    .CountAsync();
-
-                if (adminCount >= 1)
-                    throw new ChallengeLimitException("A user can create only one challenge at a time.");
-
-                // Validate deadline (max 7 days ahead)
-                if (request.Deadline.HasValue)
-                {
-                    var now = DateTime.UtcNow;
-                    var maxDeadline = now.AddDays(7);
-                    if (request.Deadline.Value > maxDeadline)
-                        return (false, "Deadline cannot be more than 7 days from now.", null);
-                }
-
-                var challenge = ChallengeFactory.Create(
-                    name: request.Name,
-                    taskId: request.TaskId,
-                    creatorId: request.CreatorId,
-                    isPrivate: request.IsPrivate,
-                    deadline: request.Deadline);
-
-                _dbContext.Challenges.Add(challenge);
-                await _dbContext.SaveChangesAsync();
-
-                var participant = new ChallengeParticipant
-                {
-                    ChallengeId = challenge.Id,
-                    UserId = request.CreatorId,
-                    Role = ChallengeRole.Admin,
-                    JoinedAt = DateTime.UtcNow
-                };
-
-                _dbContext.ChallengeParticipants.Add(participant);
-                await _dbContext.SaveChangesAsync();
-
-                challenge.Participants = new List<ChallengeParticipant>();
-                return (true, string.Empty, challenge);
+                var now = DateTime.UtcNow;
+                if (request.Deadline.Value <= now)
+                    throw new ChallengeValidationException("Deadline must be in the future.");
+                
+                var maxDeadline = now.AddDays(7);
+                if (request.Deadline.Value > maxDeadline)
+                    throw new ChallengeValidationException("Deadline cannot be more than 7 days from now.");
             }
-            catch (ChallengeLimitException)
+
+            var challenge = ChallengeFactory.Create(
+                name: request.Name,
+                taskId: request.TaskId,
+                creatorId: request.CreatorId,
+                isPrivate: request.IsPrivate,
+                deadline: request.Deadline);
+
+            _dbContext.Challenges.Add(challenge);
+            await _dbContext.SaveChangesAsync();
+
+            var participant = new ChallengeParticipant
             {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Unexpected error: {ex.Message}", null);
-            }
+                ChallengeId = challenge.Id,
+                UserId = request.CreatorId,
+                Role = ChallengeRole.Admin,
+                JoinedAt = DateTime.UtcNow
+            };
+
+            _dbContext.ChallengeParticipants.Add(participant);
+            await _dbContext.SaveChangesAsync();
+
+            challenge.Participants = new List<ChallengeParticipant>();
+            return challenge;
         }
 
-        public async Task<(bool Success, string Error, ChallengeParticipant? Participant)> JoinChallengeAsync(JoinChallengeRequest request)
+        public async Task<ChallengeParticipant> JoinChallengeAsync(JoinChallengeRequest request)
         {
-            try
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == request.ChallengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
+
+            if (!await _dbContext.Users.AnyAsync(u => u.Id == request.UserId))
+                throw new ChallengeNotFoundException("User does not exist.");
+
+            var count = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.UserId == request.UserId)
+                .CountAsync();
+
+            if (count >= 6)
+                throw new ChallengeLimitException("A user can participate in at most 6 challenges at a time.");
+
+            var existingAny = await _dbContext.ChallengeParticipants
+                .FirstOrDefaultAsync(cp => cp.UserId == request.UserId && cp.ChallengeId == request.ChallengeId);
+
+            if (existingAny != null)
+                throw new ChallengeValidationException("User is already a participant in this challenge.");
+
+            var participant = new ChallengeParticipant
             {
-                var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == request.ChallengeId);
-                if (challenge == null)
-                    return (false, "Challenge not found.", null);
+                ChallengeId = challenge.Id,
+                UserId = request.UserId,
+                Role = ChallengeRole.Participant,
+                JoinedAt = DateTime.UtcNow
+            };
 
-                if (!await _dbContext.Users.AnyAsync(u => u.Id == request.UserId))
-                    return (false, "User does not exist.", null);
+            _dbContext.ChallengeParticipants.Add(participant);
+            await _dbContext.SaveChangesAsync();
 
-                var count = await _dbContext.ChallengeParticipants
-                    .Where(cp => cp.UserId == request.UserId)
-                    .CountAsync();
+            participant.Challenge = null;
+            participant.User = null;
 
-                if (count >= 6)
-                    throw new ChallengeLimitException("A user can participate in at most 6 challenges at a time.");
+            return participant;
+        }
 
-                var existingAny = await _dbContext.ChallengeParticipants
-                    .FirstOrDefaultAsync(cp => cp.UserId == request.UserId && cp.ChallengeId == request.ChallengeId);
+        public async Task<List<Challenge>> GetChallengesAsync(bool publicOnly = true)
+        {
+            var query = _dbContext.Challenges.AsQueryable();
+            if (publicOnly)
+                query = query.Where(c => !c.IsPrivate);
 
-                if (existingAny != null)
-                    return (false, "User is already a participant in this challenge.", null);
+            var challenges = await query.ToListAsync();
+            foreach (var c in challenges)
+                c.Participants = null;
 
-                var participant = new ChallengeParticipant
+            return challenges;
+        }
+
+        public async Task<Challenge> GetChallengeByIdAsync(int challengeId)
+        {
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
+
+            var participants = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.ChallengeId == challengeId)
+                .ToListAsync();
+
+            challenge.Participants = participants.Select(p => new ChallengeParticipant
+            {
+                Id = p.Id,
+                ChallengeId = p.ChallengeId,
+                UserId = p.UserId,
+                Role = p.Role,
+                JoinedAt = p.JoinedAt
+            }).ToList();
+
+            return challenge;
+        }
+
+        public async Task DeleteChallengeAsync(int challengeId, int userId)
+        {
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
+
+            var participant = await _dbContext.ChallengeParticipants
+                .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
+
+            if (participant == null || participant.Role != ChallengeRole.Admin)
+                throw new ChallengeValidationException("Only challenge admins can delete challenges.");
+
+            var allParticipants = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.ChallengeId == challengeId)
+                .ToListAsync();
+
+            _dbContext.ChallengeParticipants.RemoveRange(allParticipants);
+            _dbContext.Challenges.Remove(challenge);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task LeaveChallengeAsync(int challengeId, int userId)
+        {
+            var participant = await _dbContext.ChallengeParticipants
+                .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
+
+            if (participant == null)
+                throw new ChallengeNotFoundException("User is not a participant of this challenge.");
+
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
+
+            var otherParticipants = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.ChallengeId == challengeId && cp.UserId != userId)
+                .OrderBy(cp => cp.JoinedAt)
+                .ToListAsync();
+
+            if (participant.Role == ChallengeRole.Admin)
+            {
+                if (!otherParticipants.Any())
                 {
-                    ChallengeId = challenge.Id,
-                    UserId = request.UserId,
-                    Role = ChallengeRole.Participant,
-                    JoinedAt = DateTime.UtcNow
-                };
-
-                _dbContext.ChallengeParticipants.Add(participant);
-                await _dbContext.SaveChangesAsync();
-
-                participant.Challenge = null;
-                participant.User = null;
-
-                return (true, string.Empty, participant);
-            }
-            catch (ChallengeLimitException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Unexpected error: {ex.Message}", null);
-            }
-        }
-
-        public async Task<(bool Success, string Error, List<Challenge>? Challenges)> GetChallengesAsync(bool publicOnly = true)
-        {
-            try
-            {
-                var query = _dbContext.Challenges.AsQueryable();
-                if (publicOnly)
-                    query = query.Where(c => !c.IsPrivate);
-
-                var challenges = await query.ToListAsync();
-                foreach (var c in challenges)
-                    c.Participants = null;
-
-                return (true, string.Empty, challenges);
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Unexpected error: {ex.Message}", null);
-            }
-        }
-
-        public async Task<(bool Success, string Error, Challenge? Challenge)> GetChallengeByIdAsync(int challengeId)
-        {
-            try
-            {
-                var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
-                if (challenge == null)
-                    return (false, "Challenge not found.", null);
-
-                var participants = await _dbContext.ChallengeParticipants
-                    .Where(cp => cp.ChallengeId == challengeId)
-                    .ToListAsync();
-
-                challenge.Participants = participants.Select(p => new ChallengeParticipant
-                {
-                    Id = p.Id,
-                    ChallengeId = p.ChallengeId,
-                    UserId = p.UserId,
-                    Role = p.Role,
-                    JoinedAt = p.JoinedAt
-                }).ToList();
-
-                return (true, string.Empty, challenge);
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Unexpected error: {ex.Message}", null);
-            }
-        }
-
-        public async Task<(bool Success, string Error)> DeleteChallengeAsync(int challengeId, int userId)
-        {
-            try
-            {
-                var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
-                if (challenge == null)
-                    return (false, "Challenge not found.");
-
-                var participant = await _dbContext.ChallengeParticipants
-                    .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
-
-                if (participant == null || participant.Role != ChallengeRole.Admin)
-                    return (false, "Only challenge admins can delete challenges.");
-
-                var allParticipants = await _dbContext.ChallengeParticipants
-                    .Where(cp => cp.ChallengeId == challengeId)
-                    .ToListAsync();
-
-                _dbContext.ChallengeParticipants.RemoveRange(allParticipants);
-                _dbContext.Challenges.Remove(challenge);
-                await _dbContext.SaveChangesAsync();
-
-                return (true, string.Empty);
-            }
-            catch (Exception ex)
-            {
-                return (false, $"Unexpected error: {ex.Message}");
-            }
-        }
-
-        public async Task<(bool Success, string Error)> LeaveChallengeAsync(int challengeId, int userId)
-        {
-            try
-            {
-                var participant = await _dbContext.ChallengeParticipants
-                    .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
-
-                if (participant == null)
-                    return (false, "User is not a participant of this challenge.");
-
-                var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
-                if (challenge == null)
-                    return (false, "Challenge not found.");
-
-                var otherParticipants = await _dbContext.ChallengeParticipants
-                    .Where(cp => cp.ChallengeId == challengeId && cp.UserId != userId)
-                    .OrderBy(cp => cp.JoinedAt)
-                    .ToListAsync();
-
-                if (participant.Role == ChallengeRole.Admin)
-                {
-                    if (!otherParticipants.Any())
-                    {
-                        _dbContext.ChallengeParticipants.Remove(participant);
-                        _dbContext.Challenges.Remove(challenge);
-                        await _dbContext.SaveChangesAsync();
-                        return (true, string.Empty);
-                    }
-                    else
-                    {
-                        var newAdmin = otherParticipants.First();
-                        newAdmin.Role = ChallengeRole.Admin;
-                        _dbContext.ChallengeParticipants.Remove(participant);
-                        await _dbContext.SaveChangesAsync();
-                        return (true, string.Empty);
-                    }
+                    _dbContext.ChallengeParticipants.Remove(participant);
+                    _dbContext.Challenges.Remove(challenge);
+                    await _dbContext.SaveChangesAsync();
                 }
                 else
                 {
+                    var newAdmin = otherParticipants.First();
+                    newAdmin.Role = ChallengeRole.Admin;
                     _dbContext.ChallengeParticipants.Remove(participant);
                     await _dbContext.SaveChangesAsync();
-                    return (true, string.Empty);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                return (false, $"Unexpected error: {ex.Message}");
+                _dbContext.ChallengeParticipants.Remove(participant);
+                await _dbContext.SaveChangesAsync();
             }
         }
     }

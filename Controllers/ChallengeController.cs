@@ -41,12 +41,18 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.CreateChallengeAsync(request);
-
-                if (!result.Success)
-                    return BadRequest(new { error = result.Error });
-
-                return CreatedAtAction(nameof(GetChallengeById), new { id = result.Challenge!.Id }, result.Challenge);
+                var challenge = await _challengeService.CreateChallengeAsync(request);
+                return CreatedAtAction(nameof(GetChallengeById), new { id = challenge.Id }, challenge);
+            }
+            catch (ChallengeValidationException ex)
+            {
+                LogExceptionToFile(ex);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
             }
             catch (ChallengeLimitException ex)
             {
@@ -65,12 +71,18 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.JoinChallengeAsync(request);
-
-                if (!result.Success)
-                    return BadRequest(new { error = result.Error });
-
-                return Ok(result.Participant);
+                var participant = await _challengeService.JoinChallengeAsync(request);
+                return Ok(participant);
+            }
+            catch (ChallengeValidationException ex)
+            {
+                LogExceptionToFile(ex);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
             }
             catch (ChallengeLimitException ex)
             {
@@ -89,12 +101,8 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.GetChallengesAsync(publicOnly);
-
-                if (!result.Success)
-                    return StatusCode(500, new { error = result.Error });
-
-                return Ok(result.Challenges);
+                var challenges = await _challengeService.GetChallengesAsync(publicOnly);
+                return Ok(challenges);
             }
             catch (Exception ex)
             {
@@ -108,12 +116,13 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.GetChallengeByIdAsync(id);
-
-                if (!result.Success)
-                    return NotFound(new { error = result.Error });
-
-                return Ok(result.Challenge);
+                var challenge = await _challengeService.GetChallengeByIdAsync(id);
+                return Ok(challenge);
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -127,12 +136,18 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.DeleteChallengeAsync(id, userId);
-
-                if (!result.Success)
-                    return BadRequest(new { error = result.Error });
-
+                await _challengeService.DeleteChallengeAsync(id, userId);
                 return NoContent();
+            }
+            catch (ChallengeValidationException ex)
+            {
+                LogExceptionToFile(ex);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -146,12 +161,13 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                var result = await _challengeService.LeaveChallengeAsync(challengeId, userId);
-
-                if (!result.Success)
-                    return BadRequest(new { error = result.Error });
-
+                await _challengeService.LeaveChallengeAsync(challengeId, userId);
                 return NoContent();
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {
