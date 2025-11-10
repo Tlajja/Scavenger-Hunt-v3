@@ -8,8 +8,10 @@ import SubmitPhoto from './pages/SubmitPhoto'
 import HallOfFame from './pages/HallOfFame'
 import TaskCreate from './pages/TaskCreate'
 import Logout from './pages/Logout'
-import JoinHub from './pages/JoinHub'
-import CreateHub from './pages/CreateHub'
+import JoinChallenge from './pages/JoinChallenge'
+import CreateChallenge from './pages/CreateChallenge'
+import Vote from './pages/Vote'
+import Leaderboards from './pages/Leaderboards'
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -47,10 +49,12 @@ export default function App() {
               <>
                 <Link to="/create-task" style={{ marginRight: 12 }}>Create Task</Link>
                 <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
+                <Link to="/challenges/create" style={{ marginRight: 12 }}>Create Challenge</Link>
+                <Link to="/challenges/join" style={{ marginRight: 12 }}>Join Challenge</Link>
                 <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
+                <Link to="/vote" style={{ marginRight: 12 }}>Vote</Link>
+                <Link to="/leaderboards" style={{ marginRight: 12 }}>Leaderboards</Link>
                 <Link to="/halloffame" style={{ marginRight: 12 }}>Hall of Fame</Link>
-                <Link to="/hubs/join" style={{ marginRight: 12 }}>Join Hub</Link>
-                <Link to="/hubs/create" style={{ marginRight: 12 }}>Create Hub</Link>
                 <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
               </>
             )}
@@ -67,8 +71,10 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/create-task" element={<TaskCreate />} />
             <Route path="/logout" element={<Logout />} />
-            <Route path="/hubs/join" element={<JoinHub />} />
-            <Route path="/hubs/create" element={<CreateHub />} />
+            <Route path="/challenges/join" element={<JoinChallenge />} />
+            <Route path="/challenges/create" element={<CreateChallenge />} />
+            <Route path="/vote" element={<Vote />} />
+            <Route path="/leaderboards" element={<Leaderboards />} />
           </Routes>
         </main>
       </div>
