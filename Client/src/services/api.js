@@ -1,4 +1,4 @@
-export const API_BASE = ''
+export const API_BASE = 'http://localhost:5248'
 
 async function safeFetch(url, opts) {
  try {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { API_BASE } from '../services/api.js'
 
 export default function Vote() {
   const [challenges, setChallenges] = useState([])
@@ -34,11 +35,43 @@ export default function Vote() {
         id: s.id ?? s.Id,
         userId: s.userId ?? s.UserId,
         userName: s.userName ?? s.UserName ?? s.user?.name ?? null,
-        photoUrl: s.photoUrl ?? s.PhotoUrl ?? s.photoUrl ?? s.PhotoUrl,
+        // original path returned by API
+        photoUrl: s.photoUrl ?? s.PhotoUrl ?? '',
+        // full URL used to fetch the blob (prefix API_BASE if photoUrl is relative)
+        photoFullUrl: (() => {
+          const p = (s.photoUrl ?? s.PhotoUrl ?? '').toString()
+          if (!p) return ''
+          if (p.startsWith('http://') || p.startsWith('https://')) return p
+          // ensure no duplicate slashes
+          const base = (API_BASE || '').replace(/\/$/, '')
+          return base ? `${base}${p.startsWith('/') ? '' : '/'}${p}` : p
+        })(),
+        photoDataUrl: null, // will be filled with data: URL after fetch
         votes: s.votes ?? s.Votes ?? 0,
         challengeId: s.challengeId ?? s.ChallengeId
       }))
       setSubs(normalized)
+
+      // fetch image blobs and convert to data URLs (non-blocking, update state per submission)
+      normalized.forEach(async (item, idx) => {
+        if (!item.photoFullUrl) return
+        try {
+          const r = await fetch(item.photoFullUrl)
+          if (!r.ok) return
+          const blob = await r.blob()
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            setSubs(prev => {
+              const copy = [...prev]
+              if (copy[idx]) copy[idx] = { ...copy[idx], photoDataUrl: reader.result }
+              return copy
+            })
+          }
+          reader.readAsDataURL(blob)
+        } catch {
+          // ignore image load errors
+        }
+      })
     } catch (e) {
       setError(String(e))
     } finally {
@@ -95,16 +128,21 @@ export default function Vote() {
 
       <div style={{ display: 'grid', gap: 12 }}>
         {subs.map(s => (
-          <div key={s.id} style={{ border: '1px solid #ddd', padding: 8, maxWidth: 420 }}>
+          <div key={s.id} style={{ border: '1px solid #ddd', padding: 8, maxWidth: 620 }}>
             <div>
               <strong>{s.userName ?? `User ${s.userId}`}</strong>
             </div>
-            <div style={{ marginTop: 8 }}>
-              {s.photoUrl ? <img src={s.photoUrl} alt="" style={{ maxWidth: '100%' }} /> : <div>No image</div>}
+            <div style={{ marginTop: 8, textAlign: 'center' }}>
+              { (s.photoDataUrl ?? s.photoFullUrl ?? s.photoUrl) ? (
+                // show data-url preview if available, otherwise full URL
+                <img src={s.photoDataUrl ?? s.photoFullUrl ?? s.photoUrl} alt={`Submission ${s.id}`} style={{ maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 4 }} />
+              ) : (
+                <div>No image</div>
+              )}
             </div>
-            <div style={{ marginTop: 8 }}>
-              Votes: {s.votes ?? s.Votes ?? 0}
-              <button style={{ marginLeft: 12 }} onClick={() => vote(s.id ?? s.Id)}>Vote</button>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div>Votes: {s.votes ?? s.Votes ?? 0}</div>
+              <button onClick={() => vote(s.id ?? s.Id)}>Vote</button>
             </div>
           </div>
         ))}

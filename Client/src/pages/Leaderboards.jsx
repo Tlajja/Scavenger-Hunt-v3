@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { API_BASE } from '../services/api.js'
 
 export default function Leaderboards() {
   const [challenges, setChallenges] = useState([])
@@ -30,25 +31,58 @@ export default function Leaderboards() {
       if (res.ok) {
         const data = await res.json()
         const entries = Array.isArray(data) ? data : (Array.isArray(data?.entries) ? data.entries : [])
+        // ensure each entry has a photoUrl when server provides it (if available)
         setBoard({ source: 'leaderboard', entries })
         return
       }
 
-      // fallback: fetch submissions for the challenge and build simple leaderboard
+      // fallback: fetch submissions for the challenge and build leaderboard with top-photo per user
       res = await fetch(`/api/photosubmissions?challengeId=${challengeId}`)
       if (!res.ok) throw new Error(`No leaderboard or submissions endpoint (status ${res.status})`)
       const subs = await res.json()
       const arr = Array.isArray(subs) ? subs : []
 
-      // aggregate by user (defensive property access)
+      // aggregate by user and pick user's top submission (by votes) to show image
       const map = new Map()
       arr.forEach(s => {
         const uid = s.userId ?? s.UserId ?? s.user?.id ?? s.User?.Id ?? 0
         const votes = Number(s.votes ?? s.Votes ?? 0)
-        if (!map.has(uid)) map.set(uid, { userId: uid, userName: s.userName ?? s.UserName ?? s.user?.name ?? `User ${uid}`, wins: 0, votes })
-        else map.get(uid).votes += votes
+        const subId = s.id ?? s.Id
+        const rawPhoto = s.photoUrl ?? s.PhotoUrl ?? s.photo?.url ?? s.PhotoUrl ?? ''
+        // build absolute URL: use raw if already absolute, otherwise prefix API_BASE
+        const photoUrl = rawPhoto
+          ? (rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://')
+              ? rawPhoto
+              : ((API_BASE || '').replace(/\/$/, '') + (rawPhoto.startsWith('/') ? rawPhoto : '/' + rawPhoto)))
+          : null
+
+        if (!map.has(uid)) {
+          map.set(uid, {
+            userId: uid,
+            userName: s.userName ?? s.UserName ?? s.user?.name ?? `User ${uid}`,
+            votes,
+            topSubmission: { id: subId, photoUrl, votes }
+          })
+        } else {
+          const item = map.get(uid)
+          item.votes += votes
+          // update topSubmission if this submission has more votes
+          if ((item.topSubmission?.votes ?? 0) < votes) {
+            item.topSubmission = { id: subId, photoUrl, votes }
+          }
+        }
       })
-      const out = Array.from(map.values()).sort((a,b) => (b.votes||0)-(a.votes||0))
+
+      const out = Array.from(map.values())
+        .map(x => ({
+          userId: x.userId,
+          userName: x.userName,
+          votes: x.votes,
+          photoUrl: x.topSubmission?.photoUrl ?? null,
+          submissionId: x.topSubmission?.id ?? null
+        }))
+        .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+
       setBoard({ source: 'computed', entries: out })
     } catch (e) {
       setError(String(e))
@@ -88,25 +122,24 @@ export default function Leaderboards() {
       {board && (
         <div>
           <h3>Leaderboard ({board.source})</h3>
-          <ol>
+          <ol style={{ paddingLeft: 18 }}>
             {(Array.isArray(board.entries) ? board.entries : []).map((e, i) => {
-              // compute displayed score: for computed (from submissions) use votes; otherwise use wins/totalVotes
-              const votesCount = e.votes ?? e.totalVotes ?? e.TotalVotes ?? 0
-              const winsCount  = e.wins  ?? e.totalVotes ?? e.TotalVotes ?? 0
-              const display = board.source === 'computed' ? votesCount : winsCount
-
+              const display = board.source === 'computed' ? (e.votes ?? 0) : (e.wins ?? e.totalVotes ?? 0)
               return (
-                <li key={e.userId ?? i}>
-                  {e.userName ?? e.userId} — {display} {board.source === 'computed' ? 'votes' : 'wins'}
-                  <button
-                    style={{ marginLeft: 12 }}
-                    onClick={async () => {
-                      // open submissions page for this challenge
-                      window.location.href = `/submit?challengeId=${selected}`
-                    }}
-                  >
-                    Show submissions
-                  </button>
+                <li key={e.userId ?? i} style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 120, height: 80, background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #eee' }}>
+                      {e.photoUrl ? (
+                        <img src={e.photoUrl} alt={`User ${e.userName} photo`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      ) : (
+                        <div style={{ fontSize: 12, color: '#666' }}>No image</div>
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{e.userName ?? `User ${e.userId}`}</div>
+                      <div style={{ fontSize: 13, color: '#444' }}>{display} {board.source === 'computed' ? 'votes' : 'wins'}</div>
+                    </div>
+                  </div>
                 </li>
               )
             })}
