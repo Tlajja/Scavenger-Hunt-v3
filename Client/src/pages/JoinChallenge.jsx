@@ -1,35 +1,35 @@
 import React, { useEffect, useState } from 'react'
-import { joinHub, getHubs, getHubById, leaveHub } from '../services/api.js'
+import { joinChallenge, getChallenges, getChallengeById, leaveChallenge } from '../services/api.js'
 
-export default function JoinHub() {
+export default function JoinChallenge() {
     const [joinCode, setJoinCode] = useState('')
     const [message, setMessage] = useState('')
     const [joining, setJoining] = useState(false)
-    const [joinedHub, setJoinedHub] = useState(null)
-    const [publicHubs, setPublicHubs] = useState([])
+    const [joinedChallenge, setJoinedChallenge] = useState(null)
+    const [publicChallenges, setPublicChallenges] = useState([])
 
     const userId = Number(localStorage.getItem('userId') || 0)
     const userName = localStorage.getItem('username') || 'Guest'
-    const [userHubId, setUserHubId] = useState(Number(localStorage.getItem('hubId') || 0))
-    const [userHubName, setUserHubName] = useState(localStorage.getItem('hubName') || '')
+    const [userChallengeId, setUserChallengeId] = useState(Number(localStorage.getItem('challengeId') || 0))
+    const [userChallengeName, setUserChallengeName] = useState(localStorage.getItem('challengeName') || '')
 
     useEffect(() => {
-        loadPublicHubs()
+        loadPublicChallenges()
     }, [])
 
     useEffect(() => {
         let mounted = true
         async function resolveName() {
-            if (userHubId && !userHubName) {
+            if (userChallengeId && !userChallengeName) {
                 try {
-                    const res = await getHubById(userHubId)
+                    const res = await getChallengeById(userChallengeId)
                     if (!mounted) return
                     if (res.ok) {
                         const h = res.data
                         const name = (h?.name ?? h?.Name) || ''
                         if (name) {
-                            setUserHubName(name)
-                            localStorage.setItem('hubName', name)
+                            setUserChallengeName(name)
+                            localStorage.setItem('challengeName', name)
                         }
                     }
                 } catch {}
@@ -37,53 +37,53 @@ export default function JoinHub() {
         }
         resolveName()
         return () => { mounted = false }
-    }, [userHubId, userHubName])
+    }, [userChallengeId, userChallengeName])
 
-    // validate that stored hubId actually belongs to the current user;
+    // validate that stored challengeId actually belongs to the current user;
     // if not clear membership info
     useEffect(() => {
         let mounted = true
         async function validateLocalMembership() {
-            if (!userHubId) return
+            if (!userChallengeId) return
             if (!userId) {
-                localStorage.removeItem('hubId')
-                localStorage.removeItem('hubName')
+                localStorage.removeItem('challengeId')
+                localStorage.removeItem('challengeName')
                 if (!mounted) return
-                setUserHubId(0)
-                setUserHubName('')
+                setUserChallengeId(0)
+                setUserChallengeName('')
                 return
             }
 
             try {
-                const res = await getHubById(userHubId)
+                const res = await getChallengeById(userChallengeId)
                 if (!mounted) return
                 if (!res.ok) {
-                    // hub missing on server — clear local state
-                    localStorage.removeItem('hubId')
-                    localStorage.removeItem('hubName')
-                    setUserHubId(0)
-                    setUserHubName('')
+                    // challenge missing on server — clear local state
+                    localStorage.removeItem('challengeId')
+                    localStorage.removeItem('challengeName')
+                    setUserChallengeId(0)
+                    setUserChallengeName('')
                     return
                 }
-                const hub = res.data
-                const members = hub?.members ?? hub?.Members ?? []
+                const challenge = res.data
+                const members = challenge?.members ?? challenge?.Members ?? []
                 const isMember = Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId)
 
                 if (!isMember) {
                     // current user is not a member -> clear stale local data
-                    localStorage.removeItem('hubId')
-                    localStorage.removeItem('hubName')
-                    setUserHubId(0)
-                    setUserHubName('')
-                    setMessage('Cleared stale hub membership (not a member on server).')
+                    localStorage.removeItem('challengeId')
+                    localStorage.removeItem('challengeName')
+                    setUserChallengeId(0)
+                    setUserChallengeName('')
+                    setMessage('Cleared stale challenge membership (not a member on server).')
                     return
                 }
 
                 // ensure name is present
-                const name = hub?.name ?? hub?.Name ?? ''
+                const name = challenge?.name ?? challenge?.Name ?? ''
                 if (name) {
-                    setUserHubName(name)
-                    localStorage.setItem('hubName', name)
+                    setUserChallengeName(name)
+                    localStorage.setItem('challengeName', name)
                 }
             } catch {
             }
@@ -91,35 +91,35 @@ export default function JoinHub() {
 
         validateLocalMembership()
         return () => { mounted = false }
-    }, [userHubId, userId])
+    }, [userChallengeId, userId])
 
     // attempt to recover membership from server after login / auth changes
     useEffect(() => {
         let mounted = true
         async function recoverMembership() {
-            // if user is logged in but client has no hub info, try to find which hub the user belongs to
-            if (!userId || userHubId > 0) return
+            // if user is logged in but client has no challenge info, try to find which challenge the user belongs to
+            if (!userId || userChallengeId > 0) return
 
             try {
-                // ask server for hubs (not only public) and then fetch each hub's details (members)
-                const res = await getHubs(false)
+                // ask server for challenges (not only public) and then fetch each challenge's details (members)
+                const res = await getChallenges(false)
                 if (!mounted || !res.ok || !Array.isArray(res.data)) return
 
                 for (const h of res.data) {
                     const id = h?.id ?? h?.Id
                     if (!id) continue
-                    // fetch full hub (includes members)
-                    const detail = await getHubById(id)
+                    // fetch full challenge (includes members)
+                    const detail = await getChallengeById(id)
                     if (!mounted || !detail.ok) continue
-                    const hub = detail.data
-                    const members = hub?.members ?? hub?.Members ?? []
+                    const challenge = detail.data
+                    const members = challenge?.members ?? challenge?.Members ?? []
                     if (Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId)) {
-                        const name = hub.name ?? hub.Name ?? ''
-                        localStorage.setItem('hubId', String(id))
-                        localStorage.setItem('hubName', name)
-                        setUserHubId(Number(id))
-                        setUserHubName(name)
-                        setMessage('Restored hub membership from server.')
+                        const name = challenge.name ?? challenge.Name ?? ''
+                        localStorage.setItem('challengeId', String(id))
+                        localStorage.setItem('challengeName', name)
+                        setUserChallengeId(Number(id))
+                        setUserChallengeName(name)
+                        setMessage('Restored challenge membership from server.')
                         break
                     }
                 }
@@ -138,44 +138,44 @@ export default function JoinHub() {
             window.removeEventListener('auth-changed', onAuth)
             window.removeEventListener('storage', onAuth)
         }
-    }, [userId, userHubId])
+    }, [userId, userChallengeId])
 
-    async function loadPublicHubs() {
-        const res = await getHubs(true)
-        if (res.ok && Array.isArray(res.data)) setPublicHubs(res.data)
+    async function loadPublicChallenges() {
+        const res = await getChallenges(true)
+        if (res.ok && Array.isArray(res.data)) setPublicChallenges(res.data)
     }
 
     async function performJoin(code) {
-        if (userHubId) { setMessage('Leave the current hub before joining another.'); return }
+        if (userChallengeId) { setMessage('Leave the current challenge before joining another.'); return }
         setJoining(true)
         try {
-            const res = await joinHub(code, userId)
+            const res = await joinChallenge(code, userId)
             if (!res.ok) {
                 const errMsg = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
                 setMessage(`Error: ${errMsg}`)
-                setJoinedHub(null)
+                setJoinedChallenge(null)
                 return
             }
             const member = res.data
-            let hub = member?.hub || member?.Hub || null
-            let resolvedHubId = member?.hubId ?? member?.HubId ?? null
+            let challenge = member?.challenge || member?.Challenge || null
+            let resolvedChallengeId = member?.challengeId ?? member?.ChallengeId ?? null
 
-            if (!hub && resolvedHubId) {
-                const hres = await getHubById(resolvedHubId)
-                if (hres.ok) hub = hres.data
+            if (!challenge && resolvedChallengeId) {
+                const hres = await getChallengeById(resolvedChallengeId)
+                if (hres.ok) challenge = hres.data
             }
 
-            const finalHubId = (hub?.id ?? hub?.Id ?? resolvedHubId) ?? null
-            if (finalHubId != null) {
-                localStorage.setItem('hubId', String(finalHubId))
-                const hubName = hub?.name ?? hub?.Name ?? ''
-                localStorage.setItem('hubName', hubName)
-                setUserHubId(Number(finalHubId))
-                setUserHubName(hubName)
+            const finalChallengeId = (challenge?.id ?? challenge?.Id ?? resolvedChallengeId) ?? null
+            if (finalChallengeId != null) {
+                localStorage.setItem('challengeId', String(finalChallengeId))
+                const challengeName = challenge?.name ?? challenge?.Name ?? ''
+                localStorage.setItem('challengeName', challengeName)
+                setUserChallengeId(Number(finalChallengeId))
+                setUserChallengeName(challengeName)
             }
 
-            setJoinedHub(hub)
-            setMessage(`Joined hub${(hub?.name ?? userHubName) ? `: ${hub?.name ?? userHubName}` : ''}`)
+            setJoinedChallenge(challenge)
+            setMessage(`Joined challenge${(challenge?.name ?? userChallengeName) ? `: ${challenge?.name ?? userChallengeName}` : ''}`)
         } catch {
             setMessage('Network error')
         } finally {
@@ -186,34 +186,34 @@ export default function JoinHub() {
     async function handleSubmit(e) {
         e.preventDefault()
         setMessage('')
-        if (!userId) { setMessage('You must be logged in to join a hub.'); return }
+        if (!userId) { setMessage('You must be logged in to join a challenge.'); return }
         const code = (joinCode || '').trim()
         if (!code) { setMessage('Enter a join code.'); return }
         await performJoin(code)
     }
 
     async function handleQuickJoin(h) {
-        if (userHubId) { setMessage('Leave current hub before joining another.'); return }
-        if (!userId) { setMessage('You must be logged in to join a hub.'); return }
+        if (userChallengeId) { setMessage('Leave current challenge before joining another.'); return }
+        if (!userId) { setMessage('You must be logged in to join a challenge.'); return }
         const code = (h?.joinCode ?? h?.JoinCode ?? '').trim()
-        if (!code) { setMessage('This hub cannot be joined automatically.'); return }
+        if (!code) { setMessage('This challenge cannot be joined automatically.'); return }
         await performJoin(code)
     }
 
     async function handleLeave() {
-        if (!userId || !userHubId) return
-        if (!confirm('Leave current hub?')) return
-        setMessage('Leaving hub...')
-        const res = await leaveHub(userHubId, userId)
+        if (!userId || !userChallengeId) return
+        if (!confirm('Leave current challenge?')) return
+        setMessage('Leaving challenge...')
+        const res = await leaveChallenge(userChallengeId, userId)
         if (!res.ok) {
             const errMsg = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
             // If server reports user is not a member, clear local membership to avoid stale UI
             if ((errMsg || '').toString().toLowerCase().includes('not a member')) {
-                localStorage.removeItem('hubId')
-                localStorage.removeItem('hubName')
-                setUserHubId(0)
-                setUserHubName('')
-                setJoinedHub(null)
+                localStorage.removeItem('challengeId')
+                localStorage.removeItem('challengeName')
+                setUserChallengeId(0)
+                setUserChallengeName('')
+                setJoinedChallenge(null)
                 setMessage('You were not a member on the server; cleared local membership.')
                 return
             }
@@ -221,22 +221,21 @@ export default function JoinHub() {
             setMessage(`Error: ${errMsg}`)
             return
         }
-        localStorage.removeItem('hubId')
-        localStorage.removeItem('hubName')
-        setUserHubId(0)
-        setUserHubName('')
-        setJoinedHub(null)
-        setMessage('Left hub.')
+        localStorage.removeItem('challengeId')
+        localStorage.removeItem('challengeName')
+        setUserChallengeId(0)
+        setUserChallengeName('')
+        setJoinedChallenge(null)
+        setMessage('Left challenge.')
     }
 
     return (
         <div style={{ maxWidth: 520 }}>
-            <h2>Join a Hub</h2>
+            <h2>Join a Challenge</h2>
 
-            {userHubId > 0 ? (
+            {userChallengeId > 0 ? (
                 <div style={{ marginBottom: 12 }}>
-                    You are currently in hub: <strong>{userHubName || `#${userHubId}`}</strong>
-                    <button onClick={handleLeave}>Leave Hub</button>
+                    You are currently in challenge: <strong>{userChallengeName || `#${userChallengeId}`}</strong>
                 </div>
             ) : null}
 
@@ -259,7 +258,7 @@ export default function JoinHub() {
                 )}
 
                 <button type="submit" disabled={!userId || joining}>
-                    {joining ? 'Joining�' : 'Join Hub by Code'}
+                    {joining ? 'Joining�' : 'Join Challenge by Code'}
                 </button>
             </form>
 
@@ -273,15 +272,15 @@ export default function JoinHub() {
 
             <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ margin: 0 }}>Public Hubs</h3>
-                    <button onClick={loadPublicHubs} disabled={joining}>Refresh</button>
+                    <h3 style={{ margin: 0 }}>Public Challenges</h3>
+                    <button onClick={loadPublicChallenges} disabled={joining}>Refresh</button>
                 </div>
 
-                {publicHubs.length === 0 ? (
-                    <div style={{ marginTop: 8, color: '#666' }}>No public hubs available.</div>
+                {publicChallenges.length === 0 ? (
+                    <div style={{ marginTop: 8, color: '#666' }}>No public challenges available.</div>
                 ) : (
                     <ul style={{ listStyle: 'none', padding: 0, marginTop: 12 }}>
-                        {publicHubs.map(h => (
+                        {publicChallenges.map(h => (
                             <li key={h.id ?? h.Id} style={{ border: '1px solid #eee', padding: 10, marginBottom: 8 }}>
                                 <div style={{ fontWeight: 600 }}>{h.name ?? h.Name}</div>
                                 <div style={{ marginTop: 8 }}>
@@ -295,10 +294,10 @@ export default function JoinHub() {
                 )}
             </div>
 
-            {joinedHub && (
+            {joinedChallenge && (
                 <div style={{ marginTop: 20, padding: 12, border: '1px solid #e0e0e0' }}>
-                    <div style={{ fontWeight: 600 }}>Joined Hub</div>
-                    <div>Name: {joinedHub.name ?? joinedHub.Name}</div>
+                    <div style={{ fontWeight: 600 }}>Joined Challenge</div>
+                    <div>Name: {joinedChallenge.name ?? joinedChallenge.Name}</div>
                 </div>
             )}
         </div>

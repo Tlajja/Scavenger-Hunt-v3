@@ -8,5 +8,6 @@
         public string Name { get; set; } = "";
         public int Age { get; set; }
         public bool IsRegistered { get; set; } = false;
+        public int Wins { get; set; } = 0;
     }
 }

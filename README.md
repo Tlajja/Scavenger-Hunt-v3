@@ -4,7 +4,7 @@ PS inzinerija 1
 ## About
 Photo scavenger hunt. I.e. a specific task for what kind of photo to capture is provided and people have a limited amount of time to upload such photo. Photo with the most votes wins.
 
-## Goals
+## Goals (UPDATE NEEDED)
 What the project should have when finished:
 1. Photo function - store & upload
 2. Generating task(s)

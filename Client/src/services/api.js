@@ -1,4 +1,4 @@
-export const API_BASE = ''
+export const API_BASE = 'http://localhost:5248'
 
 async function safeFetch(url, opts) {
  try {
@@ -32,6 +32,10 @@ export async function login(username, password) {
 // Task endpoints
 export async function getTasks() {
  return await safeFetch('/api/tasks', { method: 'GET' })
+}
+
+export async function getTaskById(id) {
+  return await safeFetch(`/api/tasks/${Number(id)}`, { method: 'GET' })
 }
 
 export async function createTask(description, deadline) {
@@ -103,45 +107,59 @@ export async function getLeaderboard() {
  return await safeFetch('/api/leaderboard', { method: 'GET' })
 }
 
-// Hubs endpoints
-export async function joinHub(joinCode, userId) {
+export async function getHallOfFame(top = 10) {
+  return await safeFetch(`/api/leaderboard/halloffame?top=${Number(top)}`, { method: 'GET' })
+}
+
+// Challenges endpoints
+export async function joinChallenge(joinCode, userId) {
  // backend generates uppercase alphanumeric join codes, normalize input
  const code = (joinCode || '').trim().toUpperCase()
- return await safeFetch('/api/hub/join', {
+ return await safeFetch('/api/challenge/join', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ JoinCode: code, UserId: Number(userId) })
  })
 }
 
-export async function getHubs(publicOnly = true) {
+export async function getChallenges(publicOnly = true) {
  const q = publicOnly ? 'true' : 'false'
- return await safeFetch(`/api/hub?publicOnly=${q}`, { method: 'GET' })
+ return await safeFetch(`/api/challenge?publicOnly=${q}`, { method: 'GET' })
 }
 
-export async function getHubById(id) {
- return await safeFetch(`/api/hub/${id}`, { method: 'GET' })
+export async function getChallengeById(id) {
+ return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-// NEW: Create a hub
-export async function createHub(name, creatorId, isPrivate = false) {
- return await safeFetch('/api/hub', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Name: name, CreatorId: Number(creatorId), IsPrivate: !!isPrivate })
- })
+export async function createChallenge(name, creatorId, taskId, deadlineIso = null, isPrivate = false) {
+  const payload = {
+    Name: name,
+    CreatorId: Number(creatorId),
+    TaskId: Number(taskId),
+    IsPrivate: !!isPrivate,
+  }
+  if (deadlineIso) payload.Deadline = deadlineIso
+  return await safeFetch('/api/challenge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
 }
 
-// NEW: leave a hub
-export async function leaveHub(hubId, userId) {
-  return await safeFetch(`/api/hub/${hubId}/leave?userId=${Number(userId)}`, {
+export async function leaveChallenge(challengeId, userId) {
+  return await safeFetch(`/api/challenge/${challengeId}/leave?userId=${Number(userId)}`, {
     method: 'DELETE'
   })
 }
 
-// NEW: Delete a hub (must be creator)
-export async function deleteHub(hubId, userId) {
- return await safeFetch(`/api/hub/${hubId}?userId=${Number(userId)}`, {
+export async function deleteChallenge(challengeId, userId) {
+ return await safeFetch(`/api/challenge/${challengeId}?userId=${Number(userId)}`, {
  method: 'DELETE'
  })
+}
+
+export async function advanceChallenge(challengeId, userId) {
+  return await safeFetch(`/api/challenge/${Number(challengeId)}/advance?userId=${Number(userId)}`, {
+    method: 'POST'
+  })
 }

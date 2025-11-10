@@ -36,5 +36,20 @@ namespace PhotoScavengerHunt.Controllers
                 return StatusCode(500, new { Message = "An unexpected error occurred while retrieving the leaderboard." });
             }
         }
+
+        [HttpGet("halloffame")]
+        public async Task<IActionResult> GetHallOfFame([FromQuery] int top = 10)
+        {
+            try
+            {
+                var list = await _leaderboardService.GetHallOfFameAsync(top);
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled exception in GetHallOfFame.");
+                return StatusCode(500, new { error = "Unable to retrieve hall of fame." });
+            }
+        }
     }
 }

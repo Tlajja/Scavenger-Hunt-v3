@@ -20,14 +20,10 @@ namespace PhotoScavengerHunt.Services
             {
                 if (string.IsNullOrWhiteSpace(req.Description))
                     throw new ArgumentException("Task description cannot be empty.");
-                if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
-                    throw new ArgumentException("Deadline cannot be in the past.");
 
                 var task = HuntTaskFactory.Create(
                     description: req.Description,
-                    authorId: req.AuthorId,
-                    deadline: req.Deadline,
-                    status: HuntTaskStatus.Open);
+                    authorId: req.AuthorId);
 
                 dbContext.Tasks.Add(task);
                 await dbContext.SaveChangesAsync();
@@ -51,16 +47,12 @@ namespace PhotoScavengerHunt.Services
             {
                 if (string.IsNullOrWhiteSpace(req.Description))
                     throw new ArgumentException("Task description cannot be empty.");
-                if (req.Deadline.HasValue && req.Deadline <= DateTime.UtcNow)
-                    throw new ArgumentException("Deadline cannot be in the past.");
                 if (!await dbContext.Users.AnyAsync(u => u.Id == req.AuthorId))
                     throw new ArgumentException("User does not exist.");
 
                 var task = HuntTaskFactory.Create(
                     description: req.Description,
-                    authorId: req.AuthorId,
-                    deadline: req.Deadline,
-                    status: HuntTaskStatus.Open);
+                    authorId: req.AuthorId);
 
                 dbContext.Tasks.Add(task);
                 await dbContext.SaveChangesAsync();
