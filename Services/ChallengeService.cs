@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
+using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Services
@@ -11,6 +13,28 @@ namespace PhotoScavengerHunt.Services
         public ChallengeService(PhotoScavengerHuntDbContext dbContext)
         {
             _dbContext = dbContext;
+        }
+
+        private static string NormalizeCode(string code) =>
+            (code ?? string.Empty).Trim().ToUpperInvariant();
+        private string GenerateJoinCode()
+        {
+            // Generate a random 6-character alphanumeric code
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, 6)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        private async Task<string> GenerateUniqueJoinCodeAsync()
+        {
+            string code;
+            do
+            {
+                code = GenerateJoinCode();
+            } while (await _dbContext.Challenges.AnyAsync(h => h.JoinCode == code));
+
+            return code;
         }
 
         public async Task<Challenge> CreateChallengeAsync(CreateChallengeRequest request)
@@ -38,17 +62,20 @@ namespace PhotoScavengerHunt.Services
                 var now = DateTime.UtcNow;
                 if (request.Deadline.Value <= now)
                     throw new ChallengeValidationException("Deadline must be in the future.");
-                
+
                 var maxDeadline = now.AddDays(7);
                 if (request.Deadline.Value > maxDeadline)
                     throw new ChallengeValidationException("Deadline cannot be more than 7 days from now.");
             }
+            
+            var joinCode = await GenerateUniqueJoinCodeAsync();
 
             var challenge = ChallengeFactory.Create(
                 name: request.Name,
                 taskId: request.TaskId,
                 creatorId: request.CreatorId,
                 isPrivate: request.IsPrivate,
+                joinCode: joinCode,
                 deadline: request.Deadline);
 
             _dbContext.Challenges.Add(challenge);
@@ -71,7 +98,13 @@ namespace PhotoScavengerHunt.Services
 
         public async Task<ChallengeParticipant> JoinChallengeAsync(JoinChallengeRequest request)
         {
-            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == request.ChallengeId);
+            var code = NormalizeCode(request.JoinCode);
+            if (string.IsNullOrWhiteSpace(code))
+                throw new ChallengeValidationException("Join code cannot be empty.");
+
+            var challenge = await _dbContext.Challenges
+                .FirstOrDefaultAsync(h => h.JoinCode == code);
+
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
@@ -86,7 +119,7 @@ namespace PhotoScavengerHunt.Services
                 throw new ChallengeLimitException("A user can participate in at most 6 challenges at a time.");
 
             var existingAny = await _dbContext.ChallengeParticipants
-                .FirstOrDefaultAsync(cp => cp.UserId == request.UserId && cp.ChallengeId == request.ChallengeId);
+                .FirstOrDefaultAsync(cp => cp.UserId == request.UserId && cp.ChallengeId == challenge.Id);
 
             if (existingAny != null)
                 throw new ChallengeValidationException("User is already a participant in this challenge.");
@@ -202,6 +235,46 @@ namespace PhotoScavengerHunt.Services
                 _dbContext.ChallengeParticipants.Remove(participant);
                 await _dbContext.SaveChangesAsync();
             }
+        }
+
+        public async Task<Challenge> FinalizeChallengeAsync(int challengeId)
+        {
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
+
+            if(challenge.WinnerId != null && challenge.Status == ChallengeStatus.Completed)
+                return challenge;
+
+            var top = await _dbContext.Photos
+                .Where(p => p.ChallengeId == challengeId)
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, TotalVotes = g.Sum(p => p.Votes)})
+                .OrderByDescending(x => x.TotalVotes)
+                .ThenBy(x => x.UserId)
+                .FirstOrDefaultAsync();
+            
+            var winnerId = top?.UserId;
+            if(winnerId.HasValue)
+            {
+                challenge.WinnerId = winnerId.Value;
+                challenge.Status = ChallengeStatus.Completed;
+
+                var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == winnerId.Value);
+                if(user != null)
+                {
+                    user.Wins += 1;
+                }
+                await _dbContext.SaveChangesAsync();
+            }
+            else
+            {
+                challenge.WinnerId = null;
+                challenge.Status = ChallengeStatus.Completed;
+                await _dbContext.SaveChangesAsync();
+            }
+            
+            return challenge;
         }
     }
 }

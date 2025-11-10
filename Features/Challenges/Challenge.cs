@@ -11,8 +11,10 @@ public class Challenge
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? Deadline { get; set; }       // challenge end time
     public bool IsPrivate { get; set; } = false;
+    public string JoinCode { get; set; } = "";
     public ChallengeStatus Status { get; set; } = ChallengeStatus.Open;
 
+    public int? WinnerId {get; set; }
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<ChallengeParticipant>? Participants { get; set; }

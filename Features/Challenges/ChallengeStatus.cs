@@ -2,8 +2,8 @@
 {
     public enum ChallengeStatus
     {
-        Open,
-        Closed,
-        Completed
+        Open,       // Joining and photo submitting stage
+        Closed,     // Voting stage
+        Completed   // Challenge has ended
     }
 }

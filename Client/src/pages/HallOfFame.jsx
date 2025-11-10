@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { getLeaderboard } from '../services/api.js'
+import { getHallOfFame } from '../services/api.js'
 
-export default function Leaderboard() {
+export default function HallOfFame() {
   const [entries, setEntries] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -12,7 +12,7 @@ export default function Leaderboard() {
       setLoading(true)
       setError('')
       try {
-        const res = await getLeaderboard()
+        const res = await getHallOfFame()
         let data = null
 
         if (res instanceof Response) {
@@ -35,13 +35,13 @@ export default function Leaderboard() {
     return () => { mounted = false }
   }, [])
 
-  if (loading) return <div>Loading leaderboard…</div>
+  if (loading) return <div>Loading hall of fame…</div>
   if (error) return <div style={{ color: 'crimson' }}>Error: {error}</div>
-  if (!entries || entries.length === 0) return <div>No leaderboard entries yet.</div>
+  if (!entries || entries.length === 0) return <div>No hall of fame entries yet.</div>
 
   return (
     <div>
-      <h2>Leaderboard</h2>
+      <h2>Hall of Fame</h2>
       <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: 720 }}>
         <thead>
           <tr>

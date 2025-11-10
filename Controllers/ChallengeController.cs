@@ -72,7 +72,8 @@ namespace PhotoScavengerHunt.Controllers
             try
             {
                 var participant = await _challengeService.JoinChallengeAsync(request);
-                return Ok(participant);
+                var joinCode = (request.JoinCode ?? string.Empty).Trim().ToUpperInvariant();
+                return Ok(new {participant, joinCode });
             }
             catch (ChallengeValidationException ex)
             {
@@ -173,6 +174,21 @@ namespace PhotoScavengerHunt.Controllers
             {
                 LogExceptionToFile(ex);
                 return StatusCode(500, new { error = "An unexpected error occurred while leaving the challenge." });
+            }
+        }
+
+        [HttpPost("{id}/finalize")]
+        public async Task<IActionResult> FinalizeChallenge(int id)
+        {
+            try
+            {
+                var challenge = await _challengeService.FinalizeChallengeAsync(id);
+                return Ok(challenge);
+            }
+            catch(Exception ex)
+            {
+                LogExceptionToFile(ex);
+                return StatusCode(500, new { error = ex.Message });
             }
         }
     }

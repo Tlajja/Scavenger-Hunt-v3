@@ -5,7 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import MyTasks from './pages/MyTasks'
 import SubmitPhoto from './pages/SubmitPhoto'
-import Leaderboard from './pages/Leaderboard'
+import HallOfFame from './pages/HallOfFame'
 import TaskCreate from './pages/TaskCreate'
 import Logout from './pages/Logout'
 import JoinHub from './pages/JoinHub'
@@ -48,7 +48,7 @@ export default function App() {
                 <Link to="/create-task" style={{ marginRight: 12 }}>Create Task</Link>
                 <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
                 <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
-                <Link to="/leaderboard" style={{ marginRight: 12 }}>Leaderboard</Link>
+                <Link to="/halloffame" style={{ marginRight: 12 }}>Hall of Fame</Link>
                 <Link to="/hubs/join" style={{ marginRight: 12 }}>Join Hub</Link>
                 <Link to="/hubs/create" style={{ marginRight: 12 }}>Create Hub</Link>
                 <Link to="/logout" style={{ marginLeft: 12 }}>Logout</Link>
@@ -62,7 +62,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/mytasks" element={<MyTasks />} />
             <Route path="/submit" element={<SubmitPhoto />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/halloffame" element={<HallOfFame />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/create-task" element={<TaskCreate />} />

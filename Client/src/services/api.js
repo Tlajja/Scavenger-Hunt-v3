@@ -103,6 +103,10 @@ export async function getLeaderboard() {
  return await safeFetch('/api/leaderboard', { method: 'GET' })
 }
 
+export async function getHallOfFame(top = 10) {
+  return await safeFetch(`/api/leaderboard/halloffame?top=${Number(top)}`, { method: 'GET' })
+}
+
 // Hubs endpoints
 export async function joinHub(joinCode, userId) {
  // backend generates uppercase alphanumeric join codes, normalize input

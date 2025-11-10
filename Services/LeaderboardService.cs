@@ -42,5 +42,26 @@ namespace PhotoScavengerHunt.Services
                 throw new ApplicationException("Unable to retrieve leaderboard data at this time.", ex);
             }
         }
+
+        public async Task<List<LeaderboardEntry>> GetHallOfFameAsync(int top = 10)
+        {
+            try
+            {
+                var users = await dbContext.Users
+                    .OrderByDescending(u => u.Wins)
+                    .ThenBy(u => u.Id)
+                    .Take(top)
+                    .Select(u => new LeaderboardEntry(u.Id, u.Name ?? "Unknown", u.Wins))
+                    .ToListAsync();
+                
+                users.Sort();
+                return users;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving Hall of Fame.");
+                throw;
+            }
+        }
     }
 }
