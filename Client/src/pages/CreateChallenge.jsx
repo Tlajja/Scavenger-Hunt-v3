@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { createChallenge, deleteChallenge, getChallenges, getChallengeById, leaveChallenge } from '../services/api.js'
+import { createChallenge, deleteChallenge, getChallenges, getChallengeById, leaveChallenge, advanceChallenge, getTasks } from '../services/api.js'
 
 export default function CreateChallenge() {
     const userId = Number(localStorage.getItem('userId') || 0)
@@ -10,12 +10,23 @@ export default function CreateChallenge() {
     const [creating, setCreating] = useState(false)
 
     const [myChallenges, setMyChallenges] = useState([])
+    const [tasks, setTasks] = useState([])
+    const [selectedTaskId, setSelectedTaskId] = useState('')
+    const [deadline, setDeadline] = useState('') // local datetime-local value
     const [loadingList, setLoadingList] = useState(true)
     const [listError, setListError] = useState('')
 
     const [userChallengeId, setUserChallengeId] = useState(Number(localStorage.getItem('challengeId') || 0))
 
-    const canSubmit = useMemo(() => !!userId && name.trim().length > 0 && !creating && !userChallengeId, [userId, name, creating, userChallengeId])
+    const canSubmit = useMemo(() =>
+        !!userId && name.trim().length > 0 && !creating && !userChallengeId && !!selectedTaskId,
+        [userId, name, creating, userChallengeId, selectedTaskId])
+
+    function toIsoForServer(dtLocal) {
+        if (!dtLocal) return null
+        const d = new Date(dtLocal)
+        return d.toISOString()
+    }
 
     useEffect(() => {
         let mounted = true
@@ -56,36 +67,75 @@ export default function CreateChallenge() {
             }
         }
         load()
-        return () => { mounted = false }
+
+        // load task list for challenge creation
+        let tmounted = true
+        ;(async function loadTasks() {
+            try {
+                const tres = await getTasks()
+                if (!tmounted || !tres.ok) return
+                const data = Array.isArray(tres.data) ? tres.data : []
+                if (mounted) {
+                  setTasks(data)
+                  if (!selectedTaskId && data.length) setSelectedTaskId(String(data[0].id ?? data[0].Id))
+                }
+            } catch {}
+        })()
+
+        return () => { mounted = false; tmounted = false }
     }, [userId])
+
+    useEffect(() => { return () => {} }, [tasks])
 
     async function handleCreate(e) {
         e.preventDefault()
         if (!userId) { setMessage('You must be logged in.'); return }
         if (userChallengeId) { setMessage('Leave your current challenge before creating a new one.'); return }
         if (!name.trim()) { setMessage('Challenge name is required.'); return }
+        if (!selectedTaskId) { setMessage('Please choose a task for the challenge.'); return }
         setCreating(true); setMessage('Creating challenge...')
 
-        const res = await createChallenge(name.trim(), userId, isPrivate)
+        const iso = toIsoForServer(deadline)
+        const res = await createChallenge(name.trim(), userId, Number(selectedTaskId), iso, isPrivate)
         if (!res.ok) {
             const err = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
             setMessage(`Error: ${err}`)
             setCreating(false)
             return
         }
+
+        // Prefer to fetch full challenge details so we know membership & roles (so canDelete is accurate)
+        const created = res.data
+        const createdId = created?.id ?? created?.Id ?? null
+        let detail = null
+        if (createdId) {
+            try {
+                const dres = await getChallengeById(createdId)
+                if (dres.ok) detail = dres.data
+            } catch {}
+        }
+
+        // If we got full detail, compute canDelete/admin flag
+        const finalEntry = detail ?? created
+        // ensure canDelete true for creator if we don't yet have members info
+        finalEntry.canDelete = !!(
+            (detail && Array.isArray(detail.members) && detail.members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId && (m.role ?? m.Role) === 1))
+            || (created && (created.creatorId ?? created.CreatorId) === userId)
+        )
+
+        // persist membership for creator
+        if (createdId) {
+            localStorage.setItem('challengeId', String(createdId))
+            localStorage.setItem('challengeName', (finalEntry.name ?? finalEntry.Name) || '')
+            setUserChallengeId(Number(createdId))
+        }
+
+        setMyChallenges(prev => [{ ...finalEntry }, ...prev])
         setMessage('Challenge created.')
         setName('')
         setIsPrivate(false)
-        const created = res.data
-        if (created?.id ?? created?.Id) {
-            const createdId = created.id ?? created.Id
-            localStorage.setItem('challengeId', String(createdId))
-            localStorage.setItem('challengeName', (created.name ?? created.Name) || '')
-            setUserChallengeId(Number(createdId))
-        }
-        if (created) {
-            setMyChallenges(prev => [{ ...created }, ...prev])
-        }
+        setSelectedTaskId('')
+        setDeadline('')
         setCreating(false)
     }
 
@@ -140,6 +190,28 @@ export default function CreateChallenge() {
                         disabled={!userId || creating || !!userChallengeId}
                     />
                 </div>
+
+                {/* NEW: Task picker (required) */}
+                <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', marginBottom: 6 }}>Choose Task</label>
+                    <select
+                        value={selectedTaskId}
+                        onChange={e => setSelectedTaskId(e.target.value)}
+                        disabled={!userId || creating || !!userChallengeId}
+                        style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+                    >
+                        <option value="">-- choose a task --</option>
+                        {tasks.map(t => (
+                            <option key={t.id ?? t.Id} value={t.id ?? t.Id}>
+                                {String(t.id ?? t.Id)} — {t.description ?? t.Description ?? '(no description)'}
+                            </option>
+                        ))}
+                    </select>
+                    <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+                      Deadline optional — leave blank to default (7 days).
+                    </div>
+                </div>
+
                 <div style={{ marginBottom: 12 }}>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <input
@@ -182,11 +254,31 @@ export default function CreateChallenge() {
                                 )}
                                 <div style={{ marginTop: 8 }}>
                                     {h.canDelete ? (
-                                        <button onClick={() => handleDelete(h)}>Delete</button>
+                                        <>
+                                            <button onClick={() => handleDelete(h)} style={{ marginRight: 8 }}>Delete</button>
+                                            <button onClick={async () => {
+                                                setMessage('Advancing stage...')
+                                                try {
+                                                    const cid = h.id ?? h.Id
+                                                    const res = await advanceChallenge(cid, userId)
+                                                    if (!res.ok) {
+                                                        const err = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
+                                                        setMessage(`Error: ${err}`)
+                                                    } else {
+                                                        setMessage('Stage advanced.')
+                                                        // update this challenge in local list
+                                                        const updated = res.data
+                                                        setMyChallenges(prev => prev.map(x => (x.id ?? x.Id) === (updated.id ?? updated.Id) ? updated : x))
+                                                    }
+                                                } catch (e) {
+                                                    setMessage(String(e))
+                                                }
+                                            }}>Advance Stage</button>
+                                        </>
                                     ) : (
-                                        <button disabled title="Only challenge admins can delete this challenge">Delete (admin only)</button>
+                                        <button disabled title="Only challenge admins can delete or advance this challenge">Admin only</button>
                                     )}
-                                </div>
+                                 </div>
                             </li>
                         )
                     })}

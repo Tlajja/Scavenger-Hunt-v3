@@ -237,6 +237,39 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
+        public async Task<Challenge> AdvanceChallengeAsync(int challengeId, int requestingUserId)
+    {
+        var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+        if (challenge == null)
+            throw new ChallengeNotFoundException("Challenge not found.");
+
+        // only creator or admin participant can advance
+        if (challenge.CreatorId != requestingUserId)
+        {
+            var isAdmin = await _dbContext.ChallengeParticipants
+                .AnyAsync(cp => cp.ChallengeId == challengeId && cp.UserId == requestingUserId && cp.Role == ChallengeRole.Admin);
+            if (!isAdmin)
+                throw new ChallengeValidationException("Not authorized to advance challenge stage.");
+        }
+
+        if (challenge.Status == ChallengeStatus.Open)
+        {
+            challenge.Status = ChallengeStatus.Closed; // move to voting
+            await _dbContext.SaveChangesAsync();
+            return challenge;
+        }
+
+        if (challenge.Status == ChallengeStatus.Closed)
+        {
+            // finalize (idempotent)
+            var finalized = await FinalizeChallengeAsync(challengeId);
+            return finalized;
+        }
+
+        // already completed
+        throw new ChallengeValidationException("Challenge is already completed.");
+    }
+
         public async Task<Challenge> FinalizeChallengeAsync(int challengeId)
         {
             var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);

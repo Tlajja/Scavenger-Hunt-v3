@@ -16,6 +16,7 @@ public class Challenge
 
     public int? WinnerId {get; set; }
 
+    [JsonPropertyName("members")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<ChallengeParticipant>? Participants { get; set; }
 }

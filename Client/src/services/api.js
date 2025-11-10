@@ -131,12 +131,19 @@ export async function getChallengeById(id) {
  return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-export async function createChallenge(name, creatorId, isPrivate = false) {
- return await safeFetch('/api/challenge', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Name: name, CreatorId: Number(creatorId), IsPrivate: !!isPrivate })
- })
+export async function createChallenge(name, creatorId, taskId, deadlineIso = null, isPrivate = false) {
+  const payload = {
+    Name: name,
+    CreatorId: Number(creatorId),
+    TaskId: Number(taskId),
+    IsPrivate: !!isPrivate,
+  }
+  if (deadlineIso) payload.Deadline = deadlineIso
+  return await safeFetch('/api/challenge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
 }
 
 export async function leaveChallenge(challengeId, userId) {
@@ -151,3 +158,8 @@ export async function deleteChallenge(challengeId, userId) {
  })
 }
 
+export async function advanceChallenge(challengeId, userId) {
+  return await safeFetch(`/api/challenge/${Number(challengeId)}/advance?userId=${Number(userId)}`, {
+    method: 'POST'
+  })
+}

@@ -185,10 +185,35 @@ namespace PhotoScavengerHunt.Controllers
                 var challenge = await _challengeService.FinalizeChallengeAsync(id);
                 return Ok(challenge);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 LogExceptionToFile(ex);
                 return StatusCode(500, new { error = ex.Message });
+            }
+        }
+        
+        [HttpPost("{id}/advance")]
+        public async Task<IActionResult> AdvanceChallenge(int id, [FromQuery] int userId)
+        {
+            try
+            {
+                var challenge = await _challengeService.AdvanceChallengeAsync(id, userId);
+                return Ok(challenge);
+            }
+            catch (ChallengeNotFoundException ex)
+            {
+                LogExceptionToFile(ex);
+                return NotFound(new { error = ex.Message });
+            }
+            catch (ChallengeValidationException ex)
+            {
+                LogExceptionToFile(ex);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                LogExceptionToFile(ex);
+                return StatusCode(500, new { error = "Unable to advance challenge stage." });
             }
         }
     }
