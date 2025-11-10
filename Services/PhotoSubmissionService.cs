@@ -14,12 +14,27 @@ namespace PhotoScavengerHunt.Services
             _env = env;
         }
 
-        public async Task<(bool Success, string Message, string? PhotoUrl, int? SubmissionId)> UploadPhotoAsync(int taskId, int userId, IFormFile file)
+        public async Task<(bool Success, string Message, string? PhotoUrl, int? SubmissionId)> UploadPhotoAsync(int? taskId, int userId, IFormFile file, int? challengeId = null)
         {
             try
             {
                 if (file == null || file.Length == 0)
                     return (false, "No file uploaded.", null, null);
+
+                // if challengeId provided, resolve its TaskId
+                if (challengeId.HasValue)
+                {
+                    var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId.Value);
+                    if (challenge == null)
+                        return (false, "Challenge not found.", null, null);
+                    taskId = challenge.TaskId;
+                }
+
+                if (!taskId.HasValue || !await _dbContext.Tasks.AnyAsync(t => t.Id == taskId.Value))
+                    return (false, "Task does not exist.", null, null);
+
+                if (!await _dbContext.Users.AnyAsync(u => u.Id == userId))
+                    return (false, "User does not exist.", null, null);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -29,12 +44,6 @@ namespace PhotoScavengerHunt.Services
 
                 if (file.Length > 10_000_000)
                     return (false, "File size cannot exceed 10MB.", null, null);
-
-                if (!await _dbContext.Tasks.AnyAsync(t => t.Id == taskId))
-                    return (false, "Task does not exist.", null, null);
-
-                if (!await _dbContext.Users.AnyAsync(u => u.Id == userId))
-                    return (false, "User does not exist.", null, null);
 
                 var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
                 if (!Directory.Exists(uploadsFolder))
@@ -51,8 +60,9 @@ namespace PhotoScavengerHunt.Services
                 var photoUrl = $"/uploads/{uniqueFileName}";
                 var submission = new PhotoSubmission
                 {
-                    TaskId = taskId,
+                    TaskId = taskId.Value,
                     UserId = userId,
+                    ChallengeId = challengeId,
                     PhotoUrl = photoUrl,
                     Votes = 0,
                     Comments = new List<Comment>()

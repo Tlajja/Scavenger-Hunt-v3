@@ -34,6 +34,10 @@ export async function getTasks() {
  return await safeFetch('/api/tasks', { method: 'GET' })
 }
 
+export async function getTaskById(id) {
+  return await safeFetch(`/api/tasks/${Number(id)}`, { method: 'GET' })
+}
+
 export async function createTask(description, deadline) {
  return await safeFetch('/api/tasks', {
  method: 'POST',

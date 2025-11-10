@@ -12,6 +12,7 @@ import JoinChallenge from './pages/JoinChallenge'
 import CreateChallenge from './pages/CreateChallenge'
 import Vote from './pages/Vote'
 import Leaderboards from './pages/Leaderboards'
+import LeaveChallenge from './pages/LeaveChallenge'
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -51,6 +52,7 @@ export default function App() {
                 <Link to="/mytasks" style={{ marginRight: 12 }}>My Tasks</Link>
                 <Link to="/challenges/create" style={{ marginRight: 12 }}>Create Challenge</Link>
                 <Link to="/challenges/join" style={{ marginRight: 12 }}>Join Challenge</Link>
+                <Link to="/challenges/leave" style={{ marginRight: 12 }}>Leave Challenge</Link>
                 <Link to="/submit" style={{ marginRight: 12 }}>Submit Photo</Link>
                 <Link to="/vote" style={{ marginRight: 12 }}>Vote</Link>
                 <Link to="/leaderboards" style={{ marginRight: 12 }}>Leaderboards</Link>
@@ -73,6 +75,7 @@ export default function App() {
             <Route path="/logout" element={<Logout />} />
             <Route path="/challenges/join" element={<JoinChallenge />} />
             <Route path="/challenges/create" element={<CreateChallenge />} />
+            <Route path="/challenges/leave" element={<LeaveChallenge />} />
             <Route path="/vote" element={<Vote />} />
             <Route path="/leaderboards" element={<Leaderboards />} />
           </Routes>

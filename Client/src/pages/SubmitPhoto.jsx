@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { submitPhoto, getTasks } from '../services/api.js'
+import { submitPhoto, getChallenges, getChallengeById, getTaskById } from '../services/api.js'
 
 export default function SubmitPhoto() {
   const [photoFile, setPhotoFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [message, setMessage] = useState('')
-  const [taskId, setTaskId] = useState('')
-  const [tasks, setTasks] = useState([])
+  const [challengeId, setChallengeId] = useState('')
+  const [challenges, setChallenges] = useState([])
+  const [selectedTask, setSelectedTask] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -19,10 +20,11 @@ export default function SubmitPhoto() {
       setLoading(true)
       setError('')
       try {
-        const res = await getTasks()
-        let data = res.data
+        const cres = await getChallenges(false)
         if (!mounted) return
-        setTasks(Array.isArray(data) ? data : [])
+        const raw = Array.isArray(cres.data) ? cres.data : []
+        const open = raw.filter(c => Number(c.status ?? c.Status ?? 0) === 0) // Open
+        setChallenges(open)
       } catch (err) {
         if (!mounted) return
         setError(String(err))
@@ -34,6 +36,27 @@ export default function SubmitPhoto() {
     load()
     return () => { mounted = false }
   }, [])
+
+  // when challenge selection changes, load the challenge details and its task preview
+  useEffect(() => {
+    let mounted = true
+    async function loadPreview() {
+      setSelectedTask(null)
+      if (!challengeId) return
+      try {
+        const cres = await getChallengeById(Number(challengeId))
+        if (!mounted || !cres.ok) return
+        const ch = cres.data
+        const tId = Number(ch?.taskId ?? ch?.TaskId ?? 0)
+        if (!tId) return
+        const tres = await getTaskById(tId)
+        if (!mounted || !tres.ok) return
+        setSelectedTask(tres.data)
+      } catch {}
+    }
+    loadPreview()
+    return () => { mounted = false }
+  }, [challengeId])
 
   function handleFileChange(e) {
     const file = e.target.files[0]
@@ -83,8 +106,8 @@ export default function SubmitPhoto() {
       setMessage('You must be logged in to submit.')
       return 
     }
-    if (!taskId) { 
-      setMessage('Please select a task.')
+    if (!challengeId) { 
+      setMessage('Please select a challenge.')
       return 
     }
     if (!photoFile) { 
@@ -96,7 +119,7 @@ export default function SubmitPhoto() {
     setUploadProgress(0)
 
     try {
-      const result = await uploadWithProgress(taskId, userId, photoFile)
+      const result = await uploadWithProgress(challengeId, userId, photoFile)
 
       if (!result.ok) {
         const err = (result.data && (result.data.message || result.data.error)) || result.text || `Error ${result.status}`
@@ -108,7 +131,7 @@ export default function SubmitPhoto() {
 
       setTimeout(() => {
         clearPreview()
-        setTaskId('')
+        setChallengeId('')
         e.target.reset()
       }, 2000)
 
@@ -120,10 +143,11 @@ export default function SubmitPhoto() {
     }
   }
 
-  function uploadWithProgress(taskId, userId, file) {
+  // update uploadWithProgress to accept challengeId name and only send challengeId
+  function uploadWithProgress(challengeId, userId, file) {
     return new Promise((resolve, reject) => {
       const formData = new FormData()
-      formData.append('taskId', taskId)
+      formData.append('challengeId', challengeId)
       formData.append('userId', userId)
       formData.append('file', file)
 
@@ -164,21 +188,36 @@ export default function SubmitPhoto() {
       <h2>Submit Photo</h2>
 
       <div style={{ marginBottom: 10 }}>
-        <label style={{ display: 'block', marginBottom: 6 }}>Select Task</label>
+        <label style={{ display: 'block', marginBottom: 6 }}>Select Challenge</label>
         <select
-          value={taskId}
-          onChange={e => setTaskId(e.target.value)}
+          value={challengeId}
+          onChange={e => setChallengeId(e.target.value)}
           disabled={uploading}
           style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
         >
-          <option value="">-- choose a task --</option>
-          {tasks.map(t => (
-            <option key={t.id ?? t.Id ?? `${t.description}-${t.deadline}`} value={t.id ?? t.Id}>
-              {`${t.id ?? t.Id ?? ''} — ${t.description ?? t.Description ?? '(no description)'}`}
+          <option value="">-- choose a challenge --</option>
+          {challenges.map(c => (
+            <option key={c.id ?? c.Id} value={c.id ?? c.Id}>
+              {`${c.name ?? c.Name ?? '(no name)'} — task:${c.taskId ?? c.TaskId ?? ''} — code:${c.joinCode ?? c.JoinCode ?? ''}`}
             </option>
           ))}
         </select>
+        <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+          Select a challenge to preview its task before uploading.
+        </div>
       </div>
+
+      {/* Task preview */}
+      {selectedTask && (
+        <div style={{ marginBottom: 12, padding: 10, border: '1px solid #eee', borderRadius: 4 }}>
+          <div style={{ fontWeight: 600 }}>Task preview</div>
+          <div style={{ marginTop: 6 }}>{selectedTask.description ?? selectedTask.Description}</div>
+          {selectedTask.deadline && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>Deadline: {new Date(selectedTask.deadline ?? selectedTask.Deadline).toLocaleString()}</div>
+          )}
+        </div>
+      )}
+       {/* rest of the form (file input, preview, upload) */}
 
       <div style={{ marginBottom: 10 }}>
         <label style={{ display: 'block', marginBottom: 6 }}>Upload Photo</label>
@@ -249,13 +288,13 @@ export default function SubmitPhoto() {
 
       <button 
         type="submit" 
-        disabled={!taskId || !photoFile || !userId || uploading}
+        disabled={!challengeId || !photoFile || !userId || uploading}
         style={{
           width: '100%',
           padding: 12,
           fontSize: '16px',
-          cursor: uploading || !taskId || !photoFile || !userId ? 'not-allowed' : 'pointer',
-          opacity: uploading || !taskId || !photoFile || !userId ? 0.6 : 1
+          cursor: uploading || !challengeId || !photoFile || !userId ? 'not-allowed' : 'pointer',
+          opacity: uploading || !challengeId || !photoFile || !userId ? 0.6 : 1
         }}
       >
         {uploading ? `Uploading... ${uploadProgress}%` : 'Submit Photo'}

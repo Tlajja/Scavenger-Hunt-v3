@@ -17,19 +17,26 @@ namespace PhotoScavengerHunt.Controllers
 
         [HttpPost("upload")]
         [RequestSizeLimit(10_000_000)]
-        public async Task<IActionResult> UploadPhoto([FromForm] int taskId, [FromForm] int userId, IFormFile file)
+        public async Task<IActionResult> UploadPhoto([FromForm] int? challengeId, [FromForm] int? taskId, [FromForm] int userId, IFormFile file)
         {
-            var result = await _submissionService.UploadPhotoAsync(taskId, userId, file);
-
-            if (!result.Success)
-                return BadRequest(new { error = result.Message });
-
-            return Ok(new
+            try
             {
-                message = result.Message,
-                photoUrl = result.PhotoUrl,
-                submissionId = result.SubmissionId
-            });
+                var result = await _submissionService.UploadPhotoAsync(taskId, userId, file, challengeId);
+                if (!result.Success)
+                    return BadRequest(new { error = result.Message });
+
+                return Ok(new
+                {
+                    message = result.Message,
+                    photoUrl = result.PhotoUrl,
+                    submissionId = result.SubmissionId
+                });
+            }
+            catch (Exception ex)
+            {
+                // keep your LogExceptionToFile helper if present
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         [HttpGet("task/{taskId}")]
