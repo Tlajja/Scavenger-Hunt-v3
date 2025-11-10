@@ -238,37 +238,37 @@ namespace PhotoScavengerHunt.Services
         }
 
         public async Task<Challenge> AdvanceChallengeAsync(int challengeId, int requestingUserId)
-    {
-        var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
-        if (challenge == null)
-            throw new ChallengeNotFoundException("Challenge not found.");
-
-        // only creator or admin participant can advance
-        if (challenge.CreatorId != requestingUserId)
         {
-            var isAdmin = await _dbContext.ChallengeParticipants
-                .AnyAsync(cp => cp.ChallengeId == challengeId && cp.UserId == requestingUserId && cp.Role == ChallengeRole.Admin);
-            if (!isAdmin)
-                throw new ChallengeValidationException("Not authorized to advance challenge stage.");
-        }
+            var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
+            if (challenge == null)
+                throw new ChallengeNotFoundException("Challenge not found.");
 
-        if (challenge.Status == ChallengeStatus.Open)
-        {
-            challenge.Status = ChallengeStatus.Closed; // move to voting
-            await _dbContext.SaveChangesAsync();
-            return challenge;
-        }
+            // only creator or admin participant can advance
+            if (challenge.CreatorId != requestingUserId)
+            {
+                var isAdmin = await _dbContext.ChallengeParticipants
+                    .AnyAsync(cp => cp.ChallengeId == challengeId && cp.UserId == requestingUserId && cp.Role == ChallengeRole.Admin);
+                if (!isAdmin)
+                    throw new ChallengeValidationException("Not authorized to advance challenge stage.");
+            }
 
-        if (challenge.Status == ChallengeStatus.Closed)
-        {
-            // finalize (idempotent)
-            var finalized = await FinalizeChallengeAsync(challengeId);
-            return finalized;
-        }
+            if (challenge.Status == ChallengeStatus.Open)
+            {
+                challenge.Status = ChallengeStatus.Closed; // move to voting
+                await _dbContext.SaveChangesAsync();
+                return challenge;
+            }
 
-        // already completed
-        throw new ChallengeValidationException("Challenge is already completed.");
-    }
+            if (challenge.Status == ChallengeStatus.Closed)
+            {
+                // finalize (idempotent)
+                var finalized = await FinalizeChallengeAsync(challengeId);
+                return finalized;
+            }
+
+            // already completed
+            throw new ChallengeValidationException("Challenge is already completed.");
+        }
 
         public async Task<Challenge> FinalizeChallengeAsync(int challengeId)
         {
@@ -276,25 +276,25 @@ namespace PhotoScavengerHunt.Services
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
-            if(challenge.WinnerId != null && challenge.Status == ChallengeStatus.Completed)
+            if (challenge.WinnerId != null && challenge.Status == ChallengeStatus.Completed)
                 return challenge;
 
             var top = await _dbContext.Photos
                 .Where(p => p.ChallengeId == challengeId)
                 .GroupBy(p => p.UserId)
-                .Select(g => new { UserId = g.Key, TotalVotes = g.Sum(p => p.Votes)})
+                .Select(g => new { UserId = g.Key, TotalVotes = g.Sum(p => p.Votes) })
                 .OrderByDescending(x => x.TotalVotes)
                 .ThenBy(x => x.UserId)
                 .FirstOrDefaultAsync();
-            
+
             var winnerId = top?.UserId;
-            if(winnerId.HasValue)
+            if (winnerId.HasValue)
             {
                 challenge.WinnerId = winnerId.Value;
                 challenge.Status = ChallengeStatus.Completed;
 
                 var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == winnerId.Value);
-                if(user != null)
+                if (user != null)
                 {
                     user.Wins += 1;
                 }
@@ -306,8 +306,35 @@ namespace PhotoScavengerHunt.Services
                 challenge.Status = ChallengeStatus.Completed;
                 await _dbContext.SaveChangesAsync();
             }
-            
+
             return challenge;
+        }
+        
+        public async Task<List<Challenge>> GetChallengesForUserAsync(int userId)
+        {
+            // find challenge ids where user is a participant
+            var challengeIds = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.UserId == userId)
+                .Select(cp => cp.ChallengeId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!challengeIds.Any())
+                return new List<Challenge>();
+
+            var challenges = await _dbContext.Challenges
+                .Where(c => challengeIds.Contains(c.Id))
+                .ToListAsync();
+
+            foreach (var c in challenges)
+            {
+                var participants = await _dbContext.ChallengeParticipants
+                    .Where(cp => cp.ChallengeId == c.Id)
+                    .ToListAsync();
+                c.Participants = participants;
+            }
+
+            return challenges;
         }
     }
 }

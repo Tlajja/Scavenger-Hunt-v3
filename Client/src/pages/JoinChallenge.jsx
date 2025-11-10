@@ -236,7 +236,6 @@ export default function JoinChallenge() {
             {userChallengeId > 0 ? (
                 <div style={{ marginBottom: 12 }}>
                     You are currently in challenge: <strong>{userChallengeName || `#${userChallengeId}`}</strong>
-                    <button onClick={handleLeave}>Leave Challenge</button>
                 </div>
             ) : null}
 

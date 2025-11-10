@@ -142,5 +142,20 @@ namespace PhotoScavengerHunt.Services
                 return (false, $"Error deleting submission: {ex.Message}");
             }
         }
+
+        public async Task<List<PhotoSubmission>> GetSubmissionsForChallengeAsync(int challengeId)
+        {
+            try
+            {
+                return await _dbContext.Photos
+                    .Include(p => p.Comments)
+                    .Where(p => p.ChallengeId == challengeId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error fetching submissions for challenge {challengeId}: {ex.Message}");
+            }
+        }
     }
 }

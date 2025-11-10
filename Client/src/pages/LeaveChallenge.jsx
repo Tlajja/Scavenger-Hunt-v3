@@ -44,25 +44,16 @@ export default function LeaveChallenge() {
     if (!selected) { setMessage('No challenge selected.'); return }
     setLoading(true); setMessage('')
     try {
-      const payload = { ChallengeId: Number(selected), UserId: Number(userId) }
-      // try common leave endpoints in order
-      let res = await fetch('/api/challenge/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      if (!res.ok) {
-        // try path-based fallback
-        res = await fetch(`/api/challenge/${payload.ChallengeId}/leave?userId=${payload.UserId}`, { method: 'POST' })
-      }
-      if (!res.ok) {
-        // try delete-style fallback
-        res = await fetch(`/api/challenge/${payload.ChallengeId}/participants/${payload.UserId}`, { method: 'DELETE' })
-      }
+      const challengeId = Number(selected)
+      const uid = Number(userId)
+      // call the DELETE endpoint the server exposes:
+      const res = await fetch(`/api/challenge/${challengeId}/leave?userId=${uid}`, { method: 'DELETE' })
+
       if (!res.ok) {
         const text = await res.text()
         throw new Error(text || `Leave failed (${res.status})`)
       }
+
       setMessage('Left challenge successfully.')
       // refresh list
       await loadMyChallenges()

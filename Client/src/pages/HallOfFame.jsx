@@ -47,7 +47,7 @@ export default function HallOfFame() {
           <tr>
             <th style={{ textAlign: 'left', padding: 8 }}>Rank</th>
             <th style={{ textAlign: 'left', padding: 8 }}>User</th>
-            <th style={{ textAlign: 'right', padding: 8 }}>Votes</th>
+            <th style={{ textAlign: 'right', padding: 8 }}>Wins</th>
           </tr>
         </thead>
         <tbody>

@@ -29,7 +29,8 @@ export default function Leaderboards() {
       let res = await fetch(`/api/leaderboard/challenge/${challengeId}`)
       if (res.ok) {
         const data = await res.json()
-        setBoard({ source: 'leaderboard', entries: data })
+        const entries = Array.isArray(data) ? data : (Array.isArray(data?.entries) ? data.entries : [])
+        setBoard({ source: 'leaderboard', entries })
         return
       }
 
@@ -37,16 +38,18 @@ export default function Leaderboards() {
       res = await fetch(`/api/photosubmissions?challengeId=${challengeId}`)
       if (!res.ok) throw new Error(`No leaderboard or submissions endpoint (status ${res.status})`)
       const subs = await res.json()
-      // aggregate by user
+      const arr = Array.isArray(subs) ? subs : []
+
+      // aggregate by user (defensive property access)
       const map = new Map()
-      (Array.isArray(subs) ? subs : []).forEach(s => {
-        const uid = s.userId ?? s.userId ?? s.UserId
+      arr.forEach(s => {
+        const uid = s.userId ?? s.UserId ?? s.user?.id ?? s.User?.Id ?? 0
         const votes = Number(s.votes ?? s.Votes ?? 0)
-        if (!map.has(uid)) map.set(uid, { userId: uid, userName: s.userName ?? s.userName ?? `User ${uid}`, wins: 0, votes })
+        if (!map.has(uid)) map.set(uid, { userId: uid, userName: s.userName ?? s.UserName ?? s.user?.name ?? `User ${uid}`, wins: 0, votes })
         else map.get(uid).votes += votes
       })
-      const arr = Array.from(map.values()).sort((a,b) => (b.votes||0)-(a.votes||0))
-      setBoard({ source: 'computed', entries: arr })
+      const out = Array.from(map.values()).sort((a,b) => (b.votes||0)-(a.votes||0))
+      setBoard({ source: 'computed', entries: out })
     } catch (e) {
       setError(String(e))
     } finally {
@@ -86,20 +89,27 @@ export default function Leaderboards() {
         <div>
           <h3>Leaderboard ({board.source})</h3>
           <ol>
-            {board.entries.map((e, i) => (
-              <li key={e.userId ?? i}>
-                {e.userName ?? e.userId} — {e.wins ?? e.votes ?? 0} {board.source === 'computed' ? 'votes' : 'wins'}
-                <button
-                  style={{ marginLeft: 12 }}
-                  onClick={async () => {
-                    // open submissions page for this challenge
-                    window.location.href = `/submit?challengeId=${selected}`
-                  }}
-                >
-                  Show submissions
-                </button>
-              </li>
-            ))}
+            {(Array.isArray(board.entries) ? board.entries : []).map((e, i) => {
+              // compute displayed score: for computed (from submissions) use votes; otherwise use wins/totalVotes
+              const votesCount = e.votes ?? e.totalVotes ?? e.TotalVotes ?? 0
+              const winsCount  = e.wins  ?? e.totalVotes ?? e.TotalVotes ?? 0
+              const display = board.source === 'computed' ? votesCount : winsCount
+
+              return (
+                <li key={e.userId ?? i}>
+                  {e.userName ?? e.userId} — {display} {board.source === 'computed' ? 'votes' : 'wins'}
+                  <button
+                    style={{ marginLeft: 12 }}
+                    onClick={async () => {
+                      // open submissions page for this challenge
+                      window.location.href = `/submit?challengeId=${selected}`
+                    }}
+                  >
+                    Show submissions
+                  </button>
+                </li>
+              )
+            })}
           </ol>
         </div>
       )}

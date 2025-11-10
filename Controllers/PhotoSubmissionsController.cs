@@ -9,10 +9,11 @@ namespace PhotoScavengerHunt.Controllers
     public class PhotoSubmissionsController : ControllerBase
     {
         private readonly PhotoSubmissionService _submissionService;
-
-        public PhotoSubmissionsController(PhotoSubmissionService submissionService)
+        private readonly VotesService _votesService;
+        public PhotoSubmissionsController(PhotoSubmissionService submissionService, VotesService votesService)
         {
             _submissionService = submissionService;
+            _votesService = votesService;
         }
 
         [HttpPost("upload")]
@@ -65,6 +66,42 @@ namespace PhotoScavengerHunt.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSubmissionsByChallenge([FromQuery] int? challengeId, [FromQuery] int? taskId)
+        {
+            try
+            {
+                if (challengeId.HasValue)
+                {
+                    var subs = await _submissionService.GetSubmissionsForChallengeAsync(challengeId.Value);
+                    return Ok(subs);
+                }
+                if (taskId.HasValue)
+                {
+                    var subs = await _submissionService.GetSubmissionsForTaskAsync(taskId.Value);
+                    return Ok(subs);
+                }
+                return BadRequest(new { error = "Provide either challengeId or taskId as query parameter." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("{id}/vote")]
+        public async Task<IActionResult> VoteOnSubmission(int id)
+        {
+            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(id);
+            if (!success)
+            {
+                if (errorMessage?.Contains("not") ?? false)
+                    return NotFound(new { error = errorMessage });
+                return BadRequest(new { error = errorMessage });
+            }
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]

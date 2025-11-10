@@ -191,7 +191,7 @@ namespace PhotoScavengerHunt.Controllers
                 return StatusCode(500, new { error = ex.Message });
             }
         }
-        
+
         [HttpPost("{id}/advance")]
         public async Task<IActionResult> AdvanceChallenge(int id, [FromQuery] int userId)
         {
@@ -214,6 +214,21 @@ namespace PhotoScavengerHunt.Controllers
             {
                 LogExceptionToFile(ex);
                 return StatusCode(500, new { error = "Unable to advance challenge stage." });
+            }
+        }
+        
+        [HttpGet("mine")]
+        public async Task<IActionResult> GetMyChallenges([FromQuery] int userId)
+        {
+            try
+            {
+                var list = await _challengeService.GetChallengesForUserAsync(userId);
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                LogExceptionToFile(ex);
+                return StatusCode(500, new { error = "An unexpected error occurred while fetching user challenges." });
             }
         }
     }

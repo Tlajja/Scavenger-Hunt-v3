@@ -28,7 +28,17 @@ export default function Vote() {
       const res = await fetch(`/api/photosubmissions?challengeId=${challengeId}`)
       if (!res.ok) throw new Error(`Failed to load submissions (${res.status})`)
       const data = await res.json()
-      setSubs(Array.isArray(data) ? data : [])
+      // normalize property names to frontend-friendly shape
+      const arr = Array.isArray(data) ? data : []
+      const normalized = arr.map(s => ({
+        id: s.id ?? s.Id,
+        userId: s.userId ?? s.UserId,
+        userName: s.userName ?? s.UserName ?? s.user?.name ?? null,
+        photoUrl: s.photoUrl ?? s.PhotoUrl ?? s.photoUrl ?? s.PhotoUrl,
+        votes: s.votes ?? s.Votes ?? 0,
+        challengeId: s.challengeId ?? s.ChallengeId
+      }))
+      setSubs(normalized)
     } catch (e) {
       setError(String(e))
     } finally {
@@ -38,7 +48,9 @@ export default function Vote() {
 
   async function vote(subId) {
     try {
-      const res = await fetch(`/api/photosubmissions/${subId}/vote`, { method: 'POST' })
+      const id = subId ?? (typeof subId === 'object' ? subId.id : null)
+      if (!id) throw new Error('Invalid submission id')
+      const res = await fetch(`/api/photosubmissions/${id}/vote`, { method: 'POST' })
       if (!res.ok) {
         const txt = await res.text()
         throw new Error(`Vote failed (${res.status}): ${txt}`)
@@ -92,7 +104,7 @@ export default function Vote() {
             </div>
             <div style={{ marginTop: 8 }}>
               Votes: {s.votes ?? s.Votes ?? 0}
-              <button style={{ marginLeft: 12 }} onClick={() => vote(s.id)}>Vote</button>
+              <button style={{ marginLeft: 12 }} onClick={() => vote(s.id ?? s.Id)}>Vote</button>
             </div>
           </div>
         ))}
