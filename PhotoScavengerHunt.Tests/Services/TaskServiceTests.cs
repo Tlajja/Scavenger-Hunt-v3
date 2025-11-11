@@ -23,10 +23,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task CreateTaskAsync_ValidRequest_ReturnsTask()
         {
-            var deadline = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
             var request = new CreateTaskRequest(
                 Description: "New Task",
-                Deadline: deadline,
                 AuthorId: 100
             );
 
@@ -34,28 +32,7 @@ namespace PhotoScavengerHunt.Tests.Services
 
             Assert.NotNull(result);
             Assert.Equal("New Task", result.Description);
-            Assert.Equal(deadline, result.Deadline);
-            Assert.Equal(HuntTaskStatus.Open, result.Status);
             Assert.Equal(100, result.AuthorId);
-        }
-
-        [Fact]
-        public async Task CreateTaskAsync_NoDeadline_UsesDefault7Days()
-        {
-            var beforeCreate = DateTime.UtcNow;
-            var request = new CreateTaskRequest(
-                Description: "Task with default deadline",
-                Deadline: null,
-                AuthorId: 100
-            );
-
-            var result = await _service.CreateTaskAsync(request);
-            var afterCreate = DateTime.UtcNow;
-
-            Assert.NotNull(result);
-            // Deadline should be approximately 7 days from now
-            Assert.True(result.Deadline >= beforeCreate.AddDays(7).AddSeconds(-1));
-            Assert.True(result.Deadline <= afterCreate.AddDays(7).AddSeconds(1));
         }
 
         [Theory]
@@ -65,7 +42,6 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var request = new CreateTaskRequest(
                 Description: description!,
-                Deadline: new DateTime(2026, 1, 1),
                 AuthorId: 100
             );
 
@@ -79,7 +55,6 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var request = new CreateTaskRequest(
                 Description: null!,
-                Deadline: new DateTime(2026, 1, 1),
                 AuthorId: 100
             );
 
@@ -89,26 +64,10 @@ namespace PhotoScavengerHunt.Tests.Services
         }
 
         [Fact]
-        public async Task CreateTaskAsync_PastDeadline_ThrowsArgumentException()
-        {
-            var pastDate = DateTime.UtcNow.AddDays(-1);
-            var request = new CreateTaskRequest(
-                Description: "Task with past deadline",
-                Deadline: pastDate,
-                AuthorId: 100
-            );
-
-            var exception = await Assert.ThrowsAsync<ArgumentException>(
-                () => _service.CreateTaskAsync(request));
-            Assert.Contains("Deadline cannot be in the past", exception.Message);
-        }
-
-        [Fact]
         public async Task CreateUserTaskAsync_ValidRequest_ReturnsTask()
         {
             var request = new CreateTaskRequest(
                 Description: "User Task",
-                Deadline: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
                 AuthorId: 100
             );
 
@@ -124,7 +83,6 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var request = new CreateTaskRequest(
                 Description: "Task for non-existent user",
-                Deadline: new DateTime(2026, 1, 1),
                 AuthorId: 99999
             );
 
@@ -140,7 +98,7 @@ namespace PhotoScavengerHunt.Tests.Services
 
             Assert.NotNull(result);
             var taskList = result.ToList();
-            Assert.True(taskList.Count >= 2); 
+            Assert.True(taskList.Count >= 2); // At least seed data
             Assert.Contains(taskList, t => t.Description == "Test Task 1");
             Assert.Contains(taskList, t => t.Description == "Test Task 2");
         }
@@ -195,7 +153,6 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var request = new CreateTaskRequest(
                 Description: "Persistent Task",
-                Deadline: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
                 AuthorId: 100
             );
 
@@ -211,19 +168,13 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public void HuntTaskFactory_Create_SetsCorrectDefaults()
         {
-            var deadline = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
-
             var task = HuntTaskFactory.Create(
                 description: "Factory Task",
-                authorId: 100,
-                deadline: deadline,
-                status: HuntTaskStatus.Closed
+                authorId: 100
             );
 
             Assert.Equal("Factory Task", task.Description);
             Assert.Equal(100, task.AuthorId);
-            Assert.Equal(deadline, task.Deadline);
-            Assert.Equal(HuntTaskStatus.Closed, task.Status);
         }
 
         [Fact]
