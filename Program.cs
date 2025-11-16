@@ -45,10 +45,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 
-app.UseRouting();
+app.UseHttpsRedirection();
 
 app.UseCors("SignalR");
-app.UseHttpsRedirection();
+
+app.UseRouting();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+
 namespace PhotoScavengerHunt.Features.Users
 {
-
     public class ActiveUsersHub : Hub
     {
-        private static readonly ConcurrentDictionary<string, DateTime> ActiveUsers
-            = new();
+        private static readonly ConcurrentDictionary<string, DateTime> ActiveUsers = new();
 
         public override async Task OnConnectedAsync()
         {
@@ -16,10 +15,9 @@ namespace PhotoScavengerHunt.Features.Users
                 ActiveUsers[userId] = DateTime.UtcNow;
 
                 await Clients.All.SendAsync(
-                    "ActiveUsersUpdated",
-                    ActiveUsers.Keys.ToArray()
+                    "ActiveUsersCountUpdated",
+                    ActiveUsers.Count
                 );
-
             }
 
             await base.OnConnectedAsync();
@@ -33,15 +31,12 @@ namespace PhotoScavengerHunt.Features.Users
                 ActiveUsers.TryRemove(userId, out _);
 
                 await Clients.All.SendAsync(
-                    "ActiveUsersUpdated",
-                    ActiveUsers.Keys.ToArray()
+                    "ActiveUsersCountUpdated",
+                    ActiveUsers.Count
                 );
             }
 
             await base.OnDisconnectedAsync(ex);
         }
-
-
     }
-
 }

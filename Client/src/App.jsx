@@ -19,7 +19,7 @@ export default function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(
         typeof window !== 'undefined' && !!localStorage.getItem('userId')
     )
-    const { activeUsers } = useActiveUsers()
+    const { activeUsersCount } = useActiveUsers()
 
     useEffect(() => {
         const updateAuth = () => setIsAuthenticated(!!localStorage.getItem('userId'))
@@ -62,13 +62,8 @@ export default function App() {
                                 </>
                             )}
                         </div>
-
-                        {/* Always show active users count */}
-                        <div style={{ marginLeft: 'auto', background: '#d1d1d1', border: '1px solid #b0b0b0', padding: '6px 10px', borderRadius: 6, fontSize: 13, color: '#222' }} aria-label={`Active users: ${activeUsers.length}`}>
-                            Active users: <strong style={{ color: '#000' }}>{activeUsers.length}</strong>
-                            <span style={{ marginLeft: 8, color: '#222' }}>
-                                {activeUsers.length > 0 ? `[${activeUsers.slice(0, 6).join(', ')}${activeUsers.length > 6 ? ', …' : ''}]` : '(none)'}
-                            </span>
+                        <div style={{ marginLeft: 'auto', background: '#d1d1d1', border: '1px solid #b0b0b0', padding: '6px 10px', borderRadius: 6, fontSize: 13, color: '#222' }} aria-label={`Active users: ${activeUsersCount}`}>
+                            Active users: <strong style={{ color: '#000' }}>{activeUsersCount}</strong>
                         </div>
                     </nav>
                 </header>

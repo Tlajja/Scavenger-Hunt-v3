@@ -2,10 +2,10 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 import { API_BASE } from '../services/api.js'
 
-const ActiveUsersContext = createContext({ activeUsers: [] })
+const ActiveUsersContext = createContext({ activeUsersCount: 0 })
 
 export function ActiveUsersProvider({ children }) {
-    const [activeUsers, setActiveUsers] = useState([])
+    const [activeUsersCount, setActiveUsersCount] = useState(0)
     const connectionRef = useRef(null)
 
     useEffect(() => {
@@ -19,8 +19,9 @@ export function ActiveUsersProvider({ children }) {
 
             const userId = localStorage.getItem('userId')
             const username = localStorage.getItem('username') || 'Guest'
+
             if (!userId) {
-                setActiveUsers([])
+                setActiveUsersCount(0)
                 return
             }
 
@@ -31,29 +32,25 @@ export function ActiveUsersProvider({ children }) {
             const conn = new HubConnectionBuilder()
                 .withUrl(url)
                 .withAutomaticReconnect()
-                .configureLogging(LogLevel.Error)
+                .configureLogging(
+                    import.meta.env.DEV === 'development'
+                        ? LogLevel.Information
+                        : LogLevel.Error
+                )
                 .build()
 
-            conn.on('ActiveUsersUpdated', users => {
-                try {
-                    const list = Array.isArray(users) ? users : Array.from(users ?? [])
-                    setActiveUsers(list)
-                } catch (err) {
-                    console.error("ActiveUsersUpdated parse error:", err, users)
-                    setActiveUsers([])
-                }
+            conn.on('ActiveUsersCountUpdated', count => {
+                setActiveUsersCount(count || 0)
             })
 
             try {
                 await conn.start()
-                console.log("SignalR connected:", conn.connectionId)   // debug log
                 if (!disposed) connectionRef.current = conn
             } catch (e) {
-                console.error("SignalR connection failed:", e)          // debug log
+                console.error("SignalR connection failed:", e)
                 setTimeout(() => { if (!disposed) start() }, 2000)
             }
         }
-
 
         start()
 
@@ -78,7 +75,7 @@ export function ActiveUsersProvider({ children }) {
     }, [])
 
     return (
-        <ActiveUsersContext.Provider value={{ activeUsers }}>
+        <ActiveUsersContext.Provider value={{ activeUsersCount }}>
             {children}
         </ActiveUsersContext.Provider>
     )
