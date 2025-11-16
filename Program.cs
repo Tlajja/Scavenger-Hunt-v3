@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,9 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
