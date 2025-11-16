@@ -1,55 +1,40 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
+using PhotoScavengerHunt.Services;
 
-namespace PhotoScavengerHunt.Features.Users
+public class ActiveUsersHub(ActiveUsersService activeUsers) : Hub
 {
-    public class ActiveUsersHub : Hub
+    private readonly ActiveUsersService _activeUsers = activeUsers;
+
+    private Task BroadcastIfChanged(int newCount)
     {
-        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> UserConnections = new();
+        if (newCount < 0)
+            return Task.CompletedTask;
 
-        private Task BroadcastCountIfChanged(bool changed)
+        return Clients.All.SendAsync("ActiveUsersCountUpdated", newCount);
+    }
+
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Context.UserIdentifier;
+        if (userId != null)
         {
-            if (!changed) return Task.CompletedTask;
-            var distinctUsers = UserConnections.Count;
-            return Clients.All.SendAsync("ActiveUsersCountUpdated", distinctUsers);
+            var newCount = _activeUsers.AddConnection(userId, Context.ConnectionId);
+            if (newCount >= 0)
+                await Clients.All.SendAsync("ActiveUsersCountUpdated", newCount);
         }
 
-        public override async Task OnConnectedAsync()
+        await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? ex)
+    {
+        var userId = Context.UserIdentifier;
+        if (!string.IsNullOrWhiteSpace(userId))
         {
-            var userId = Context.UserIdentifier;
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                var connections = UserConnections.GetOrAdd(userId, _ => new ConcurrentDictionary<string, byte>());
-                connections[Context.ConnectionId] = 0;
-
-                var changed = connections.Count == 1;
-                await BroadcastCountIfChanged(changed);
-            }
-
-            await base.OnConnectedAsync();
+            var newCount = _activeUsers.RemoveConnection(userId, Context.ConnectionId);
+            await BroadcastIfChanged(newCount);
         }
 
-        public override async Task OnDisconnectedAsync(Exception? ex)
-        {
-            var userId = Context.UserIdentifier;
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                if (UserConnections.TryGetValue(userId, out var connections))
-                {
-                    connections.TryRemove(Context.ConnectionId, out _);
-
-                    bool changed = false;
-                    if (connections.IsEmpty)
-                    {
-                        UserConnections.TryRemove(userId, out _);
-                        changed = true;
-                    }
-
-                    await BroadcastCountIfChanged(changed);
-                }
-            }
-
-            await base.OnDisconnectedAsync(ex);
-        }
+        await base.OnDisconnectedAsync(ex);
     }
 }

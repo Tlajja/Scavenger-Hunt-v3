@@ -17,8 +17,9 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<VotesService>();
 builder.Services.AddScoped<PhotoSubmissionService>();
 
-builder.Services.AddSignalR();
+builder.Services.AddSingleton<ActiveUsersService>();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
