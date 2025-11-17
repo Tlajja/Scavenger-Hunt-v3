@@ -7,7 +7,7 @@ public interface IChallengeRepository
     Task<Challenge?> GetByIdAsync(int id);
     Task<Challenge?> GetWithParticipantsAsync(int id);
     Task<List<Challenge>> GetByIdsAsync(IEnumerable<int> ids);
-    Task<List<Challenge>> GetAllAsync(bool publicOnly = true);
+    Task<List<Challenge>> GetAllAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc);
     Task AddAsync(Challenge challenge);
     Task SaveChangesAsync();
     Task EnsureNameNotEmptyAsync(string name);

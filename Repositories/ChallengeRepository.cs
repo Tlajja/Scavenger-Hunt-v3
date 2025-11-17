@@ -30,10 +30,14 @@ namespace PhotoScavengerHunt.Repositories
                 .Where(c => ids.Contains(c.Id))
                 .ToListAsync();
         }
-        public async Task<List<Challenge>> GetAllAsync(bool publicOnly = true)
+        public async Task<List<Challenge>> GetAllAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc)
         {
             var query = _dbContext.Challenges.AsQueryable();
             if(publicOnly) query = query.Where(c => !c.IsPrivate);
+
+            // Use the generic sorter with multiple constraints
+            query = query.SortBy(sortBy);
+
             return await query.ToListAsync();
         }
 
@@ -41,12 +45,7 @@ namespace PhotoScavengerHunt.Repositories
         {
             await _dbContext.Challenges.AddAsync(challenge);
         }
-/*
-        public void Remove(Challenge challenge) 
-        {
-            _dbContext.Challenges.Remove(challenge);
-        }
-*/
+
         public async Task SaveChangesAsync()
         {
             await _dbContext.SaveChangesAsync();
