@@ -3,7 +3,7 @@ using PhotoScavengerHunt.Interfaces;
 
 namespace PhotoScavengerHunt.Features.Challenges;
 
-public class Challenge : IHasTimeMetadata
+public class Challenge : IHasCreatedAt, IHasDeadline
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";

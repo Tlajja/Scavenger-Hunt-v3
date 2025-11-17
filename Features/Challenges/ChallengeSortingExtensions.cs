@@ -1,38 +1,27 @@
 using PhotoScavengerHunt.Features.Challenges;
+using PhotoScavengerHunt.Features.Challenges.Abstractions;
 using PhotoScavengerHunt.Interfaces;
 
-public static class ChallengeSortingExtensions
+public static class SortingExtensions
 {
-    public static TSource SortBy<TSource, TItem>(
-        this TSource source,
-        ChallengeSortBy sortBy
-    )
-        where TSource : IEnumerable<TItem>   // Generic constraint #1 (collection)
-        where TItem : IHasTimeMetadata       // Generic constraint #2 (item metadata)
+    public static IQueryable<T> SortBy<T>(
+        this IQueryable<T> source,
+        ChallengeSortBy sortBy)
+        where T : IHasCreatedAt, IHasDeadline
     {
-        // If IQueryable<T>, use IQueryable sorting (deferred, EF Core safe)
-        if (source is IQueryable<TItem> queryable)
+        return sortBy switch
         {
-            return (TSource)(sortBy switch
-            {
-                ChallengeSortBy.CreatedAtAsc => queryable.OrderBy(x => x.CreatedAt),
-                ChallengeSortBy.CreatedAtDesc => queryable.OrderByDescending(x => x.CreatedAt),
-                ChallengeSortBy.DeadlineAsc => queryable.OrderBy(x => x.Deadline == null).ThenBy(x => x.Deadline),
-                ChallengeSortBy.DeadlineDesc => queryable.OrderByDescending(x => x.Deadline ?? DateTime.MaxValue),
-                _ => queryable.OrderByDescending(x => x.CreatedAt)
-            });
-        }
+            ChallengeSortBy.CreatedAtAsc => source.OrderBy(x => x.CreatedAt),
+            ChallengeSortBy.CreatedAtDesc => source.OrderByDescending(x => x.CreatedAt),
 
-        // Otherwise use IEnumerable<T>
-        IEnumerable<TItem> enumerable = source;
+            ChallengeSortBy.DeadlineAsc =>
+                source.OrderBy(x => !x.HasDeadline).ThenBy(x => x.Deadline),
 
-        return (TSource)(sortBy switch
-        {
-            ChallengeSortBy.CreatedAtAsc => enumerable.OrderBy(x => x.CreatedAt),
-            ChallengeSortBy.CreatedAtDesc => enumerable.OrderByDescending(x => x.CreatedAt),
-            ChallengeSortBy.DeadlineAsc => enumerable.OrderBy(x => x.Deadline == null).ThenBy(x => x.Deadline),
-            ChallengeSortBy.DeadlineDesc => enumerable.OrderByDescending(x => x.Deadline ?? DateTime.MaxValue),
-            _ => enumerable.OrderByDescending(x => x.CreatedAt)
-        });
+            ChallengeSortBy.DeadlineDesc =>
+                source.OrderByDescending(x => x.HasDeadline)
+                      .ThenByDescending(x => x.Deadline),
+
+            _ => source.OrderByDescending(x => x.CreatedAt),
+        };
     }
 }

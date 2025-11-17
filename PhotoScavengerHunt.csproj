@@ -14,10 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Features\Challenges\Abstractions\IHasTimeMetadata.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.9" />
@@ -34,11 +30,6 @@
       <Content Remove="PhotoScavengerHunt.Tests\**" />
       <EmbeddedResource Remove="PhotoScavengerHunt.Tests\**" />
       <None Remove="PhotoScavengerHunt.Tests\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Common\" />
-    <Folder Include="Features\Shared\" />
   </ItemGroup>
 
 </Project>
