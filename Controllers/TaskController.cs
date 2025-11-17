@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -8,10 +9,10 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly TaskService _taskService;
+        private readonly ITaskService _taskService;
         private readonly ILogger<TasksController> _taskLogger;
 
-        public TasksController(TaskService taskService, ILogger<TasksController> logger)
+        public TasksController(ITaskService taskService, ILogger<TasksController> logger)
         {
             _taskService = taskService;
             _taskLogger = logger;

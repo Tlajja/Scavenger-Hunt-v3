@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
 

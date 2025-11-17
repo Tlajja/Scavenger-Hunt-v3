@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Features.Photos;
 
 namespace PhotoScavengerHunt.Controllers
@@ -8,9 +9,9 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class PhotoSubmissionsController : ControllerBase
     {
-        private readonly PhotoSubmissionService _submissionService;
-        private readonly VotesService _votesService;
-        public PhotoSubmissionsController(PhotoSubmissionService submissionService, VotesService votesService)
+        private readonly IPhotoSubmissionService _submissionService;
+        private readonly IVotesService _votesService;
+        public PhotoSubmissionsController(IPhotoSubmissionService submissionService, IVotesService votesService)
         {
             _submissionService = submissionService;
             _votesService = votesService;

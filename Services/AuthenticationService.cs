@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
+using PhotoScavengerHunt.Services.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class AuthenticationService
+    public class AuthenticationService : IAuthenticationService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
 
