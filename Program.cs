@@ -28,6 +28,7 @@ builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IUserRepository, Phot
 builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ITaskRepository, PhotoScavengerHunt.Repositories.TaskRepository>();
 builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IChallengeParticipantRepository, PhotoScavengerHunt.Repositories.ChallengeParticipantRepository>();
 builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IPhotoRepository, PhotoScavengerHunt.Repositories.PhotoRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ILeaderboardRepository, PhotoScavengerHunt.Repositories.LeaderboardRepository>();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

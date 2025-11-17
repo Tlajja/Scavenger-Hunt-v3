@@ -10,27 +10,21 @@ namespace PhotoScavengerHunt.Services
 {
     public class ChallengeService : IChallengeService
     {
-        //private readonly PhotoScavengerHuntDbContext _dbContext;
         private readonly IChallengeRepository _challengeRepo;
         private readonly IUserRepository _userRepo;
         private readonly ITaskRepository _taskRepo;
         private readonly IChallengeParticipantRepository _participantRepo;
-        private readonly IPhotoRepository _photoRepo;
 
         public ChallengeService(
-            //PhotoScavengerHuntDbContext dbContext,
             IChallengeRepository challengeRepo,
             IUserRepository userRepo,
             ITaskRepository taskRepo,
-            IChallengeParticipantRepository participantRepo,
-            IPhotoRepository photoRepo)
+            IChallengeParticipantRepository participantRepo)
         {
-            //_dbContext = dbContext;
             _challengeRepo = challengeRepo;
             _userRepo = userRepo;
             _taskRepo = taskRepo;
             _participantRepo = participantRepo;
-            _photoRepo = photoRepo;
         }
 
         private static string NormalizeCode(string code) =>

@@ -8,4 +8,10 @@ public interface IUserRepository
     Task<UserProfile?> GetByIdAsync(int id);
     Task EnsureUserExistsAsync(int id, string? errorMessage = null);
     Task IncrementWinsAsync(int userId);
+    Task<bool> ExistsByNameAsync(string name);
+    Task AddAsync(UserProfile user);
+    Task<List<UserProfile>> GetAllAsync();
+    Task RemoveAsync(UserProfile user);
+    Task SaveChangesAsync();
+    Task EnsureUsernameIsValidAsync(string name);
 }

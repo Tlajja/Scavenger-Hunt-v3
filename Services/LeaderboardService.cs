@@ -1,17 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 
 namespace PhotoScavengerHunt.Services
 {
     public class LeaderboardService : ILeaderboardService
     {
-        private readonly PhotoScavengerHuntDbContext dbContext;
+        private readonly ILeaderboardRepository _leaderboardRepo;
         private readonly ILogger<LeaderboardService> _logger;
 
-        public LeaderboardService(PhotoScavengerHuntDbContext dbContext, ILogger<LeaderboardService> logger)
+        public LeaderboardService(ILeaderboardRepository leaderboardRepo, ILogger<LeaderboardService> logger)
         {
-            this.dbContext = dbContext;
+            _leaderboardRepo = leaderboardRepo;
             _logger = logger;
         }
 
@@ -19,23 +20,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var leaderboard = await dbContext.Photos
-                    .GroupBy(p => p.UserId)
-                    .Select(g => new LeaderboardEntry
-                    {
-                        UserId = g.Key,
-                        UserName = dbContext.Users
-                            .Where(u => u.Id == g.Key)
-                            .Select(u => u.Name)
-                            .FirstOrDefault() ?? "Unknown",
-                        TotalVotes = g.Sum(p => p.Votes)
-                    })
-                    .ToListAsync();
-
-                // Sort using IComparable<LeaderboardEntry>
-                leaderboard.Sort();
-
-                return leaderboard;
+                return await _leaderboardRepo.GetLeaderboardAsync();
             }
             catch (Exception ex)
             {
@@ -48,15 +33,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var users = await dbContext.Users
-                    .OrderByDescending(u => u.Wins)
-                    .ThenBy(u => u.Id)
-                    .Take(top)
-                    .Select(u => new LeaderboardEntry(u.Id, u.Name ?? "Unknown", u.Wins))
-                    .ToListAsync();
-                
-                users.Sort();
-                return users;
+                return await _leaderboardRepo.GetHallOfFameAsync(top);
             }
             catch (Exception ex)
             {

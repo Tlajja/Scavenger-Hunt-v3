@@ -38,5 +38,40 @@ namespace PhotoScavengerHunt.Repositories
             user.Wins += 1;
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task<bool> ExistsByNameAsync(string name)
+        {
+            return await _dbContext.Users.AnyAsync(u => u.Name == name);
+        }
+
+        public async Task AddAsync(UserProfile user)
+        {
+            await _dbContext.Users.AddAsync(user);
+        }
+
+        public async Task<List<UserProfile>> GetAllAsync()
+        {
+            return await _dbContext.Users.ToListAsync();
+        }
+
+        public async Task RemoveAsync(UserProfile user)
+        {
+            _dbContext.Users.Remove(user);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task EnsureUsernameIsValidAsync(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || !ValidationExtensions.IsValidUsername(name))
+                throw new ArgumentException("Invalid username format");
+
+            var exists = await _dbContext.Users.AnyAsync(u => u.Name == name);
+            if (exists)
+                throw new ArgumentException("Username already exists.");
+        }
     }
 }

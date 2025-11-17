@@ -27,5 +27,28 @@ namespace PhotoScavengerHunt.Repositories
         {
             await _dbContext.SaveChangesAsync();
         }
+
+        public async Task<(bool Success, string? ErrorMessage, PhotoSubmission? Result)> UpvoteAsync(int submissionId)
+        {
+            try
+            {
+                var submission = await _dbContext.Photos.FindAsync(submissionId);
+                if (submission == null)
+                    return (false, "Submission not found.", null);
+
+                submission.Votes += 1;
+                await _dbContext.SaveChangesAsync();
+                return (true, null, submission);
+            }
+            catch (DbUpdateException dbEx)
+            {
+                var msg = dbEx.InnerException?.Message ?? dbEx.Message;
+                return (false, $"Database error: {msg}", null);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Unexpected error: {ex.Message}", null);
+            }
+        }
     }
 }
