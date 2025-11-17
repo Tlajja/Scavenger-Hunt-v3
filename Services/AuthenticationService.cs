@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,11 +10,11 @@ namespace PhotoScavengerHunt.Services
 {
     public class AuthenticationService : IAuthenticationService
     {
-        private readonly PhotoScavengerHuntDbContext dbContext;
+        private readonly IUserRepository _userRepo;
 
-        public AuthenticationService(PhotoScavengerHuntDbContext db)
+        public AuthenticationService(IUserRepository userRepo)
         {
-            dbContext = db;
+            _userRepo = userRepo;
         }
 
         public async Task<(bool Success, string Message, object? Data)> RegisterAsync(RegisterRequest request)
@@ -29,17 +30,9 @@ namespace PhotoScavengerHunt.Services
                 if (request.Password.Length < 6)
                     return (false, "Password must be at least 6 characters long.", null);
 
-                if (await dbContext.Users.AnyAsync(u => u.Email == request.Email))
-                    return (false, "Email already registered.", null);
-
-                if (!ValidationExtensions.IsValidUsername(request.Username))
-                    return (false, "Invalid username format.", null);
-
-                if (await dbContext.Users.AnyAsync(u => u.Name == request.Username))
-                    return (false, "Username already exists.", null);
-
-                if (request.Age <= 0 || request.Age > 125)
-                    return (false, "Invalid age value.", null);
+                await _userRepo.EnsureEmailIsUniqueAsync(request.Email);
+                await _userRepo.EnsureUsernameIsValidAsync(request.Username);
+                await _userRepo.EnsureAgeIsValidAsync(request.Age);
 
                 string passwordHash = HashPassword(request.Password);
 
@@ -52,14 +45,18 @@ namespace PhotoScavengerHunt.Services
                     IsRegistered = true
                 };
 
-                dbContext.Users.Add(userProfile);
-                await dbContext.SaveChangesAsync();
+                await _userRepo.AddAsync(userProfile);
+                await _userRepo.SaveChangesAsync();
 
                 return (true, "Registration successful.", new
                 {
                     userId = userProfile.Id,
                     username = userProfile.Name
                 });
+            }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message, null);
             }
             catch (Exception ex)
             {
@@ -74,9 +71,7 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
                     return (false, "Username and password are required.", null);
 
-                var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Name == request.Username);
-                if (user == null)
-                    return (false, "Invalid username or password.", null);
+                var user = await _userRepo.EnsureUserExistsByNameAsync(request.Username);
 
                 if (!user.IsRegistered)
                     return (false, "Please complete registration first.", null);
@@ -89,6 +84,10 @@ namespace PhotoScavengerHunt.Services
                     userId = user.Id,
                     username = user.Name
                 });
+            }
+            catch(ArgumentException aex)
+            {
+                return (false, aex.Message, null);
             }
             catch (Exception ex)
             {

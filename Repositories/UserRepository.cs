@@ -18,6 +18,14 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
+        public async Task<UserProfile> GetByIdOrThrowAsync(int id)
+        {
+            var user = await GetByIdAsync(id);
+            if (user == null)
+                throw new ChallengeNotFoundException("User not found.");
+            return user;
+        }
+
         public async Task<bool> ExistsAsync(int id)
         {
             return await _dbContext.Users.AnyAsync(u => u.Id == id);
@@ -54,9 +62,10 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Users.ToListAsync();
         }
 
-        public async Task RemoveAsync(UserProfile user)
+        public Task RemoveAsync(UserProfile user)
         {
             _dbContext.Users.Remove(user);
+            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()
@@ -72,6 +81,35 @@ namespace PhotoScavengerHunt.Repositories
             var exists = await _dbContext.Users.AnyAsync(u => u.Name == name);
             if (exists)
                 throw new ArgumentException("Username already exists.");
+        }
+
+        public Task EnsureAgeIsValidAsync(int age)
+        {
+            if (age <= 0 || age > 125)
+                throw new ArgumentException("Invalid age value.");
+            return Task.CompletedTask;
+        }
+
+        public async Task EnsureEmailIsUniqueAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email is required.");
+            var exists = await _dbContext.Users.AnyAsync(u => u.Email == email);
+            if (exists)
+                throw new ArgumentException("Email already registered.");
+        }
+
+        public async Task<UserProfile?> GetByNameAsync(string username)
+        {
+            return await _dbContext.Users.FirstOrDefaultAsync(u => u.Name == username);
+        }
+
+        public async Task<UserProfile> EnsureUserExistsByNameAsync(string username)
+        {
+            var user = await GetByNameAsync(username);
+            if (user == null)
+                throw new ArgumentException("Invalid username or password.");
+            return user;
         }
     }
 }

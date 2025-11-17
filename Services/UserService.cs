@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -22,9 +23,7 @@ namespace PhotoScavengerHunt.Services
             try
             {
                 await _userRepo.EnsureUsernameIsValidAsync(name);
-
-                if (age <= 0 || age > 125)
-                    return (false, "Invalid age value.", null);
+                await _userRepo.EnsureAgeIsValidAsync(age);
 
                 var profile = new UserProfile
                 {
@@ -71,11 +70,13 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
+                await _userRepo.EnsureUserExistsAsync(id);
                 var user = await _userRepo.GetByIdAsync(id);
-                if (user == null)
-                    return (false, "User not found.", null);
-
                 return (true, string.Empty, user);
+            }
+            catch (ChallengeNotFoundException)
+            {
+                return (false, "User not found.", null);
             }
             catch (Exception ex)
             {
@@ -88,14 +89,14 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var user = await _userRepo.GetByIdAsync(id);
-                if (user == null)
-                    return (false, "User not found.");
-
+                var user = await _userRepo.GetByIdOrThrowAsync(id);
                 await _userRepo.RemoveAsync(user);
                 await _userRepo.SaveChangesAsync();
-
                 return (true, string.Empty);
+            }
+            catch (ChallengeNotFoundException)
+            {
+                return (false, "User not found.");
             }
             catch (Exception ex)
             {

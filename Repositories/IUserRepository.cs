@@ -6,6 +6,7 @@ public interface IUserRepository
 {
     Task<bool> ExistsAsync(int id);
     Task<UserProfile?> GetByIdAsync(int id);
+    Task<UserProfile> GetByIdOrThrowAsync(int id);
     Task EnsureUserExistsAsync(int id, string? errorMessage = null);
     Task IncrementWinsAsync(int userId);
     Task<bool> ExistsByNameAsync(string name);
@@ -14,4 +15,8 @@ public interface IUserRepository
     Task RemoveAsync(UserProfile user);
     Task SaveChangesAsync();
     Task EnsureUsernameIsValidAsync(string name);
+    Task EnsureAgeIsValidAsync(int age);
+    Task EnsureEmailIsUniqueAsync(string email);
+    Task<UserProfile?> GetByNameAsync(string username);
+    Task<UserProfile> EnsureUserExistsByNameAsync(string username);
 }

@@ -50,5 +50,66 @@ namespace PhotoScavengerHunt.Repositories
                 return (false, $"Unexpected error: {ex.Message}", null);
             }
         }
+
+        public async Task<PhotoSubmission?> GetSubmissionWithCommentsAsync(int submissionId)
+        {
+            return await _dbContext.Photos
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.Id == submissionId);
+        }
+
+        public async Task<PhotoSubmission> EnsureSubmissionExistsAsync(int submissionId)
+        {
+            var submission = await GetSubmissionWithCommentsAsync(submissionId);
+            if (submission == null)
+                throw new ArgumentException("Submission not found.");
+            return submission;
+        }
+
+        public async Task AddCommentAsync(Comment comment)
+        {
+            await _dbContext.Comments.AddAsync(comment);
+        }
+
+        public Task RemoveCommentAsync(Comment comment)
+        {
+            _dbContext.Comments.Remove(comment);
+            return Task.CompletedTask;
+        }
+
+        public async Task<List<PhotoSubmission>> GetSubmissionsForTaskAsync(int taskId)
+        {
+            return await _dbContext.Photos
+                .Include(p => p.Comments)
+                .Where(s => s.TaskId == taskId)
+                .ToListAsync();
+        }
+
+        public async Task<List<PhotoSubmission>> GetSubmissionsByUserAsync(int userId)
+        {
+            return await _dbContext.Photos
+                .Include(p => p.Comments)
+                .Where(s => s.UserId == userId)
+                .ToListAsync();
+        }
+
+        public async Task<List<PhotoSubmission>> GetSubmissionsForChallengeAsync(int challengeId)
+        {
+            return await _dbContext.Photos
+                .Include(p => p.Comments)
+                .Where(p => p.ChallengeId == challengeId)
+                .ToListAsync();
+        }
+
+        public async Task<PhotoSubmission?> FindByIdAsync(int submissionId)
+        {
+            return await _dbContext.Photos.FindAsync(submissionId);
+        }
+
+        public Task RemoveAsync(PhotoSubmission submission)
+        {
+            _dbContext.Photos.Remove(submission);
+            return Task.CompletedTask;
+        }
     }
 }
