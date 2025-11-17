@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
-using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Services
@@ -141,11 +139,14 @@ namespace PhotoScavengerHunt.Services
             return participant;
         }
 
-        public async Task<List<Challenge>> GetChallengesAsync(bool publicOnly = true)
+        public async Task<List<Challenge>> GetChallengesAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc)
         {
             var query = _dbContext.Challenges.AsQueryable();
             if (publicOnly)
                 query = query.Where(c => !c.IsPrivate);
+
+            // Use the generic sorter with multiple constraints
+            query = query.SortBy(sortBy);
 
             var challenges = await query.ToListAsync();
             foreach (var c in challenges)
@@ -261,12 +262,10 @@ namespace PhotoScavengerHunt.Services
 
             if (challenge.Status == ChallengeStatus.Closed)
             {
-                // finalize (idempotent)
                 var finalized = await FinalizeChallengeAsync(challengeId);
                 return finalized;
             }
 
-            // already completed
             throw new ChallengeValidationException("Challenge is already completed.");
         }
 
@@ -312,7 +311,6 @@ namespace PhotoScavengerHunt.Services
         
         public async Task<List<Challenge>> GetChallengesForUserAsync(int userId)
         {
-            // find challenge ids where user is a participant
             var challengeIds = await _dbContext.ChallengeParticipants
                 .Where(cp => cp.UserId == userId)
                 .Select(cp => cp.ChallengeId)

@@ -25,4 +25,8 @@
       <None Remove="PhotoScavengerHunt.Tests\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Challenges\Abstractions\" />
+  </ItemGroup>
+
 </Project>
