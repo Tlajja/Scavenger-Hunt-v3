@@ -3,7 +3,7 @@ namespace PhotoScavengerHunt.Features.Tasks
     public static class HuntTaskFactory
     {
 
-        public static HuntTask Create(string description, int authorId)
+        public static HuntTask Create(string description, int authorId, DateTime? deadline = null)
         {
             if (string.IsNullOrWhiteSpace(description))
                 throw new ArgumentException("Task description cannot be empty.", nameof(description));
@@ -11,7 +11,8 @@ namespace PhotoScavengerHunt.Features.Tasks
             return new HuntTask
             {
                 Description = description,
-                AuthorId = authorId
+                AuthorId = authorId,
+                Deadline = deadline
             };
         }
     }
