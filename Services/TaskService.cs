@@ -24,7 +24,8 @@ namespace PhotoScavengerHunt.Services
 
                 var task = HuntTaskFactory.Create(
                     description: req.Description,
-                    authorId: req.AuthorId);
+                    authorId: req.AuthorId,
+                    deadline: req.Deadline);
 
                 dbContext.Tasks.Add(task);
                 await dbContext.SaveChangesAsync();
@@ -53,7 +54,8 @@ namespace PhotoScavengerHunt.Services
 
                 var task = HuntTaskFactory.Create(
                     description: req.Description,
-                    authorId: req.AuthorId);
+                    authorId: req.AuthorId,
+                    deadline: req.Deadline);
 
                 dbContext.Tasks.Add(task);
                 await dbContext.SaveChangesAsync();

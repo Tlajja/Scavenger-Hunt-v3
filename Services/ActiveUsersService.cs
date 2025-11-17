@@ -19,7 +19,6 @@ namespace PhotoScavengerHunt.Services
 
             connections.TryAdd(connectionId, 0);
 
-            // jei tai naujas useris → keičiasi aktyvių user count
             return isNewUser ? _connections.Count : -1;
         }
 
