@@ -29,9 +29,6 @@ export default function CreateChallenge() {
       if (res.ok) {
         const data = Array.isArray(res.data) ? res.data : []
         setTasks(data)
-        if (data.length && !selectedTaskId) {
-          setSelectedTaskId(String(data[0].id ?? data[0].Id))
-        }
       }
     } catch {}
   }
@@ -84,7 +81,7 @@ export default function CreateChallenge() {
     }
 
     if (!selectedTaskId) {
-      setError('Please select or create a task')
+      setError('Please create a task for this challenge')
       return
     }
 
@@ -145,33 +142,53 @@ export default function CreateChallenge() {
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label>Select Task</label>
-            <select
-              value={selectedTaskId}
-              onChange={e => setSelectedTaskId(e.target.value)}
-              disabled={creating}
-            >
-              <option value="">-- Choose a task --</option>
-              {tasks.map(t => (
-                <option key={t.id ?? t.Id} value={t.id ?? t.Id}>
-                  {t.description ?? t.Description ?? '(no description)'}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setShowCreateTask(!showCreateTask)}
-              disabled={creating}
-              style={{
-                marginTop: 12,
-                width: '100%',
-                background: 'transparent',
-                border: '1px solid #646cff',
-                boxShadow: 'none'
-              }}
-            >
-              {showCreateTask ? 'Cancel' : '+ Create New Task'}
-            </button>
+            <label>Challenge Task</label>
+            {selectedTaskId && !showCreateTask ? (
+              <div style={{
+                background: 'rgba(100, 108, 255, 0.1)',
+                padding: 16,
+                borderRadius: 8,
+                marginBottom: 12
+              }}>
+                <div style={{ color: 'white', marginBottom: 8 }}>
+                  {tasks.find(t => String(t.id ?? t.Id) === selectedTaskId)?.description ?? 
+                   tasks.find(t => String(t.id ?? t.Id) === selectedTaskId)?.Description ?? 
+                   'Task description'}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateTask(true)
+                    setSelectedTaskId('')
+                  }}
+                  disabled={creating}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: '1px solid #646cff',
+                    padding: '8px',
+                    fontSize: 14,
+                    boxShadow: 'none'
+                  }}
+                >
+                  Change Task
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowCreateTask(true)}
+                disabled={creating}
+                style={{
+                  width: '100%',
+                  background: 'rgba(100, 108, 255, 0.1)',
+                  border: '1px solid #646cff',
+                  boxShadow: 'none'
+                }}
+              >
+                + Create Task for Challenge
+              </button>
+            )}
           </div>
 
           {showCreateTask && (
@@ -181,7 +198,7 @@ export default function CreateChallenge() {
               borderRadius: 8,
               marginBottom: 20
             }}>
-              <h3 style={{ color: 'white', marginBottom: 16, fontSize: 18 }}>Create New Task</h3>
+              <h3 style={{ color: 'white', marginBottom: 16, fontSize: 18 }}>Create Task</h3>
               
               <div style={{ marginBottom: 16 }}>
                 <label>Task Description</label>
@@ -207,13 +224,32 @@ export default function CreateChallenge() {
                 </div>
               </div>
 
-              <button
-                onClick={handleCreateTask}
-                disabled={creatingTask || !taskDescription.trim()}
-                style={{ width: '100%' }}
-              >
-                {creatingTask ? 'Creating Task...' : 'Create Task'}
-              </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={handleCreateTask}
+                  disabled={creatingTask || !taskDescription.trim()}
+                  style={{ flex: 1 }}
+                >
+                  {creatingTask ? 'Creating...' : 'Create Task'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateTask(false)
+                    setTaskDescription('')
+                    setTaskDeadline('')
+                  }}
+                  disabled={creatingTask}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255, 107, 107, 0.5)',
+                    color: '#ff6b6b',
+                    boxShadow: 'none'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 

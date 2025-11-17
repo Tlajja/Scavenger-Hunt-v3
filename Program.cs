@@ -15,8 +15,8 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<VotesService>();
 builder.Services.AddScoped<PhotoSubmissionService>();
 
-builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options => 
-    options.UseInMemoryDatabase("PhotoScavengerHuntDb"));
+builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {

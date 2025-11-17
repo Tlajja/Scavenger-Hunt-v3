@@ -191,16 +191,23 @@ export default function MyChallenges() {
                     <span>👥</span>
                     <span>{(c.members ?? []).length} members</span>
                   </div>
-                  {(c.isPrivate ?? c.IsPrivate) && (
+                  {(c.isPrivate ?? c.IsPrivate ?? c.private ?? false) ? (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span>🔒</span>
+                        <span>Private Challenge</span>
+                      </div>
+                      {(c.joinCode ?? c.JoinCode) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span>🔑</span>
+                          <span>Code: {c.joinCode ?? c.JoinCode}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>🔒</span>
-                      <span>Private Challenge</span>
-                    </div>
-                  )}
-                  {(c.joinCode ?? c.JoinCode) && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span>🔑</span>
-                      <span>Code: {c.joinCode ?? c.JoinCode}</span>
+                      <span>🌍</span>
+                      <span>Public Challenge</span>
                     </div>
                   )}
                 </div>

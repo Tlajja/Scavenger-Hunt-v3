@@ -340,16 +340,50 @@ export default function ChallengeRoom() {
             <h1 style={{ fontSize: 36, color: 'white', marginBottom: 8 }}>
               {challenge?.name ?? challenge?.Name ?? 'Challenge'}
             </h1>
-            <div style={{
-              display: 'inline-block',
-              background: statusInfo.color,
-              color: statusInfo.color === '#ffd43b' ? '#1a1a2e' : 'white',
-              padding: '6px 16px',
-              borderRadius: 16,
-              fontSize: 14,
-              fontWeight: 600
-            }}>
-              {statusInfo.text}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'inline-block',
+                background: statusInfo.color,
+                color: statusInfo.color === '#ffd43b' ? '#1a1a2e' : 'white',
+                padding: '6px 16px',
+                borderRadius: 16,
+                fontSize: 14,
+                fontWeight: 600
+              }}>
+                {statusInfo.text}
+              </div>
+              {(challenge?.isPrivate ?? challenge?.IsPrivate ?? challenge?.private ?? false) && (challenge?.joinCode ?? challenge?.JoinCode) && (
+                <div style={{
+                  background: 'rgba(100, 108, 255, 0.2)',
+                  color: 'white',
+                  padding: '6px 16px',
+                  borderRadius: 16,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span>🔑</span>
+                  <span>Code: {challenge?.joinCode ?? challenge?.JoinCode}</span>
+                </div>
+              )}
+              {!(challenge?.isPrivate ?? challenge?.IsPrivate ?? challenge?.private ?? false) && (
+                <div style={{
+                  background: 'rgba(81, 207, 102, 0.2)',
+                  color: '#51cf66',
+                  padding: '6px 16px',
+                  borderRadius: 16,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span>🌍</span>
+                  <span>Public</span>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -358,7 +392,7 @@ export default function ChallengeRoom() {
                 background: '#51cf66',
                 padding: '10px 20px'
               }}>
-                Advance Stage
+                {status === 0 ? '→ Move to Voting' : 'Complete Challenge'}
               </button>
             )}
             <button onClick={handleLeave} style={{
