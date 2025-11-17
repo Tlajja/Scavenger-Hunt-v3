@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class TaskService
+    public class TaskService : ITaskService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<TaskService> _logger;

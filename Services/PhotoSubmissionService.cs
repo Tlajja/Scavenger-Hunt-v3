@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class PhotoSubmissionService
+    public class PhotoSubmissionService : IPhotoSubmissionService
     {
         private readonly PhotoScavengerHuntDbContext _dbContext;
         private readonly IWebHostEnvironment _env;

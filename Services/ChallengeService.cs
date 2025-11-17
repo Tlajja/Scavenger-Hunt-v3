@@ -4,10 +4,11 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Exceptions;
 using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class ChallengeService
+    public class ChallengeService : IChallengeService
     {
         //private readonly PhotoScavengerHuntDbContext _dbContext;
         private readonly IChallengeRepository _challengeRepo;

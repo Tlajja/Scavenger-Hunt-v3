@@ -39,7 +39,6 @@ public class PhotoScavengerHuntDbContext : DbContext
             .HasForeignKey(cp => cp.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Example seed data for tasks and users
         modelBuilder.Entity<HuntTask>().HasData(
             new HuntTask { Id = 1, Description = "Red car"},
             new HuntTask { Id = 2, Description = "Blue mailbox"}
