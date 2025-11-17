@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<CommentService> _logger;

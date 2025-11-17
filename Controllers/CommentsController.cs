@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -8,9 +8,9 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class CommentsController : ControllerBase
     {
-        private readonly CommentService _commentService;
+        private readonly ICommentService _commentService;
 
-        public CommentsController(CommentService comService)
+        public CommentsController(ICommentService comService)
         {
             _commentService = comService;
         }

@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Leaderboard;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class LeaderboardService
+    public class LeaderboardService : ILeaderboardService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
         private readonly ILogger<LeaderboardService> _logger;

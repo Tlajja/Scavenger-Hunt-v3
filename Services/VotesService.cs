@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class VotesService
+    public class VotesService : IVotesService
     {
         private readonly PhotoScavengerHuntDbContext dbContext;
 
