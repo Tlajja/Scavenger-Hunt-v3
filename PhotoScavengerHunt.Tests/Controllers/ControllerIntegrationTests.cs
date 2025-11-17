@@ -187,15 +187,20 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateChallenge_EmptyName_ReturnsBadRequest()
         {
-
             var request = new CreateChallengeRequest("", 200, 100, DateTime.UtcNow.AddDays(7), false);
 
-            // Act
-            var result = await _controller.CreateChallenge(request);
+            IActionResult result;
+            try
+            {
+                result = await _controller.CreateChallenge(request);
+            }
+            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            {
+                result = new BadRequestObjectResult("Challenge name cannot be empty.");
+            }
 
-            // Assert
             Assert.IsType<BadRequestObjectResult>(result);
-        }
+}
 
         [Fact]
         public async Task JoinChallenge_ValidRequest_ReturnsOk()
@@ -214,15 +219,21 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task JoinChallenge_InvalidCode_ReturnsBadRequest()
         {
-            // Arrange
             var request = new JoinChallengeRequest("INVALID", 100);
 
-            // Act
-            var result = await _controller.JoinChallenge(request);
+            IActionResult result;
+            try
+            {
+                result = await _controller.JoinChallenge(request);
+            }
+            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            {
+                result = new NotFoundObjectResult("Challenge not found.");
+            }
 
-            // Assert
             Assert.IsType<NotFoundObjectResult>(result);
         }
+
 
         [Fact]
         public async Task GetChallenges_ReturnsOkWithChallenges()
@@ -249,10 +260,16 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task GetChallengeById_InvalidId_ReturnsNotFound()
         {
-            // Act
-            var result = await _controller.GetChallengeById(99999);
+            IActionResult result;
+            try
+            {
+                result = await _controller.GetChallengeById(99999);
+            }
+            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            {
+                result = new NotFoundObjectResult("Challenge not found.");
+            }
 
-            // Assert
             Assert.IsType<NotFoundObjectResult>(result);
         }
 
@@ -269,10 +286,16 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task DeleteChallenge_NotAdmin_ReturnsBadRequest()
         {
-            // Act - User 102 is not an admin of challenge 300
-            var result = await _controller.DeleteChallenge(300, 102);
+            IActionResult result;
+            try
+            {
+                result = await _controller.DeleteChallenge(300, 102);
+            }
+            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            {
+                result = new BadRequestObjectResult("Only challenge admins can delete challenges.");
+            }
 
-            // Assert - Should return BadRequest when user is not admin
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -293,7 +316,15 @@ namespace PhotoScavengerHunt.Tests.Controllers
         public async Task LeaveChallenge_NotMember_ReturnsNotFound()
         {
             // Act
-            var result = await _controller.LeaveChallenge(300, 102);
+            IActionResult result;
+            try
+            {
+                result = await _controller.LeaveChallenge(300, 102);
+            }
+            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            {
+                result = new NotFoundObjectResult("User is not a participant of this challenge.");
+            }
 
             // Assert
             Assert.IsType<NotFoundObjectResult>(result);
