@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Challenges;
-using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Exceptions;
 

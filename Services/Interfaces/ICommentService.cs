@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PhotoScavengerHunt.Features.Photos;
 
 namespace PhotoScavengerHunt.Services.Interfaces;

@@ -23,10 +23,6 @@ builder.Services.AddSingleton<ActiveUsersService>();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddSignalR();
 
-builder.Services.AddSingleton<ActiveUsersService>();
-builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
-builder.Services.AddSignalR();
-
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -51,14 +47,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-
 app.UseHttpsRedirection();
 
-app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-
-app.UseCors("SignalR");
-
 app.UseRouting();
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+app.UseCors("SignalR");
 app.UseAuthorization();
 
 app.MapControllers();
