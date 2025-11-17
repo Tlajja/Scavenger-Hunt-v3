@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 export default function Logout() {
   const [done, setDone] = useState(false)
@@ -7,51 +7,132 @@ export default function Logout() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken') || localStorage.getItem('access_token')
     const userId = localStorage.getItem('userId')
-    setIsLoggedIn(!!(token || userId))
+    setIsLoggedIn(!!userId)
   }, [])
 
   function handleLogout() {
     try {
       localStorage.removeItem('userId')
       localStorage.removeItem('username')
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('hubId')
-      localStorage.removeItem('hubName')
-      // Notify app about auth change
+      localStorage.removeItem('challengeId')
+      localStorage.removeItem('challengeName')
       window.dispatchEvent(new Event('auth-changed'))
-
       localStorage.setItem('__logout_ts', String(Date.now()))
     } catch {}
     setIsLoggedIn(false)
     setDone(true)
-    
+  }
+
+  if (done) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 70px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 40
+      }}>
+        <div className="card" style={{
+          maxWidth: 500,
+          width: '100%',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: 'rgba(81, 207, 102, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 24px',
+            fontSize: 40
+          }}>
+            👋
+          </div>
+          <h2 style={{ color: 'white', marginBottom: 16 }}>
+            Logged Out Successfully
+          </h2>
+          <p style={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            marginBottom: 32
+          }}>
+            Your session has been cleared. See you next time!
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button
+              onClick={() => navigate('/login')}
+              style={{ padding: '12px 24px' }}
+            >
+              Log In Again
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              style={{
+                background: 'transparent',
+                border: '1px solid #646cff',
+                padding: '12px 24px'
+              }}
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div>
-      {!done ? (
-        <>
-          <h2>Would you like to log out?</h2>
-          <p>Click the button below to end your session.</p>
-          {!isLoggedIn && (
-            <p style={{ color: '#666' }}>
-              You are not logged in. <Link to="/login">Go to login</Link>
-            </p>
-          )}
-          <button onClick={handleLogout} style={{ padding: '8px 12px' }} disabled={!isLoggedIn}>Log out</button>
-        </>
-      ) : (
-        <>
-          <h2>Logout successful</h2>
-          <p>Your session has been cleared.</p>
-          <p>
-            <Link to="/login">Go to login</Link> or <Link to="/">Return home</Link>
-          </p>
-        </>
-      )}
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 40
+    }}>
+      <div className="card" style={{
+        maxWidth: 500,
+        width: '100%',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ color: 'white', marginBottom: 16 }}>
+          Log Out?
+        </h2>
+        <p style={{
+          color: 'rgba(255, 255, 255, 0.7)',
+          marginBottom: 32
+        }}>
+          Are you sure you want to end your session?
+        </p>
+        {!isLoggedIn && (
+          <div className="error-message" style={{ marginBottom: 24 }}>
+            You are not logged in
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button
+            onClick={handleLogout}
+            disabled={!isLoggedIn}
+            style={{
+              background: '#ff6b6b',
+              padding: '12px 24px'
+            }}
+          >
+            Yes, Log Out
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              background: 'transparent',
+              border: '1px solid #646cff',
+              padding: '12px 24px'
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
