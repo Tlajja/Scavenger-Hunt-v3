@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { joinChallenge, getChallenges, getChallengeById } from '../services/api.js'
+import { joinChallenge, getChallenges, getChallengeById, getMyChallenges } from '../services/api.js'
 
 export default function JoinChallenge() {
   const navigate = useNavigate()
@@ -8,6 +8,7 @@ export default function JoinChallenge() {
   
   const [joinCode, setJoinCode] = useState('')
   const [publicChallenges, setPublicChallenges] = useState([])
+  const [myChallengeIds, setMyChallengeIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -15,7 +16,19 @@ export default function JoinChallenge() {
 
   useEffect(() => {
     loadPublicChallenges()
+    loadMyChallenges()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function loadMyChallenges() {
+    try {
+      const res = await getMyChallenges(userId)
+      if (res.ok && Array.isArray(res.data)) {
+        const ids = new Set(res.data.map(c => c.id ?? c.Id))
+        setMyChallengeIds(ids)
+      }
+    } catch { /* ignore */ }
+  }
 
   async function loadPublicChallenges() {
     setLoading(true)
@@ -41,29 +54,54 @@ export default function JoinChallenge() {
       const res = await joinChallenge(code, userId)
       if (!res.ok) {
         const errMsg = (res.data && (res.data.error || res.data.message)) || res.text || `Error ${res.status}`
+        
+        if (/already a participant/i.test(errMsg)) {
+          const mine = await getMyChallenges(userId)
+          if (mine.ok && Array.isArray(mine.data)) {
+            const match = mine.data.find(c => (c.joinCode ?? c.JoinCode ?? '').toUpperCase() === (code || '').toUpperCase())
+            if (match) {
+              const cid = match.id ?? match.Id
+              const cname = match.name ?? match.Name ?? ''
+              localStorage.setItem('challengeId', String(cid))
+              localStorage.setItem('challengeName', cname)
+              setMessage('You are already in this challenge. Redirecting...')
+              setTimeout(() => navigate(`/challenge-room/${cid}`), 1000)
+              return
+            }
+          }
+        }
+        
         setError(errMsg)
         return
       }
 
-      const member = res.data
-      let challenge = member?.challenge || member?.Challenge || null
-      let resolvedChallengeId = member?.challengeId ?? member?.ChallengeId ?? null
+      // New API shape: { participant: {...}, joinCode: 'ABC123' }
+      const participantWrapper = res.data
+      const participant = participantWrapper?.participant ?? participantWrapper?.Participant ?? null
+      if (!participant) {
+        setError('Invalid response from server.')
+        return
+      }
 
-      if (!challenge && resolvedChallengeId) {
-        const hres = await getChallengeById(resolvedChallengeId)
+      let challengeId = participant.challengeId ?? participant.ChallengeId ?? null
+      let challenge = participant.challenge ?? participant.Challenge ?? null
+
+      if (!challenge && challengeId != null) {
+        const hres = await getChallengeById(challengeId)
         if (hres.ok) challenge = hres.data
       }
 
-      const finalChallengeId = (challenge?.id ?? challenge?.Id ?? resolvedChallengeId) ?? null
+      const finalChallengeId = challengeId ?? (challenge?.id ?? challenge?.Id ?? null)
       if (finalChallengeId != null) {
-        localStorage.setItem('challengeId', String(finalChallengeId))
         const challengeName = challenge?.name ?? challenge?.Name ?? ''
+        localStorage.setItem('challengeId', String(finalChallengeId))
         localStorage.setItem('challengeName', challengeName)
         
         setMessage('Successfully joined challenge!')
+        await loadMyChallenges()
         setTimeout(() => {
           navigate(`/challenge-room/${finalChallengeId}`)
-        }, 1000)
+        }, 800)
       }
     } catch (err) {
       setError('Network error')
@@ -173,7 +211,7 @@ export default function JoinChallenge() {
             Public Challenges
           </h2>
           <button
-            onClick={loadPublicChallenges}
+            onClick={() => { loadPublicChallenges(); loadMyChallenges(); }}
             disabled={loading || joining}
             style={{
               background: 'transparent',
@@ -211,7 +249,7 @@ export default function JoinChallenge() {
             {publicChallenges.map(c => {
               const challengeId = c.id ?? c.Id
               const name = c.name ?? c.Name ?? 'Unnamed Challenge'
-              const joinCode = c.joinCode ?? c.JoinCode
+              const alreadyJoined = myChallengeIds.has(challengeId)
               
               return (
                 <div
@@ -223,11 +261,11 @@ export default function JoinChallenge() {
                     border: '1px solid rgba(100, 108, 255, 0.2)',
                     transition: 'all 0.2s'
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     e.currentTarget.style.background = 'rgba(100, 108, 255, 0.1)'
                     e.currentTarget.style.borderColor = 'rgba(100, 108, 255, 0.4)'
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     e.currentTarget.style.background = 'rgba(100, 108, 255, 0.05)'
                     e.currentTarget.style.borderColor = 'rgba(100, 108, 255, 0.2)'
                   }}
@@ -253,11 +291,11 @@ export default function JoinChallenge() {
                   </div>
 
                   <button
-                    onClick={() => handleQuickJoin(c)}
+                    onClick={() => alreadyJoined ? navigate(`/challenge-room/${challengeId}`) : handleQuickJoin(c)}
                     disabled={joining}
                     style={{ width: '100%', padding: '10px' }}
                   >
-                    {joining ? 'Joining...' : 'Join Now'}
+                    {joining ? 'Joining...' : alreadyJoined ? 'Enter' : 'Join Now'}
                   </button>
                 </div>
               )

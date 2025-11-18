@@ -4,9 +4,7 @@ using PhotoScavengerHunt.Interfaces;
 
 public static class SortingExtensions
 {
-    public static IQueryable<T> SortBy<T>(
-        this IQueryable<T> source,
-        ChallengeSortBy sortBy)
+    public static IQueryable<T> SortBy<T>(this IQueryable<T> source, ChallengeSortBy sortBy)
         where T : IHasCreatedAt, IHasDeadline
     {
         return sortBy switch
