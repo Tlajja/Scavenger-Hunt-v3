@@ -108,5 +108,10 @@ namespace PhotoScavengerHunt.Repositories
             if (participant == null || participant.Role != ChallengeRole.Admin)
                 throw new ChallengeValidationException("Not authorized to advance challenge stage.");
         }
+
+        public async Task SaveChangesAsync()
+        {
+            await _dbContext.SaveChangesAsync();
+        }
     }
 }

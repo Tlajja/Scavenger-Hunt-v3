@@ -77,8 +77,8 @@ namespace PhotoScavengerHunt.Services
             };
 
             await _participantRepo.AddAsync(participant);
-
-            challenge.Participants = new List<ChallengeParticipant>();
+            await _participantRepo.SaveChangesAsync();
+            challenge.Participants = new List<ChallengeParticipant> { participant };
             return challenge;
         }
 

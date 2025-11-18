@@ -29,15 +29,15 @@ export default function MyChallenges() {
             const detail = await getChallengeById(c.id ?? c.Id)
             if (!detail.ok || !detail.data) return null
             
-            const members = detail.data.members ?? detail.data.Members ?? []
-            const isMember = Array.isArray(members) && members.some(m => Number(m.userId ?? m.UserId ?? 0) === userId)
+            const participants = detail.data.participants ?? detail.data.Participants ?? detail.data.members ?? detail.data.Members ?? []
+            const isMember = Array.isArray(participants) && participants.some(m => Number(m.userId ?? m.UserId ?? m.id ?? m.Id ?? 0) === userId)
             
             if (!isMember) return null
             
             return {
               ...c,
               ...detail.data,
-              members
+              members: participants
             }
           } catch {
             return null

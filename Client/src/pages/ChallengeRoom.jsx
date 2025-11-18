@@ -21,8 +21,9 @@ export default function ChallengeRoom() {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  const isAdmin = challenge && Array.isArray(challenge.members) && 
-    challenge.members.some(m => Number(m.userId ?? m.UserId) === userId && (m.role ?? m.Role) === 1)
+  const participants = challenge?.members ?? challenge?.Participants ?? challenge?.participants ?? challenge?.participantsList ?? []
+  const isAdmin = Array.isArray(participants) && participants.some(p => 
+    Number(p.userId ?? p.UserId ?? p.id ?? p.Id) === userId && Number(p.role ?? p.Role ?? 0) === 1)
 
   useEffect(() => {
     loadChallengeData()
