@@ -32,4 +32,8 @@
       <None Remove="PhotoScavengerHunt.Tests\**" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\Controllers\" />
+  </ItemGroup>
+
 </Project>

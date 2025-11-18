@@ -1,43 +1,56 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { login } from '../services/api.js'
 
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setMessage('Logging in...')
+    setError('')
+
+    if (!username || !username.trim()) {
+      setError('Username is required')
+      return
+    }
+
+    if (!password) {
+      setError('Password is required')
+      return
+    }
+
     const res = await login(username, password)
 
-    // handle case api.js returned a raw Response (old version) or the safeFetch object
     if (res instanceof Response) {
-      // fallback for older api shape
       const text = await res.text()
       let parsed = null
       try { parsed = text ? JSON.parse(text) : null } catch {}
       if (!res.ok) {
-        setMessage(`Error: ${(parsed && (parsed.message || parsed.error)) || text || res.statusText}`)
+        setError(`Invalid username or password`)
         return
       }
       const userId = parsed?.userId
       const name = parsed?.username ?? username
       if (!userId) {
-        setMessage('Unexpected response from server.')
+        setError('Unexpected response from server')
         return
       }
+      // Clear any old challenge data from previous user
+      localStorage.removeItem('challengeId')
+      localStorage.removeItem('challengeName')
+      
       localStorage.setItem('userId', String(userId))
       localStorage.setItem('username', name)
       window.dispatchEvent(new Event('auth-changed'))
-      setMessage(parsed?.message || 'Login successful.')
+      navigate('/')
       return
     }
 
-    // expected shape from safeFetch: { ok, status, data, text }
     if (!res.ok) {
-      const errMsg = (res.data && (res.data.message || res.data.error)) || res.text || `Error ${res.status}`
-      setMessage(`Error: ${errMsg}`)
+      setError('Invalid username or password')
       return
     }
 
@@ -46,38 +59,92 @@ export default function Login() {
     const name = payload?.username ?? username
 
     if (!userId) {
-      setMessage(payload ?? 'Unexpected response from server.')
+      setError('Unexpected response from server')
       return
     }
 
+    // Clear any old challenge data from previous user
+    localStorage.removeItem('challengeId')
+    localStorage.removeItem('challengeName')
+    
     localStorage.setItem('userId', String(userId))
     localStorage.setItem('username', name)
     window.dispatchEvent(new Event('auth-changed'))
-    setMessage(payload?.message || 'Login successful.')
+    navigate('/')
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: 420 }}>
-      <h2>Login</h2>
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', marginBottom: 6 }}>Username</label>
-        <input
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-        />
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 40
+    }}>
+      <div className="card" style={{ maxWidth: 500, width: '100%' }}>
+        <h1 style={{ 
+          textAlign: 'center', 
+          marginBottom: 16,
+          fontSize: 32,
+          color: 'white'
+        }}>
+          Welcome Back!
+        </h1>
+        <p style={{
+          textAlign: 'center',
+          color: 'rgba(255, 255, 255, 0.6)',
+          marginBottom: 32
+        }}>
+          Log in to continue your adventure
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 20 }}>
+            <label>Username</label>
+            <input
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="Enter your username"
+              autoComplete="username"
+            />
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+            />
+          </div>
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          <button type="submit" style={{ width: '100%', padding: '14px 24px', fontSize: 16 }}>
+            Log In
+          </button>
+        </form>
+
+        <div style={{
+          marginTop: 24,
+          textAlign: 'center',
+          color: 'rgba(255, 255, 255, 0.6)'
+        }}>
+          Don't have an account?{' '}
+          <a
+            onClick={() => navigate('/register')}
+            style={{ color: '#646cff', cursor: 'pointer', fontWeight: 500 }}
+          >
+            Register
+          </a>
+        </div>
       </div>
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', marginBottom: 6 }}>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-        />
-      </div>
-      <button type="submit">Login</button>
-      <div style={{ marginTop: 10 }}>{message}</div>
-    </form>
+    </div>
   )
 }
