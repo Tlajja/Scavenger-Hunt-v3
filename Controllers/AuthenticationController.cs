@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Users;
-using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -8,9 +8,9 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class AuthenticationController : ControllerBase
     {
-        private readonly AuthenticationService _authService;
+        private readonly IAuthenticationService _authService;
 
-        public AuthenticationController(AuthenticationService authService)
+        public AuthenticationController(IAuthenticationService authService)
         {
             _authService = authService;
         }

@@ -7,7 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Features\Challenges\Abstractions\**" />
+    <Content Remove="Features\Challenges\Abstractions\**" />
+    <EmbeddedResource Remove="Features\Challenges\Abstractions\**" />
+    <None Remove="Features\Challenges\Abstractions\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.9">
@@ -22,6 +30,10 @@
       <Content Remove="PhotoScavengerHunt.Tests\**" />
       <EmbeddedResource Remove="PhotoScavengerHunt.Tests\**" />
       <None Remove="PhotoScavengerHunt.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Data\Controllers\" />
   </ItemGroup>
 
 </Project>

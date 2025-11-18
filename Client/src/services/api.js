@@ -163,3 +163,8 @@ export async function advanceChallenge(challengeId, userId) {
     method: 'POST'
   })
 }
+
+// NEW: get challenges the user participates in (private + public)
+export async function getMyChallenges(userId) {
+ return await safeFetch(`/api/challenge/mine?userId=${Number(userId)}`, { method: 'GET' })
+}

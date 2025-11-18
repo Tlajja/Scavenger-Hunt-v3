@@ -1,16 +1,29 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class PhotoSubmissionService
+    public class PhotoSubmissionService : IPhotoSubmissionService
     {
-        private readonly PhotoScavengerHuntDbContext _dbContext;
+        private readonly IPhotoRepository _photoRepo;
+        private readonly IUserRepository _userRepo;
+        private readonly ITaskRepository _taskRepo;
+        private readonly IChallengeRepository _challengeRepo;
         private readonly IWebHostEnvironment _env;
 
-        public PhotoSubmissionService(PhotoScavengerHuntDbContext dbContext, IWebHostEnvironment env)
+        public PhotoSubmissionService(
+            IPhotoRepository photoRepo,
+            IUserRepository userRepo,
+            ITaskRepository taskRepo,
+            IChallengeRepository challengeRepo,
+            IWebHostEnvironment env)
         {
-            _dbContext = dbContext;
+            _photoRepo = photoRepo;
+            _userRepo = userRepo;
+            _taskRepo = taskRepo;
+            _challengeRepo = challengeRepo;
             _env = env;
         }
 
@@ -24,17 +37,15 @@ namespace PhotoScavengerHunt.Services
                 // if challengeId provided, resolve its TaskId
                 if (challengeId.HasValue)
                 {
-                    var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId.Value);
-                    if (challenge == null)
-                        return (false, "Challenge not found.", null, null);
-                    taskId = challenge.TaskId;
+                    await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
+                    var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
+                    taskId = challenge?.TaskId;
                 }
-
-                if (!taskId.HasValue || !await _dbContext.Tasks.AnyAsync(t => t.Id == taskId.Value))
+                if (!taskId.HasValue)
                     return (false, "Task does not exist.", null, null);
 
-                if (!await _dbContext.Users.AnyAsync(u => u.Id == userId))
-                    return (false, "User does not exist.", null, null);
+                await _taskRepo.EnsureTaskExistsAsync(taskId.Value);
+                await _userRepo.EnsureUserExistsAsync(userId);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -68,10 +79,14 @@ namespace PhotoScavengerHunt.Services
                     Comments = new List<Comment>()
                 };
 
-                _dbContext.Photos.Add(submission);
-                await _dbContext.SaveChangesAsync();
+                await _photoRepo.AddAsync(submission);
+                await _photoRepo.SaveChangesAsync();
 
                 return (true, "Photo uploaded successfully.", photoUrl, submission.Id);
+            }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message, null, null);
             }
             catch (DbUpdateException dbEx)
             {
@@ -91,10 +106,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _dbContext.Photos
-                    .Include(p => p.Comments)
-                    .Where(s => s.TaskId == taskId)
-                    .ToListAsync();
+                return await _photoRepo.GetSubmissionsForTaskAsync(taskId);
             }
             catch (Exception ex)
             {
@@ -106,10 +118,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _dbContext.Photos
-                    .Include(p => p.Comments)
-                    .Where(s => s.UserId == userId)
-                    .ToListAsync();
+                return await _photoRepo.GetSubmissionsByUserAsync(userId);
             }
             catch (Exception ex)
             {
@@ -121,7 +130,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await _dbContext.Photos.FindAsync(submissionId);
+                var submission = await _photoRepo.FindByIdAsync(submissionId);
                 if (submission == null)
                     return (false, "Submission not found.");
 
@@ -132,10 +141,14 @@ namespace PhotoScavengerHunt.Services
                     File.Delete(filePath);
                 }
 
-                _dbContext.Photos.Remove(submission);
-                await _dbContext.SaveChangesAsync();
+                await _photoRepo.RemoveAsync(submission);
+                await _photoRepo.SaveChangesAsync();
 
                 return (true, "Submission deleted successfully.");
+            }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message);
             }
             catch (Exception ex)
             {
@@ -147,10 +160,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _dbContext.Photos
-                    .Include(p => p.Comments)
-                    .Where(p => p.ChallengeId == challengeId)
-                    .ToListAsync();
+                return await _photoRepo.GetSubmissionsForChallengeAsync(challengeId);
             }
             catch (Exception ex)
             {

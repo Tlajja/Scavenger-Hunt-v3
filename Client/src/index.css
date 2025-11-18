@@ -1,11 +1,11 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #1a1a2e;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,56 +13,142 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
-  text-decoration: inherit;
+  text-decoration: none;
+  transition: color 0.3s;
 }
+
 a:hover {
   color: #535bf2;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
 }
 
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.75em 1.5em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #646cff;
+  color: white;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(100, 108, 255, 0.3);
 }
-button:hover {
+
+button:hover:not(:disabled) {
+  background-color: #535bf2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.4);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1em;
+  font-family: inherit;
+  background-color: #2a2a3e;
+  color: white;
+  transition: border-color 0.3s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
   border-color: #646cff;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.card {
+  background: rgba(42, 42, 62, 0.8);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.error-message {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #ff6b6b;
+  margin: 12px 0;
+}
+
+.success-message {
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #51cf66;
+  margin: 12px 0;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #f5f7fa;
   }
+
+  body {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  }
+
+  a {
+    color: #4361ee;
+  }
+
   a:hover {
-    color: #747bff;
+    color: #3a51d1;
   }
+
   button {
-    background-color: #f9f9f9;
+    background-color: #4361ee;
+  }
+
+  button:hover:not(:disabled) {
+    background-color: #3a51d1;
+  }
+
+  input, select, textarea {
+    background-color: white;
+    color: #213547;
+    border-color: #ddd;
+  }
+
+  .card {
+    background: white;
   }
 }
