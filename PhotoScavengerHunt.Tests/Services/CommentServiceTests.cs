@@ -3,6 +3,7 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PhotoScavengerHunt.Repositories;
 using Moq;
 using Xunit;
 
@@ -16,7 +17,10 @@ namespace PhotoScavengerHunt.Tests.Services
         public CommentServiceTests()
         {
             _mockLogger = CreateMockLogger<CommentService>();
-            _service = new CommentService(DbContext, _mockLogger.Object);
+            var photoRepo = new PhotoRepository(DbContext);
+            _service = new CommentService(photoRepo, _mockLogger.Object);
+
+
             SeedTestData();
         }
 

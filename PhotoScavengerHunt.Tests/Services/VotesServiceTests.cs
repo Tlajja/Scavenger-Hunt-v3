@@ -3,8 +3,7 @@ using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Moq;
+using PhotoScavengerHunt.Repositories;
 using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Services
@@ -15,7 +14,7 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public VotesServiceTests()
         {
-            _service = new VotesService(DbContext);
+            _service = new VotesService(new PhotoRepository(DbContext));
             SeedTestData();
         }
 

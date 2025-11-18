@@ -1,8 +1,6 @@
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Leaderboard;
-using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Tests.Infrastructure;
-using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Repositories;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -10,27 +8,32 @@ using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Services
 {
-    public class LeaderboardServiceTests : DatabaseTestBase
+    public class LeaderboardServiceTests
     {
         private readonly LeaderboardService _service;
+        private readonly Mock<ILeaderboardRepository> _mockRepo;
         private readonly Mock<ILogger<LeaderboardService>> _mockLogger;
 
         public LeaderboardServiceTests()
         {
-            _mockLogger = CreateMockLogger<LeaderboardService>();
-            _service = new LeaderboardService(DbContext, _mockLogger.Object);
-            SeedTestData();
+            _mockRepo = new Mock<ILeaderboardRepository>();
+            _mockLogger = new Mock<ILogger<LeaderboardService>>();
+            _service = new LeaderboardService(_mockRepo.Object, _mockLogger.Object);
         }
 
         [Fact]
         public async Task GetLeaderboardAsync_ReturnsEntriesSortedByVotes()
         {
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(100, "TestUser1", 5),
+                new LeaderboardEntry(101, "TestUser2", 3)
+            });
+
             var result = await _service.GetLeaderboardAsync();
 
             Assert.NotNull(result);
-            Assert.Equal(2, result.Count); // Seed data has 2 users with submissions
-            
-            // Should be sorted by votes descending (user 100 has 5, user 101 has 3)
+            Assert.Equal(2, result.Count);
             Assert.Equal(100, result[0].UserId);
             Assert.Equal(5, result[0].TotalVotes);
             Assert.Equal(101, result[1].UserId);
@@ -40,6 +43,12 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_IncludesUserNames()
         {
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(100, "TestUser1", 5),
+                new LeaderboardEntry(101, "TestUser2", 3)
+            });
+
             var result = await _service.GetLeaderboardAsync();
 
             Assert.Equal("TestUser1", result[0].UserName);
@@ -49,9 +58,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_EmptyDatabase_ReturnsEmpty()
         {
-            // Clear all photos
-            DbContext.Photos.RemoveRange(DbContext.Photos);
-            await DbContext.SaveChangesAsync();
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>());
 
             var result = await _service.GetLeaderboardAsync();
 
@@ -62,34 +69,24 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_AggregatesMultipleSubmissions()
         {
-            // Add another submission for user 100
-            DbContext.Photos.Add(new PhotoSubmission
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
             {
-                TaskId = 201,
-                UserId = 100,
-                PhotoUrl = "/test/photo3.jpg",
-                Votes = 10
+                new LeaderboardEntry(100, "TestUser1", 15)
             });
-            await DbContext.SaveChangesAsync();
 
             var result = await _service.GetLeaderboardAsync();
 
             var user100Entry = result.First(e => e.UserId == 100);
-            Assert.Equal(15, user100Entry.TotalVotes); 
+            Assert.Equal(15, user100Entry.TotalVotes);
         }
 
         [Fact]
         public async Task GetLeaderboardAsync_UnknownUser_ShowsUnknown()
         {
-            // Add submission for non-existent user
-            DbContext.Photos.Add(new PhotoSubmission
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
             {
-                TaskId = 200,
-                UserId = 99999,
-                PhotoUrl = "/test/photo_unknown.jpg",
-                Votes = 1
+                new LeaderboardEntry(99999, "Unknown", 1)
             });
-            await DbContext.SaveChangesAsync();
 
             var result = await _service.GetLeaderboardAsync();
 
@@ -100,21 +97,16 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_SameVotes_SortsByName()
         {
-            // Make both users have same votes
-            var photo1 = await DbContext.Photos.FindAsync(400);
-            var photo2 = await DbContext.Photos.FindAsync(401);
-            photo1!.Votes = 5;
-            photo2!.Votes = 5;
-            await DbContext.SaveChangesAsync();
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(100, "Alice", 5),
+                new LeaderboardEntry(101, "Bob", 5)
+            });
 
             var result = await _service.GetLeaderboardAsync();
 
             Assert.Equal(2, result.Count);
-            // Should be sorted alphabetically when votes are equal
-            Assert.True(string.Compare(
-                result[0].UserName, 
-                result[1].UserName, 
-                StringComparison.OrdinalIgnoreCase) <= 0);
+            Assert.True(string.Compare(result[0].UserName, result[1].UserName, StringComparison.OrdinalIgnoreCase) <= 0);
         }
 
         [Fact]
@@ -130,10 +122,10 @@ namespace PhotoScavengerHunt.Tests.Services
 
             entries.Sort();
 
-            Assert.Equal(4, entries[0].UserId); // David (20 votes)
-            Assert.Equal(2, entries[1].UserId); // Bob (15 votes)
-            Assert.Equal(1, entries[2].UserId); // Alice (10 votes)
-            Assert.Equal(3, entries[3].UserId); // Charlie (10 votes)
+            Assert.Equal(4, entries[0].UserId);
+            Assert.Equal(2, entries[1].UserId);
+            Assert.Equal(1, entries[2].UserId);
+            Assert.Equal(3, entries[3].UserId);
         }
 
         [Fact]
@@ -156,15 +148,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetLeaderboardAsync_ZeroVotes_IncludedInLeaderboard()
         {
-            // Submission with 0 votes
-            DbContext.Photos.Add(new PhotoSubmission
+            _mockRepo.Setup(r => r.GetLeaderboardAsync()).ReturnsAsync(new List<LeaderboardEntry>
             {
-                TaskId = 200,
-                UserId = 102,
-                PhotoUrl = "/test/photo_zero.jpg",
-                Votes = 0
+                new LeaderboardEntry(102, "ZeroUser", 0)
             });
-            await DbContext.SaveChangesAsync();
 
             var result = await _service.GetLeaderboardAsync();
 

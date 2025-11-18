@@ -7,6 +7,7 @@ using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Tests.Infrastructure;
+using PhotoScavengerHunt.Repositories;
 using Moq;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
 
         public AuthenticationControllerTests()
         {
-            _service = new AuthenticationService(DbContext);
+            _service = new AuthenticationService(new UserRepository(DbContext));
             _controller = new AuthenticationController(_service);
             SeedTestData();
         }
@@ -86,7 +87,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         public TasksControllerTests()
         {
             var logger = CreateMockLogger<TaskService>();
-            _service = new TaskService(DbContext, logger.Object);
+            _service = new TaskService(new TaskRepository(DbContext), new UserRepository(DbContext), logger.Object);
             var controllerLogger = CreateMockLogger<TasksController>();
             _controller = new TasksController(_service, controllerLogger.Object);
             SeedTestData();
@@ -168,7 +169,13 @@ namespace PhotoScavengerHunt.Tests.Controllers
 
         public ChallengeControllerTests()
         {
-            _service = new ChallengeService(DbContext);
+            _service = new ChallengeService(
+            new ChallengeRepository(DbContext),
+            new UserRepository(DbContext),
+            new TaskRepository(DbContext),
+            new ChallengeParticipantRepository(DbContext)
+        );
+
             _controller = new ChallengeController(_service);
             SeedTestData();
         }
@@ -338,7 +345,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
 
         public VotesControllerTests()
         {
-            _service = new VotesService(DbContext);
+            _service = new VotesService(new PhotoRepository(DbContext));
             _controller = new VotesController(_service);
             SeedTestData();
         }
@@ -369,7 +376,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         public LeaderboardControllerTests()
         {
             var logger = CreateMockLogger<LeaderboardService>();
-            _service = new LeaderboardService(DbContext, logger.Object);
+            _service = new LeaderboardService(new LeaderboardRepository(DbContext), logger.Object);
             var controllerLogger = CreateMockLogger<LeaderboardController>();
             _controller = new LeaderboardController(_service, controllerLogger.Object);
             SeedTestData();

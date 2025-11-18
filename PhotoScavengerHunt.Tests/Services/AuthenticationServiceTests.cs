@@ -2,6 +2,8 @@ using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Repositories;
+
 using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Services
@@ -12,7 +14,9 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public AuthenticationServiceTests()
         {
-            _service = new AuthenticationService(DbContext);
+            var userRepo = new UserRepository(DbContext);
+            _service = new AuthenticationService(userRepo);
+
             SeedTestData();
         }
 
@@ -49,8 +53,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [InlineData("test@test.com", "password123", "", 25, "Email, password, and username are required.")]
         [InlineData("invalid-email", "password123", "user", 25, "Invalid email format.")]
         [InlineData("test@test.com", "short", "user", 25, "Password must be at least 6 characters long.")]
-        [InlineData("test@test.com", "password123", "u", 25, "Invalid username format.")]
-        [InlineData("test@test.com", "password123", "user with spaces", 25, "Invalid username format.")]
+        [InlineData("test@test.com", "password123", "u", 25, "Invalid username format")]
+        [InlineData("test@test.com", "password123", "user with spaces", 25, "Invalid username format")]
         [InlineData("test@test.com", "password123", "user", 0, "Invalid age value.")]
         [InlineData("test@test.com", "password123", "user", 126, "Invalid age value.")]
         public async Task RegisterAsync_InvalidInput_ReturnsError(

@@ -4,6 +4,7 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using PhotoScavengerHunt.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Repositories;
 using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Services
@@ -14,7 +15,13 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public ChallengeServiceTests()
         {
-            _service = new ChallengeService(DbContext);
+            _service =  new ChallengeService(
+                        new ChallengeRepository(DbContext),
+                        new UserRepository(DbContext),
+                        new TaskRepository(DbContext),
+                        new ChallengeParticipantRepository(DbContext)
+                    );
+
             SeedTestData();
         }
 

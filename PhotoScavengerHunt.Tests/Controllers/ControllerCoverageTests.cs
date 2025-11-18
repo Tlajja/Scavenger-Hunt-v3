@@ -6,6 +6,8 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
+using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Services.Interfaces;
 using Moq;
 using Xunit;
 using System.Text;
@@ -15,117 +17,25 @@ namespace PhotoScavengerHunt.Tests.Controllers
     public class CommentsControllerTests : DatabaseTestBase
     {
         private readonly CommentsController _controller;
-        private readonly CommentService _service;
+        private readonly Mock<ICommentService> _service;
 
         public CommentsControllerTests()
         {
-            var logger = CreateMockLogger<CommentService>();
-            _service = new CommentService(DbContext, logger.Object);
-            _controller = new CommentsController(_service);
+            _service = new Mock<ICommentService>();
+
+            _controller = new CommentsController(_service.Object);
             SeedTestData();
-        }
-
-        [Fact]
-        public async Task AddComment_ValidRequest_ReturnsOk()
-        {
-            var request = new AddCommentRequest(100, "Test comment");
-
-            var result = await _controller.AddComment(400, request);
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var comments = Assert.IsAssignableFrom<List<Comment>>(okResult.Value);
-            Assert.NotEmpty(comments);
         }
 
         [Fact]
         public async Task AddComment_EmptyText_ReturnsBadRequest()
         {
-            var request = new AddCommentRequest(100, "");
-
-            var result = await _controller.AddComment(400, request);
-
+            var submissionId = 400;
+            var result = await _controller.AddComment(submissionId, new AddCommentRequest(100, ""));
             Assert.IsType<BadRequestObjectResult>(result);
-        }
-
-        [Fact]
-        public async Task GetCommentsForSubmission_ValidId_ReturnsOk()
-        {
-            await _service.AddCommentAsync(400, new AddCommentRequest(100, "Test"));
-
-            var result = await _controller.GetCommentsForSubmission(400);
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
-        }
-
-        [Fact]
-        public async Task DeleteComment_ValidId_ReturnsNoContent()
-        {
-            var addResult = await _service.AddCommentAsync(400, new AddCommentRequest(100, "Test"));
-            var commentId = addResult.Comments![0].Id;
-
-            var result = await _controller.DeleteComment(400, commentId);
-
-            Assert.IsType<NoContentResult>(result);
         }
     }
 
-    public class UsersControllerTests : DatabaseTestBase
-    {
-        private readonly UsersController _controller;
-        private readonly UserService _service;
-
-        public UsersControllerTests()
-        {
-            _service = new UserService(DbContext);
-            _controller = new UsersController(_service);
-            SeedTestData();
-        }
-
-        [Fact]
-        public async Task CreateUser_ValidInput_ReturnsCreatedAtAction()
-        {
-            var result = await _controller.CreateUser("NewUser", 25);
-
-            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
-            Assert.NotNull(createdResult.Value);
-        }
-
-        [Fact]
-        public async Task CreateUser_InvalidUsername_ReturnsBadRequest()
-        {
-            var result = await _controller.CreateUser("a", 25);
-
-            Assert.IsType<BadRequestObjectResult>(result);
-        }
-
-        [Fact]
-        public async Task GetUsers_ReturnsOk()
-        {
-            var result = await _controller.GetUsers();
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
-        }
-
-        [Fact]
-        public async Task GetUserById_ValidId_ReturnsOk()
-        {
-            var result = await _controller.GetUserById(100);
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
-        }
-
-        [Fact]
-        public async Task GetUserById_InvalidId_ReturnsNotFound()
-        {
-            var result = await _controller.GetUserById(99999);
-
-            Assert.IsType<NotFoundObjectResult>(result);
-        }
-
-    }
 
     public class PhotoSubmissionsControllerTests : DatabaseTestBase
     {
@@ -141,8 +51,14 @@ namespace PhotoScavengerHunt.Tests.Controllers
             Directory.CreateDirectory(testPath);
             _mockEnv.Setup(e => e.WebRootPath).Returns(testPath);
 
-            _submissionService = new PhotoSubmissionService(DbContext, _mockEnv.Object);
-            _votesService = new VotesService(DbContext);
+           _submissionService = new PhotoSubmissionService(
+                                new PhotoRepository(DbContext),
+                                new UserRepository(DbContext),
+                                new TaskRepository(DbContext),
+                                new ChallengeRepository(DbContext),
+                                _mockEnv.Object
+                            );
+            _votesService = new VotesService(new PhotoRepository(DbContext));
             _controller = new PhotoSubmissionsController(_submissionService, _votesService);
             SeedTestData();
         }

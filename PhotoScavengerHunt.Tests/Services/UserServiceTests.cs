@@ -2,6 +2,9 @@ using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Repositories;
+using Microsoft.Extensions.Logging;
+
 using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Services
@@ -12,7 +15,10 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public UserServiceTests()
         {
-            _service = new UserService(DbContext);
+            var userRepo = new UserRepository(DbContext);
+            var logger = new LoggerFactory().CreateLogger<UserService>();
+            _service = new UserService(userRepo, logger);
+
             SeedTestData();
         }
 
