@@ -106,7 +106,10 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task GetUsersAsync_EmptyDatabase_ReturnsEmpty()
         {
+            // Remove in correct order to avoid foreign key constraint issues
             DbContext.Photos.RemoveRange(DbContext.Photos);
+            DbContext.ChallengeParticipants.RemoveRange(DbContext.ChallengeParticipants);
+            DbContext.Challenges.RemoveRange(DbContext.Challenges);
             DbContext.Tasks.RemoveRange(DbContext.Tasks);
             DbContext.Users.RemoveRange(DbContext.Users);
             await DbContext.SaveChangesAsync();
@@ -142,6 +145,21 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task DeleteUserAsync_ValidId_ReturnsSuccess()
         {
+            // Remove related entities first to avoid foreign key constraint issues
+            var userPhotos = DbContext.Photos.Where(p => p.UserId == 100);
+            DbContext.Photos.RemoveRange(userPhotos);
+            
+            var userParticipations = DbContext.ChallengeParticipants.Where(cp => cp.UserId == 100);
+            DbContext.ChallengeParticipants.RemoveRange(userParticipations);
+            
+            var allChallenges = DbContext.Challenges.ToList();
+            DbContext.Challenges.RemoveRange(allChallenges);
+            
+            var userTasks = DbContext.Tasks.Where(t => t.AuthorId == 100);
+            DbContext.Tasks.RemoveRange(userTasks);
+            
+            await DbContext.SaveChangesAsync();
+
             var result = await _service.DeleteUserAsync(100);
 
             Assert.True(result.Success);

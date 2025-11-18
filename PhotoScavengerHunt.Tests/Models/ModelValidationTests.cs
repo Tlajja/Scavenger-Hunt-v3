@@ -1,5 +1,6 @@
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Features.Leaderboard;
 using Xunit;
@@ -52,17 +53,106 @@ namespace PhotoScavengerHunt.Tests.Models
 
             Assert.Equal(0, task.Id);
             Assert.Equal("", task.Description);
-            Assert.Equal(default(DateTime), task.Deadline);
-            Assert.Equal(HuntTaskStatus.Open, task.Status);
             Assert.Equal(0, task.AuthorId);
+        }
+    }
+
+    public class ChallengeTests
+    {
+        [Fact]
+        public void Challenge_DefaultValues_AreCorrect()
+        {
+            var challenge = new Challenge();
+
+            Assert.Equal(0, challenge.Id);
+            Assert.Equal("", challenge.Name);
+            Assert.Equal(0, challenge.TaskId);
+            Assert.Equal(0, challenge.CreatorId);
+            Assert.False(challenge.IsPrivate);
+            Assert.Null(challenge.Participants);
         }
 
         [Fact]
-        public void HuntTaskStatus_HasCorrectValues()
+        public void Challenge_JsonSerialization_ExcludesNullParticipants()
         {
-            Assert.Equal(0, (int)HuntTaskStatus.Open);
-            Assert.Equal(1, (int)HuntTaskStatus.Closed);
-            Assert.Equal(2, (int)HuntTaskStatus.Completed);
+            var challenge = new Challenge
+            {
+                Id = 1,
+                Name = "Test Challenge",
+                TaskId = 1,
+                JoinCode = "ABC123",
+                CreatorId = 1,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                IsPrivate = false,
+                Participants = null
+            };
+
+            var json = JsonSerializer.Serialize(challenge);
+
+            Assert.DoesNotContain("\"members\"", json.ToLower());
+        }
+
+        [Fact]
+        public void Challenge_JsonSerialization_IncludesParticipants_WhenNotNull()
+        {
+            var challenge = new Challenge
+            {
+                Id = 1,
+                Name = "Test Challenge",
+                TaskId = 1,
+                JoinCode = "ABC123",
+                CreatorId = 1,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                IsPrivate = false,
+                Participants = new List<ChallengeParticipant>()
+            };
+
+            var json = JsonSerializer.Serialize(challenge);
+
+            Assert.Contains("\"members\"", json.ToLower());
+        }
+    }
+
+    public class ChallengeParticipantTests
+    {
+        [Fact]
+        public void ChallengeParticipant_DefaultValues_AreCorrect()
+        {
+            var participant = new ChallengeParticipant();
+
+            Assert.Equal(0, participant.Id);
+            Assert.Equal(0, participant.ChallengeId);
+            Assert.Equal(0, participant.UserId);
+            Assert.Equal(ChallengeRole.Participant, participant.Role);
+            Assert.Null(participant.Challenge);
+            Assert.Null(participant.User);
+        }
+
+        [Fact]
+        public void ChallengeRole_HasCorrectValues()
+        {
+            Assert.Equal(0, (int)ChallengeRole.Participant);
+            Assert.Equal(1, (int)ChallengeRole.Admin);
+        }
+
+        [Fact]
+        public void ChallengeParticipant_JsonSerialization_ExcludesNavigationProperties()
+        {
+            var participant = new ChallengeParticipant
+            {
+                Id = 1,
+                ChallengeId = 1,
+                UserId = 1,
+                Role = ChallengeRole.Admin,
+                JoinedAt = DateTime.UtcNow,
+                Challenge = new Challenge(),
+                User = new UserProfile()
+            };
+
+            var json = JsonSerializer.Serialize(participant);
+
+            Assert.DoesNotContain("\"challenge\"", json.ToLower());
+            Assert.DoesNotContain("\"user\"", json.ToLower());
         }
     }
 
@@ -76,7 +166,7 @@ namespace PhotoScavengerHunt.Tests.Models
             Assert.Equal(0, photo.Id);
             Assert.Equal(0, photo.TaskId);
             Assert.Equal(0, photo.UserId);
-            Assert.Null(photo.HubId);
+            Assert.Null(photo.ChallengeId);
             Assert.Equal(string.Empty, photo.PhotoUrl);
             Assert.Equal(0, photo.Votes);
             Assert.NotNull(photo.Comments);
@@ -84,19 +174,19 @@ namespace PhotoScavengerHunt.Tests.Models
         }
 
         [Fact]
-        public void PhotoSubmission_HubId_CanBeNull()
+        public void PhotoSubmission_ChallengeId_CanBeNull()
         {
-            var photo = new PhotoSubmission { HubId = null };
+            var photo = new PhotoSubmission { ChallengeId = null };
 
-            Assert.Null(photo.HubId);
+            Assert.Null(photo.ChallengeId);
         }
 
         [Fact]
-        public void PhotoSubmission_HubId_CanBeSet()
+        public void PhotoSubmission_ChallengeId_CanBeSet()
         {
-            var photo = new PhotoSubmission { HubId = 5 };
+            var photo = new PhotoSubmission { ChallengeId = 5 };
 
-            Assert.Equal(5, photo.HubId);
+            Assert.Equal(5, photo.ChallengeId);
         }
     }
 
@@ -183,14 +273,31 @@ namespace PhotoScavengerHunt.Tests.Models
     public class RequestModelTests
     {
         [Fact]
+        public void CreateChallengeRequest_Record_WorksCorrectly()
+        {
+            var request = new CreateChallengeRequest("Test Challenge", 1, 1, DateTime.UtcNow.AddDays(7), true);
+
+            Assert.Equal("Test Challenge", request.Name);
+            Assert.Equal(1, request.TaskId);
+            Assert.Equal(1, request.CreatorId);
+            Assert.True(request.IsPrivate);
+        }
+
+        [Fact]
+        public void JoinChallengeRequest_Record_WorksCorrectly()
+        {
+            var request = new JoinChallengeRequest("ABC123", 1);
+
+            Assert.Equal("ABC123", request.JoinCode);
+            Assert.Equal(1, request.UserId);
+        }
+
+        [Fact]
         public void CreateTaskRequest_Record_WorksCorrectly()
         {
-            var deadline = new DateTime(2026, 1, 1);
-
-            var request = new CreateTaskRequest("Task description", deadline, 1);
+            var request = new CreateTaskRequest("Task description", 1);
 
             Assert.Equal("Task description", request.Description);
-            Assert.Equal(deadline, request.Deadline);
             Assert.Equal(1, request.AuthorId);
         }
 
@@ -206,13 +313,14 @@ namespace PhotoScavengerHunt.Tests.Models
         [Fact]
         public void RegisterRequest_Record_WorksCorrectly()
         {
+
             var request = new RegisterRequest(
-                "test@test.com", 
-                "password123", 
-                "TestUser", 
+                "test@test.com",
+                "password123",
+                "TestUser",
                 25
             );
-
+            
             Assert.Equal("test@test.com", request.Email);
             Assert.Equal("password123", request.Password);
             Assert.Equal("TestUser", request.Username);

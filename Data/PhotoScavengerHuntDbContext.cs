@@ -39,10 +39,21 @@ public class PhotoScavengerHuntDbContext : DbContext
             .HasForeignKey(cp => cp.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Example seed data for tasks and users
+        modelBuilder.Entity<HuntTask>()
+            .Property(t => t.CreatedAt)
+            .HasDefaultValueSql("GETUTCDATE()");
+
+        modelBuilder.Entity<HuntTask>()
+            .Property(t => t.Deadline)
+            .IsRequired(false);
+
+        // Seed with deterministic timestamps to avoid EF PendingModelChangesWarning
+        var seedCreatedAt1 = new DateTime(2025,1,1,0,0,0, DateTimeKind.Utc);
+        var seedCreatedAt2 = new DateTime(2025,1,2,0,0,0, DateTimeKind.Utc);
+
         modelBuilder.Entity<HuntTask>().HasData(
-            new HuntTask { Id = 1, Description = "Red car"},
-            new HuntTask { Id = 2, Description = "Blue mailbox"}
+            new HuntTask { Id = 1, Description = "Red car", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new HuntTask { Id = 2, Description = "Blue mailbox", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 }
         );
 
         modelBuilder.Entity<UserProfile>().HasData(

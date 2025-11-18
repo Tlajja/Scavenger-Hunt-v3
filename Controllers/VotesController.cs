@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PhotoScavengerHunt.Services;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -7,9 +7,9 @@ namespace PhotoScavengerHunt.Controllers
     [Route("api/[controller]")]
     public class VotesController : ControllerBase
     {
-        private readonly VotesService _votesService;
+        private readonly IVotesService _votesService;
 
-        public VotesController(VotesService votesService)
+        public VotesController(IVotesService votesService)
         {
             _votesService = votesService;
         }

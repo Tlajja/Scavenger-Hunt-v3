@@ -4,6 +4,7 @@ using PhotoScavengerHunt.Controllers;
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
+using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Moq;
@@ -96,7 +97,6 @@ namespace PhotoScavengerHunt.Tests.Controllers
         {
             var request = new CreateTaskRequest(
                 Description: "Controller Task",
-                Deadline: new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
                 AuthorId: 100
             );
 
@@ -109,7 +109,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateTask_EmptyDescription_ReturnsBadRequest()
         {
-            var request = new CreateTaskRequest("", DateTime.UtcNow.AddDays(1), 100);
+            var request = new CreateTaskRequest("", 100);
 
             var result = await _controller.CreateTask(request);
 
@@ -157,6 +157,145 @@ namespace PhotoScavengerHunt.Tests.Controllers
         {
             var result = await _controller.DeleteUserTask(100, 99999);
 
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+    }
+
+    public class ChallengeControllerTests : DatabaseTestBase
+    {
+        private readonly ChallengeController _controller;
+        private readonly ChallengeService _service;
+
+        public ChallengeControllerTests()
+        {
+            _service = new ChallengeService(DbContext);
+            _controller = new ChallengeController(_service);
+            SeedTestData();
+        }
+
+        [Fact]
+        public async Task CreateChallenge_ValidRequest_ReturnsCreatedAtAction()
+        {
+            var request = new CreateChallengeRequest("Controller Challenge", 200, 102, DateTime.UtcNow.AddDays(7), true);
+
+            var result = await _controller.CreateChallenge(request);
+
+            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+            Assert.Equal(nameof(_controller.GetChallengeById), createdResult.ActionName);
+        }
+
+        [Fact]
+        public async Task CreateChallenge_EmptyName_ReturnsBadRequest()
+        {
+
+            var request = new CreateChallengeRequest("", 200, 100, DateTime.UtcNow.AddDays(7), false);
+
+            // Act
+            var result = await _controller.CreateChallenge(request);
+
+            // Assert
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task JoinChallenge_ValidRequest_ReturnsOk()
+        {
+            // Arrange
+            var request = new JoinChallengeRequest("TEST01", 102);
+
+            // Act
+            var result = await _controller.JoinChallenge(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+        }
+
+        [Fact]
+        public async Task JoinChallenge_InvalidCode_ReturnsBadRequest()
+        {
+            // Arrange
+            var request = new JoinChallengeRequest("INVALID", 100);
+
+            // Act
+            var result = await _controller.JoinChallenge(request);
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task GetChallenges_ReturnsOkWithChallenges()
+        {
+            // Act
+            var result = await _controller.GetChallenges(publicOnly: true);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+        }
+
+        [Fact]
+        public async Task GetChallengeById_ValidId_ReturnsOk()
+        {
+            // Act
+            var result = await _controller.GetChallengeById(300);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+        }
+
+        [Fact]
+        public async Task GetChallengeById_InvalidId_ReturnsNotFound()
+        {
+            // Act
+            var result = await _controller.GetChallengeById(99999);
+
+            // Assert
+            Assert.IsType<NotFoundObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteChallenge_ValidAdmin_ReturnsNoContent()
+        {
+            // Act
+            var result = await _controller.DeleteChallenge(300, 100);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task DeleteChallenge_NotAdmin_ReturnsBadRequest()
+        {
+            // Act - User 102 is not an admin of challenge 300
+            var result = await _controller.DeleteChallenge(300, 102);
+
+            // Assert - Should return BadRequest when user is not admin
+            Assert.IsType<BadRequestObjectResult>(result);
+        }
+
+        [Fact]
+        public async Task LeaveChallenge_ValidMember_ReturnsNoContent()
+        {
+            // Arrange - Join first
+            await _service.JoinChallengeAsync(new JoinChallengeRequest("TEST01", 102));
+
+            // Act
+            var result = await _controller.LeaveChallenge(300, 102);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+        }
+
+        [Fact]
+        public async Task LeaveChallenge_NotMember_ReturnsNotFound()
+        {
+            // Act
+            var result = await _controller.LeaveChallenge(300, 102);
+
+            // Assert
             Assert.IsType<NotFoundObjectResult>(result);
         }
     }

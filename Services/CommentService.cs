@@ -1,16 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 
 namespace PhotoScavengerHunt.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
-        private readonly PhotoScavengerHuntDbContext dbContext;
+        private readonly IPhotoRepository _photoRepo;
         private readonly ILogger<CommentService> _logger;
 
-        public CommentService(PhotoScavengerHuntDbContext dbContext, ILogger<CommentService> logger)
+        public CommentService(IPhotoRepository photoRepo, ILogger<CommentService> logger)
         {
-            this.dbContext = dbContext;
+            _photoRepo = photoRepo;
             _logger = logger;
         }
 
@@ -21,12 +23,7 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Text))
                     return (false, "Comment text cannot be empty.", null);
 
-                var submission = await dbContext.Photos
-                    .Include(s => s.Comments)
-                    .FirstOrDefaultAsync(s => s.Id == submissionId);
-
-                if (submission == null)
-                    return (false, "Submission not found.", null);
+                var submission = await _photoRepo.EnsureSubmissionExistsAsync(submissionId);
 
                 var comment = new Comment
                 {
@@ -36,12 +33,18 @@ namespace PhotoScavengerHunt.Services
                     PhotoSubmissionId = submissionId
                 };
 
-                submission.Comments.Add(comment);
-                await dbContext.SaveChangesAsync();
+                await _photoRepo.AddCommentAsync(comment);
+                await _photoRepo.SaveChangesAsync();
+
+                submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId) ?? submission;
 
                 _logger.LogInformation("Comment added by user {UserId} to submission {SubmissionId}", request.UserId, submissionId);
 
                 return (true, "", submission.Comments.ToList());
+            }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message, null);
             }
             catch (Exception ex)
             {
@@ -54,10 +57,7 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await dbContext.Photos
-                    .Include(s => s.Comments)
-                    .FirstOrDefaultAsync(s => s.Id == submissionId);
-
+                var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
                 if (submission == null)
                     return (false, "Submission not found.", null);
 
@@ -89,22 +89,21 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await dbContext.Photos
-                    .Include(s => s.Comments)
-                    .FirstOrDefaultAsync(s => s.Id == submissionId);
-
-                if (submission == null)
-                    return (false, "Submission not found.");
+                var submission = await _photoRepo.EnsureSubmissionExistsAsync(submissionId);
 
                 var commentToRemove = submission.Comments.FirstOrDefault(c => c.Id == commentId);
                 if (commentToRemove == null)
                     return (false, "Comment not found.");
 
-                submission.Comments.Remove(commentToRemove);
-                await dbContext.SaveChangesAsync();
+                await _photoRepo.RemoveCommentAsync(commentToRemove);
+                await _photoRepo.SaveChangesAsync();
 
                 _logger.LogInformation("Comment {CommentId} deleted from submission {SubmissionId}", commentId, submissionId);
                 return (true, "");
+            }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message);
             }
             catch (Exception ex)
             {
