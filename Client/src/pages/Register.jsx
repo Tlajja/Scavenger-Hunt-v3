@@ -48,6 +48,10 @@ export default function Register() {
       return
     }
 
+    // Clear any old challenge data
+    localStorage.removeItem('challengeId')
+    localStorage.removeItem('challengeName')
+    
     setSuccess(true)
   }
 

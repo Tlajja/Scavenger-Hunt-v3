@@ -38,6 +38,10 @@ export default function Login() {
         setError('Unexpected response from server')
         return
       }
+      // Clear any old challenge data from previous user
+      localStorage.removeItem('challengeId')
+      localStorage.removeItem('challengeName')
+      
       localStorage.setItem('userId', String(userId))
       localStorage.setItem('username', name)
       window.dispatchEvent(new Event('auth-changed'))
@@ -59,6 +63,10 @@ export default function Login() {
       return
     }
 
+    // Clear any old challenge data from previous user
+    localStorage.removeItem('challengeId')
+    localStorage.removeItem('challengeName')
+    
     localStorage.setItem('userId', String(userId))
     localStorage.setItem('username', name)
     window.dispatchEvent(new Event('auth-changed'))
