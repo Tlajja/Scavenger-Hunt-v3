@@ -94,11 +94,9 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
-            // Remove participants first
             if (challenge.Participants != null && challenge.Participants.Any())
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
 
-            // Remove challenge
             _dbContext.Challenges.Remove(challenge);
             await _dbContext.SaveChangesAsync();
         }

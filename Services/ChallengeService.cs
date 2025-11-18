@@ -141,19 +141,16 @@ namespace PhotoScavengerHunt.Services
             {
                 if (!otherParticipants.Any())
                 {
-                    // no other participants -> delete challenge via repository cascade
                     await _challengeRepo.DeleteCascadeAsync(challengeId);
                     return;
                 }
 
-                // transfer admin to the earliest joined participant
                 var newAdmin = otherParticipants.First();
                 await _participantRepo.TransferAdminAsync(challengeId, userId, newAdmin.UserId);
                 await _participantRepo.RemoveAsync(participant);
                 return;
             }
 
-            // simple leave
             await _participantRepo.RemoveAsync(participant);
         }
 

@@ -97,12 +97,11 @@ namespace PhotoScavengerHunt.Repositories
 
         public async Task EnsureUserCanAdvanceAsync(int challengeId, int userId)
         {
-            // load challenge to check creator
             var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
-            if (challenge.CreatorId == userId) return; // creator can always advance
+            if (challenge.CreatorId == userId) return;
 
             var participant = await _dbContext.ChallengeParticipants
                 .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
