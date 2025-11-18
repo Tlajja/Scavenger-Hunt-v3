@@ -15,4 +15,5 @@ public interface IChallengeParticipantRepository
     Task TransferAdminAsync(int challengeId, int fromUserId, int toUserId);
     Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId);
     Task EnsureUserCanAdvanceAsync(int challengeId, int userId);
+    Task SaveChangesAsync();
 }
