@@ -3,6 +3,8 @@ using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PhotoScavengerHunt.Repositories;
+
 using Moq;
 using Xunit;
 
@@ -16,7 +18,9 @@ namespace PhotoScavengerHunt.Tests.Services
         public TaskServiceTests()
         {
             _mockLogger = CreateMockLogger<TaskService>();
-            _service = new TaskService(DbContext, _mockLogger.Object);
+            var taskRepo = new TaskRepository(DbContext);
+            var userRepo = new UserRepository(DbContext);
+            _service = new TaskService(taskRepo, userRepo, _mockLogger.Object);
             SeedTestData();
         }
 

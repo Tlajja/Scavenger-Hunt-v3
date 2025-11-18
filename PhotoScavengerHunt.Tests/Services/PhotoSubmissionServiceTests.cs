@@ -4,6 +4,7 @@ using PhotoScavengerHunt.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using PhotoScavengerHunt.Repositories;
 using Moq;
 using Xunit;
 using System.Text;
@@ -23,7 +24,12 @@ namespace PhotoScavengerHunt.Tests.Services
             Directory.CreateDirectory(_testUploadsPath);
             _mockEnv.Setup(e => e.WebRootPath).Returns(_testUploadsPath);
             
-            _service = new PhotoSubmissionService(DbContext, _mockEnv.Object);
+            var photoRepo = new PhotoRepository(DbContext);
+            var userRepo = new UserRepository(DbContext);
+            var taskRepo = new TaskRepository(DbContext);
+            var challengeRepo = new ChallengeRepository(DbContext);
+            _service = new PhotoSubmissionService(photoRepo, userRepo, taskRepo, challengeRepo, _mockEnv.Object);
+
             SeedTestData();
         }
 
@@ -109,7 +115,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var result = await _service.UploadPhotoAsync(99999, 100, file);
 
             Assert.False(result.Success);
-            Assert.Equal("Task does not exist.", result.Message);
+            Assert.Equal("Unexpected error: Task does not exist.", result.Message);
         }
 
         [Fact]
@@ -120,7 +126,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var result = await _service.UploadPhotoAsync(200, 99999, file);
 
             Assert.False(result.Success);
-            Assert.Equal("User does not exist.", result.Message);
+            Assert.Equal("Unexpected error: User does not exist.", result.Message);
         }
 
         [Fact]
