@@ -7,7 +7,7 @@ public interface IChallengeService
 {
     Task<Challenge> CreateChallengeAsync(CreateChallengeRequest request);
     Task<ChallengeParticipant> JoinChallengeAsync(JoinChallengeRequest request);
-    Task<List<Challenge>> GetChallengesAsync(bool publicOnly = true);
+    Task<List<Challenge>> GetChallengesAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc);
     Task<Challenge> GetChallengeByIdAsync(int challengeId);
     Task DeleteChallengeAsync(int challengeId, int userId);
     Task LeaveChallengeAsync(int challengeId, int userId);

@@ -23,6 +23,13 @@ builder.Services.AddSingleton<ActiveUsersService>();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddSignalR();
 
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IChallengeRepository, PhotoScavengerHunt.Repositories.ChallengeRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IUserRepository, PhotoScavengerHunt.Repositories.UserRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ITaskRepository, PhotoScavengerHunt.Repositories.TaskRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IChallengeParticipantRepository, PhotoScavengerHunt.Repositories.ChallengeParticipantRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IPhotoRepository, PhotoScavengerHunt.Repositories.PhotoRepository>();
+builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ILeaderboardRepository, PhotoScavengerHunt.Repositories.LeaderboardRepository>();
+
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 

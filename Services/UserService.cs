@@ -1,30 +1,29 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Services
 {
     public class UserService : IUserService
     {
-        private readonly PhotoScavengerHuntDbContext dbContext;
+        private readonly IUserRepository _userRepo;
+        private readonly ILogger<UserService> _logger;
 
-        public UserService(PhotoScavengerHuntDbContext dbContext)
+        public UserService(IUserRepository userRepo, ILogger<UserService> logger)
         {
-            this.dbContext = dbContext;
+            _userRepo = userRepo;
+            _logger = logger;
         }
 
         public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name, int age)
         {
             try
             {
-                if (!ValidationExtensions.IsValidUsername(name))
-                    return (false, "Invalid username format. Must be 2–20 alphanumeric characters, no spaces.", null);
-
-                if (await dbContext.Users.AnyAsync(u => u.Name == name))
-                    return (false, "Username already exists.", null);
-
-                if (age <= 0 || age > 125)
-                    return (false, "Invalid age value.", null);
+                await _userRepo.EnsureUsernameIsValidAsync(name);
+                await _userRepo.EnsureAgeIsValidAsync(age);
 
                 var profile = new UserProfile
                 {
@@ -32,17 +31,23 @@ namespace PhotoScavengerHunt.Services
                     Age = age
                 };
 
-                dbContext.Users.Add(profile);
-                await dbContext.SaveChangesAsync();
+                await _userRepo.AddAsync(profile);
+                await _userRepo.SaveChangesAsync();
 
                 return (true, string.Empty, profile);
             }
+            catch (ArgumentException aex)
+            {
+                return (false, aex.Message, null);
+            }
             catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Database update failed while creating user.");
                 return (false, $"Database update failed: {ex.Message}", null);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Unexpected error while creating user.");
                 return (false, $"Unexpected error: {ex.Message}", null);
             }
         }
@@ -51,11 +56,12 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var users = await dbContext.Users.ToListAsync();
+                var users = await _userRepo.GetAllAsync();
                 return (true, string.Empty, users);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving users.");
                 return (false, $"Error retrieving users: {ex.Message}", null);
             }
         }
@@ -64,14 +70,17 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var user = await dbContext.Users.FindAsync(id);
-                if (user == null)
-                    return (false, "User not found.", null);
-
+                await _userRepo.EnsureUserExistsAsync(id);
+                var user = await _userRepo.GetByIdAsync(id);
                 return (true, string.Empty, user);
+            }
+            catch (ChallengeNotFoundException)
+            {
+                return (false, "User not found.", null);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving user.");
                 return (false, $"Error retrieving user: {ex.Message}", null);
             }
         }
@@ -80,17 +89,18 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var user = await dbContext.Users.FindAsync(id);
-                if (user == null)
-                    return (false, "User not found.");
-
-                dbContext.Users.Remove(user);
-                await dbContext.SaveChangesAsync();
-
+                var user = await _userRepo.GetByIdOrThrowAsync(id);
+                await _userRepo.RemoveAsync(user);
+                await _userRepo.SaveChangesAsync();
                 return (true, string.Empty);
+            }
+            catch (ChallengeNotFoundException)
+            {
+                return (false, "User not found.");
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error deleting user.");
                 return (false, $"Error deleting user: {ex.Message}");
             }
         }
