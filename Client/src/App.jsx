@@ -15,12 +15,14 @@ import LeaveChallenge from './pages/LeaveChallenge'
 import MyChallenges from './pages/MyChallenges'
 import ChallengeRoom from './pages/ChallengeRoom'
 import Guide from './pages/Guide'
+import { useActiveUsers } from './context/ActiveUsersContext.jsx'
 
 function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('userId'))
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
   const navigate = useNavigate()
+  const { activeUsersCount } = useActiveUsers()
 
   useEffect(() => {
     const updateAuth = () => setIsAuthenticated(!!localStorage.getItem('userId'))
@@ -217,6 +219,10 @@ function Header() {
                 </div>
               )}
             </div>
+
+            <div style={{ marginLeft: 16, padding: '4px 10px', background: '#2a2a3e', borderRadius: 6, color: '#fff', fontSize: 13 }}>
+              🟢 {activeUsersCount} online
+            </div>
           </>
         )}
       </div>
@@ -240,8 +246,6 @@ export default function App() {
             <Route path="/create-challenge" element={<CreateChallenge />} />
             <Route path="/join-challenge" element={<JoinChallenge />} />
             <Route path="/guide" element={<Guide />} />
-            
-            {/* Legacy routes - keeping for compatibility */}
             <Route path="/submit" element={<SubmitPhoto />} />
             <Route path="/vote" element={<Vote />} />
             <Route path="/leaderboards" element={<Leaderboards />} />
