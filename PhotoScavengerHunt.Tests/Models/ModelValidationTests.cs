@@ -11,14 +11,14 @@ namespace PhotoScavengerHunt.Tests.Models
 {
     // These tests focus on VALIDATION LOGIC and NULL HANDLING, not simple property getters/setters
     
-    public class HuntTaskFactoryTests
+    public class BasicTaskFactoryTests
     {
         [Fact]
         public void Create_NullDescription_ThrowsArgumentException()
         {
             // This tests actual business logic: rejecting invalid input
             var exception = Assert.Throws<ArgumentException>(
-                () => HuntTaskFactory.Create(null!, 1)
+                () => BasicTaskFactory.Create(null!, 1)
             );
             Assert.Contains("description", exception.Message.ToLower());
         }
@@ -27,7 +27,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_EmptyDescription_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
-                () => HuntTaskFactory.Create("", 1)
+                () => BasicTaskFactory.Create("", 1)
             );
             Assert.Contains("description", exception.Message.ToLower());
         }
@@ -36,7 +36,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_WhitespaceDescription_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
-                () => HuntTaskFactory.Create("   ", 1)
+                () => BasicTaskFactory.Create("   ", 1)
             );
             Assert.Contains("description", exception.Message.ToLower());
         }
@@ -44,7 +44,7 @@ namespace PhotoScavengerHunt.Tests.Models
         [Fact]
         public void Create_ValidInput_SetsPropertiesCorrectly()
         {
-            var task = HuntTaskFactory.Create("Test Task", 123);
+            var task = BasicTaskFactory.Create("Test Task", 123);
             
             Assert.Equal("Test Task", task.Description);
             Assert.Equal(123, task.AuthorId);

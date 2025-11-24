@@ -35,7 +35,7 @@ export async function getTasks() {
 }
 
 export async function getTaskById(id) {
-  return await safeFetch(`/api/tasks/${Number(id)}`, { method: 'GET' })
+ return await safeFetch(`/api/tasks/${Number(id)}`, { method: 'GET' })
 }
 
 export async function createTask(description, deadline) {
@@ -52,6 +52,10 @@ export async function createUserTask(description, deadline, authorId) {
  headers: { 'Content-Type': 'application/json' },
  body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId: authorId })
  })
+}
+
+export async function getRandomTaskForUser(userId) {
+ return await safeFetch(`/api/tasks/random/${Number(userId)}`, { method: 'GET' })
 }
 
 export async function submitPhoto(taskId, userId, photoFile) {
@@ -107,8 +111,8 @@ export async function getLeaderboard() {
  return await safeFetch('/api/leaderboard', { method: 'GET' })
 }
 
-export async function getHallOfFame(top = 10) {
-  return await safeFetch(`/api/leaderboard/halloffame?top=${Number(top)}`, { method: 'GET' })
+export async function getHallOfFame(top =10) {
+ return await safeFetch(`/api/leaderboard/halloffame?top=${Number(top)}`, { method: 'GET' })
 }
 
 // Challenges endpoints
@@ -132,24 +136,24 @@ export async function getChallengeById(id) {
 }
 
 export async function createChallenge(name, creatorId, taskId, deadlineIso = null, isPrivate = false) {
-  const payload = {
-    Name: name,
-    CreatorId: Number(creatorId),
-    TaskId: Number(taskId),
-    IsPrivate: !!isPrivate,
-  }
-  if (deadlineIso) payload.Deadline = deadlineIso
-  return await safeFetch('/api/challenge', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+ const payload = {
+ Name: name,
+ CreatorId: Number(creatorId),
+ TaskId: Number(taskId),
+ IsPrivate: !!isPrivate,
+ }
+ if (deadlineIso) payload.Deadline = deadlineIso
+ return await safeFetch('/api/challenge', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(payload)
+ })
 }
 
 export async function leaveChallenge(challengeId, userId) {
-  return await safeFetch(`/api/challenge/${challengeId}/leave?userId=${Number(userId)}`, {
-    method: 'DELETE'
-  })
+ return await safeFetch(`/api/challenge/${challengeId}/leave?userId=${Number(userId)}`, {
+ method: 'DELETE'
+ })
 }
 
 export async function deleteChallenge(challengeId, userId) {
@@ -159,9 +163,9 @@ export async function deleteChallenge(challengeId, userId) {
 }
 
 export async function advanceChallenge(challengeId, userId) {
-  return await safeFetch(`/api/challenge/${Number(challengeId)}/advance?userId=${Number(userId)}`, {
-    method: 'POST'
-  })
+ return await safeFetch(`/api/challenge/${Number(challengeId)}/advance?userId=${Number(userId)}`, {
+ method: 'POST'
+ })
 }
 
 // NEW: get challenges the user participates in (private + public)

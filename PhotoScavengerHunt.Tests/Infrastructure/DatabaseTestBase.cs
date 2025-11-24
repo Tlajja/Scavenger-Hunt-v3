@@ -87,8 +87,8 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
             // Seed tasks - IDs start at 200
             var tasks = new[]
             {
-                new HuntTask { Id = 200, Description = "Test Task 1", AuthorId = 100 },
-                new HuntTask { Id = 201, Description = "Test Task 2", AuthorId = 101 }
+                new BasicTask { Id = 200, Description = "Test Task 1", AuthorId = 100 },
+                new BasicTask { Id = 201, Description = "Test Task 2", AuthorId = 101 }
             };
 
             // Seed challenges - IDs start at 300

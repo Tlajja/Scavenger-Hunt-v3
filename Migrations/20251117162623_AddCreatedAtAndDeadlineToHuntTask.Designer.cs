@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    [Migration("20251117162623_AddCreatedAtAndDeadlineToHuntTask")]
-    partial class AddCreatedAtAndDeadlineToHuntTask
+    [Migration("20251117162623_AddCreatedAtAndDeadlineToBasicTask")]
+    partial class AddCreatedAtAndDeadlineToBasicTask
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,7 +24,7 @@ namespace PhotoScavengerHunt.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HuntTask", b =>
+            modelBuilder.Entity("BasicTask", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

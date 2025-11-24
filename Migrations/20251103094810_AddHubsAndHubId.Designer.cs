@@ -161,7 +161,7 @@ namespace PhotoScavengerHunt.Migrations
                         });
                 });
 
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Tasks.HuntTask", b =>
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Tasks.BasicTask", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

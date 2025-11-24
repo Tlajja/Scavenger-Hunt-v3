@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PhotoScavengerHunt.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCreatedAtAndDeadlineToHuntTask : Migration
+    public partial class AddCreatedAtAndDeadlineToBasicTask : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -123,7 +123,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             var result = await _controller.GetTasks();
 
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var tasks = Assert.IsAssignableFrom<IEnumerable<HuntTask>>(okResult.Value);
+            var tasks = Assert.IsAssignableFrom<IEnumerable<BasicTask>>(okResult.Value);
             Assert.NotEmpty(tasks);
         }
 
@@ -133,7 +133,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             var result = await _controller.GetTaskById(200);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var task = Assert.IsType<HuntTask>(okResult.Value);
+            var task = Assert.IsType<BasicTask>(okResult.Value);
             Assert.Equal(200, task.Id);
         }
 

@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Exceptions;
 using PhotoScavengerHunt.Repositories;

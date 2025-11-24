@@ -9,4 +9,3 @@ namespace PhotoScavengerHunt.Exceptions
         public ChallengeValidationException(string message, Exception inner) : base(message, inner) { }
     }
 }
-

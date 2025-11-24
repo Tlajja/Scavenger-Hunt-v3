@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Features.Tasks;
+﻿using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 
@@ -18,14 +17,14 @@ namespace PhotoScavengerHunt.Services
             _logger = logger;
         }
 
-        public async Task<HuntTask> CreateTaskAsync(CreateTaskRequest req)
+        public async Task<BasicTask> CreateTaskAsync(CreateTaskRequest req)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(req.Description))
                     throw new ArgumentException("Task description cannot be empty.");
 
-                var task = HuntTaskFactory.Create(
+                var task = BasicTaskFactory.Create(
                     description: req.Description,
                     authorId: req.AuthorId,
                     deadline: req.Deadline);
@@ -46,7 +45,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<HuntTask> CreateUserTaskAsync(CreateTaskRequest req)
+        public async Task<BasicTask> CreateUserTaskAsync(CreateTaskRequest req)
         {
             try
             {
@@ -55,7 +54,7 @@ namespace PhotoScavengerHunt.Services
                 if (!await _userRepo.ExistsAsync(req.AuthorId))
                     throw new ArgumentException("User does not exist.");
 
-                var task = HuntTaskFactory.Create(
+                var task = BasicTaskFactory.Create(
                     description: req.Description,
                     authorId: req.AuthorId,
                     deadline: req.Deadline);
@@ -76,7 +75,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<IEnumerable<HuntTask>> GetTasksAsync()
+        public async Task<IEnumerable<BasicTask>> GetTasksAsync()
         {
             try
             {
@@ -89,7 +88,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<HuntTask?> GetTaskByIdAsync(int id)
+        public async Task<BasicTask?> GetTaskByIdAsync(int id)
         {
             try
             {
@@ -99,6 +98,26 @@ namespace PhotoScavengerHunt.Services
             {
                 _logger.LogError(ex, "Error fetching task by ID {TaskId}.", id);
                 throw new InvalidOperationException("An error occurred while fetching the task.", ex);
+            }
+        }
+
+        public async Task<BasicTask?> GetRandomTaskForUserAsync(int userId)
+        {
+            try
+            {
+                if (!await _userRepo.ExistsAsync(userId))
+                    throw new ArgumentException("User does not exist.");
+                return await _taskRepo.GetRandomForUserAsync(userId);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Validation failed while getting random task for user.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching random task for user {UserId}.", userId);
+                throw new InvalidOperationException("An error occurred while fetching a random task.", ex);
             }
         }
 

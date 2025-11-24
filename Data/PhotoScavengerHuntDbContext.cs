@@ -10,7 +10,7 @@ public class PhotoScavengerHuntDbContext : DbContext
     {
     }
 
-    public DbSet<HuntTask> Tasks => Set<HuntTask>();
+    public DbSet<BasicTask> Tasks => Set<BasicTask>();
     public DbSet<PhotoSubmission> Photos => Set<PhotoSubmission>();
     public DbSet<UserProfile> Users => Set<UserProfile>();
     public DbSet<Comment> Comments => Set<Comment>();
@@ -39,11 +39,11 @@ public class PhotoScavengerHuntDbContext : DbContext
             .HasForeignKey(cp => cp.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<HuntTask>()
+        modelBuilder.Entity<BasicTask>()
             .Property(t => t.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()");
 
-        modelBuilder.Entity<HuntTask>()
+        modelBuilder.Entity<BasicTask>()
             .Property(t => t.Deadline)
             .IsRequired(false);
 
@@ -51,9 +51,9 @@ public class PhotoScavengerHuntDbContext : DbContext
         var seedCreatedAt1 = new DateTime(2025,1,1,0,0,0, DateTimeKind.Utc);
         var seedCreatedAt2 = new DateTime(2025,1,2,0,0,0, DateTimeKind.Utc);
 
-        modelBuilder.Entity<HuntTask>().HasData(
-            new HuntTask { Id = 1, Description = "Red car", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
-            new HuntTask { Id = 2, Description = "Blue mailbox", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 }
+        modelBuilder.Entity<BasicTask>().HasData(
+            new BasicTask { Id = 1, Description = "Red car", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 2, Description = "Blue mailbox", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 }
         );
 
         modelBuilder.Entity<UserProfile>().HasData(

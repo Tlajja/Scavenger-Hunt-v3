@@ -5,10 +5,10 @@ namespace PhotoScavengerHunt.Services.Interfaces;
 
 public interface ITaskService
 {
-    Task<HuntTask> CreateTaskAsync(CreateTaskRequest req);
-    Task<HuntTask> CreateUserTaskAsync(CreateTaskRequest req);
-    Task<IEnumerable<HuntTask>> GetTasksAsync();
-    Task<HuntTask?> GetTaskByIdAsync(int id);
+    Task<BasicTask> CreateTaskAsync(CreateTaskRequest req);
+    Task<BasicTask> CreateUserTaskAsync(CreateTaskRequest req);
+    Task<IEnumerable<BasicTask>> GetTasksAsync();
+    Task<BasicTask?> GetTaskByIdAsync(int id);
+    Task<BasicTask?> GetRandomTaskForUserAsync(int userId);
     Task DeleteUserTaskAsync(int userId, int taskId);
 }
-

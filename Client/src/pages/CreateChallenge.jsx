@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createChallenge, getTasks, createUserTask } from '../services/api.js'
+import { createChallenge, getTasks, createUserTask, getRandomTaskForUser } from '../services/api.js'
 
 export default function CreateChallenge() {
   const navigate = useNavigate()
-  const userId = Number(localStorage.getItem('userId') || 0)
+  const userId = Number(localStorage.getItem('userId') ||0)
   
   const [challengeName, setChallengeName] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -18,6 +18,7 @@ export default function CreateChallenge() {
   const [taskDescription, setTaskDescription] = useState('')
   const [taskDeadline, setTaskDeadline] = useState('')
   const [creatingTask, setCreatingTask] = useState(false)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     loadTasks()
@@ -30,7 +31,9 @@ export default function CreateChallenge() {
         const data = Array.isArray(res.data) ? res.data : []
         setTasks(data)
       }
-    } catch {}
+    } catch (e) {
+      // swallow fetch errors, keep UI functional
+    }
   }
 
   function toIsoForServer(dtLocal) {
@@ -64,10 +67,37 @@ export default function CreateChallenge() {
       setTaskDescription('')
       setTaskDeadline('')
       setShowCreateTask(false)
-    } catch (err) {
+    } catch (e) {
       setError('Network error')
     } finally {
       setCreatingTask(false)
+    }
+  }
+
+  async function handleGenerateTask() {
+    setGenerating(true)
+    setError('')
+    try {
+      const res = await getRandomTaskForUser(userId)
+      if (!res.ok) {
+        setError(res.text || 'No random task available for you')
+        return
+      }
+      const randomTask = res.data
+      if (!randomTask) {
+        setError('No random task available')
+        return
+      }
+      // Add to list if not already present
+      const idVal = String(randomTask.id ?? randomTask.Id)
+      const exists = tasks.some(t => String(t.id ?? t.Id) === idVal)
+      if (!exists) setTasks(prev => [...prev, randomTask])
+      setSelectedTaskId(idVal)
+      setShowCreateTask(false)
+    } catch (e) {
+      setError('Network error while generating task')
+    } finally {
+      setGenerating(false)
     }
   }
 
@@ -81,7 +111,7 @@ export default function CreateChallenge() {
     }
 
     if (!selectedTaskId) {
-      setError('Please create a task for this challenge')
+      setError('Please create or generate a task for this challenge')
       return
     }
 
@@ -105,7 +135,7 @@ export default function CreateChallenge() {
       }
 
       navigate(`/challenge-room/${createdId}`)
-    } catch (err) {
+    } catch (e) {
       setError('Network error')
     } finally {
       setCreating(false)
@@ -114,16 +144,16 @@ export default function CreateChallenge() {
 
   return (
     <div style={{
-      minHeight: 'calc(100vh - 70px)',
+      minHeight: 'calc(100vh -70px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 40
+      padding:40
     }}>
-      <div className="card" style={{ maxWidth: 600, width: '100%' }}>
+      <div className="card" style={{ maxWidth:600, width: '100%' }}>
         <h1 style={{
-          fontSize: 32,
-          marginBottom: 32,
+          fontSize:32,
+          marginBottom:32,
           textAlign: 'center',
           color: 'white'
         }}>
@@ -131,7 +161,7 @@ export default function CreateChallenge() {
         </h1>
 
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom:20 }}>
             <label>Challenge Name</label>
             <input
               value={challengeName}
@@ -141,66 +171,100 @@ export default function CreateChallenge() {
             />
           </div>
 
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom:20 }}>
             <label>Challenge Task</label>
             {selectedTaskId && !showCreateTask ? (
               <div style={{
-                background: 'rgba(100, 108, 255, 0.1)',
-                padding: 16,
-                borderRadius: 8,
-                marginBottom: 12
+                background: 'rgba(100,108,255,0.1)',
+                padding:16,
+                borderRadius:8,
+                marginBottom:12
               }}>
-                <div style={{ color: 'white', marginBottom: 8 }}>
+                <div style={{ color: 'white', marginBottom:8 }}>
                   {tasks.find(t => String(t.id ?? t.Id) === selectedTaskId)?.description ?? 
                    tasks.find(t => String(t.id ?? t.Id) === selectedTaskId)?.Description ?? 
                    'Task description'}
                 </div>
+                <div style={{ display: 'flex', gap:8 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateTask(true)
+                      setSelectedTaskId('')
+                    }}
+                    disabled={creating}
+                    style={{
+                      flex:1,
+                      background: 'transparent',
+                      border: '1px solid #646cff',
+                      padding: '8px',
+                      fontSize:14,
+                      boxShadow: 'none'
+                    }}
+                  >
+                    Change Task
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGenerateTask}
+                    disabled={creating || generating}
+                    style={{
+                      flex:1,
+                      background: 'transparent',
+                      border: '1px solid #38b000',
+                      padding: '8px',
+                      fontSize:14,
+                      boxShadow: 'none',
+                      color: '#38b000'
+                    }}
+                  >
+                    {generating ? 'Generating...' : 'Generate New'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowCreateTask(true)
-                    setSelectedTaskId('')
-                  }}
+                  onClick={() => setShowCreateTask(true)}
                   disabled={creating}
                   style={{
                     width: '100%',
-                    background: 'transparent',
+                    background: 'rgba(100,108,255,0.1)',
                     border: '1px solid #646cff',
-                    padding: '8px',
-                    fontSize: 14,
                     boxShadow: 'none'
                   }}
                 >
-                  Change Task
+                  + Create Task for Challenge
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateTask}
+                  disabled={creating || generating}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(56,176,0,0.1)',
+                    border: '1px solid #38b000',
+                    boxShadow: 'none',
+                    color: '#38b000'
+                  }}
+                >
+                  {generating ? 'Generating...' : 'Generate Random Task'}
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowCreateTask(true)}
-                disabled={creating}
-                style={{
-                  width: '100%',
-                  background: 'rgba(100, 108, 255, 0.1)',
-                  border: '1px solid #646cff',
-                  boxShadow: 'none'
-                }}
-              >
-                + Create Task for Challenge
-              </button>
             )}
           </div>
 
           {showCreateTask && (
             <div style={{
-              background: 'rgba(100, 108, 255, 0.05)',
-              padding: 20,
-              borderRadius: 8,
-              marginBottom: 20
+              background: 'rgba(100,108,255,0.05)',
+              padding:20,
+              borderRadius:8,
+              marginBottom:20
             }}>
-              <h3 style={{ color: 'white', marginBottom: 16, fontSize: 18 }}>Create Task</h3>
+              <h3 style={{ color: 'white', marginBottom:16, fontSize:18 }}>Create Task</h3>
               
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom:16 }}>
                 <label>Task Description</label>
                 <textarea
                   value={taskDescription}
@@ -211,7 +275,7 @@ export default function CreateChallenge() {
                 />
               </div>
 
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom:16 }}>
                 <label>Task Deadline (Optional)</label>
                 <input
                   type="datetime-local"
@@ -219,16 +283,16 @@ export default function CreateChallenge() {
                   onChange={e => setTaskDeadline(e.target.value)}
                   disabled={creatingTask}
                 />
-                <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', marginTop: 6 }}>
+                <div style={{ fontSize:12, color: 'rgba(255,255,255,0.6)', marginTop:6 }}>
                   Leave blank for 7 days from now
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap:12 }}>
                 <button
                   onClick={handleCreateTask}
                   disabled={creatingTask || !taskDescription.trim()}
-                  style={{ flex: 1 }}
+                  style={{ flex:1 }}
                 >
                   {creatingTask ? 'Creating...' : 'Create Task'}
                 </button>
@@ -242,7 +306,7 @@ export default function CreateChallenge() {
                   disabled={creatingTask}
                   style={{
                     background: 'transparent',
-                    border: '1px solid rgba(255, 107, 107, 0.5)',
+                    border: '1px solid rgba(255,107,107,0.5)',
                     color: '#ff6b6b',
                     boxShadow: 'none'
                   }}
@@ -253,7 +317,7 @@ export default function CreateChallenge() {
             </div>
           )}
 
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom:20 }}>
             <label>Challenge Deadline (Optional)</label>
             <input
               type="datetime-local"
@@ -261,16 +325,16 @@ export default function CreateChallenge() {
               onChange={e => setDeadline(e.target.value)}
               disabled={creating}
             />
-            <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', marginTop: 6 }}>
+            <div style={{ fontSize:12, color: 'rgba(255,255,255,0.6)', marginTop:6 }}>
               Leave blank for 7 days from now
             </div>
           </div>
 
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom:24 }}>
             <label style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap:12,
               cursor: 'pointer',
               userSelect: 'none'
             }}>
@@ -294,20 +358,20 @@ export default function CreateChallenge() {
           <button
             type="submit"
             disabled={creating || !challengeName.trim() || !selectedTaskId}
-            style={{ width: '100%', padding: '14px', fontSize: 16 }}
+            style={{ width: '100%', padding: '14px', fontSize:16 }}
           >
             {creating ? 'Creating Challenge...' : 'Create Challenge'}
           </button>
         </form>
 
         <div style={{
-          marginTop: 24,
+          marginTop:24,
           textAlign: 'center',
-          color: 'rgba(255, 255, 255, 0.6)'
+          color: 'rgba(255,255,255,0.6)'
         }}>
           <a
             onClick={() => navigate('/')}
-            style={{ color: '#646cff', cursor: 'pointer', fontWeight: 500 }}
+            style={{ color: '#646cff', cursor: 'pointer', fontWeight:500 }}
           >
             ← Back to Home
           </a>

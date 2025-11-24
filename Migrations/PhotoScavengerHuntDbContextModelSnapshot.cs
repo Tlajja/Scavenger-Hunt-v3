@@ -21,7 +21,7 @@ namespace PhotoScavengerHunt.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HuntTask", b =>
+            modelBuilder.Entity("BasicTask", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
