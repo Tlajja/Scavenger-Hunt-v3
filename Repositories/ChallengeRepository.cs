@@ -60,14 +60,14 @@ namespace PhotoScavengerHunt.Repositories
         {
             var challenge =  await _dbContext.Challenges.FirstOrDefaultAsync(c => c.JoinCode == joinCode);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge with the provided join code does not exist.");
+                throw new EntityNotFoundException("Challenge with the provided join code does not exist.");
             return challenge;
         }
 
         public Task EnsureNameNotEmptyAsync(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new ChallengeValidationException("Challenge name cannot be empty.");
+                throw new ValidationException("Challenge name cannot be empty.");
             return Task.CompletedTask;
         }
 
@@ -77,11 +77,11 @@ namespace PhotoScavengerHunt.Repositories
             {
                 var now = DateTime.UtcNow;
                 if (deadline.Value <= now)
-                    throw new ChallengeValidationException("Deadline must be in the future.");
+                    throw new ValidationException("Deadline must be in the future.");
 
                 var maxDeadline = now.AddDays(7);
                 if (deadline.Value > maxDeadline)
-                    throw new ChallengeValidationException("Deadline cannot be more than 7 days from now.");
+                    throw new ValidationException("Deadline cannot be more than 7 days from now.");
             }
             return Task.CompletedTask;
         }
@@ -92,7 +92,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Include(c => c.Participants)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge not found.");
+                throw new EntityNotFoundException("Challenge not found.");
 
             if (challenge.Participants != null && challenge.Participants.Any())
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
@@ -121,7 +121,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Include(c => c.Participants)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge not found.");
+                throw new EntityNotFoundException("Challenge not found.");
             return challenge;
         }
     }

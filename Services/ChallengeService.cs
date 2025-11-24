@@ -86,7 +86,7 @@ namespace PhotoScavengerHunt.Services
         {
             var code = NormalizeCode(request.JoinCode);
             if (string.IsNullOrWhiteSpace(code))
-                throw new ChallengeValidationException("Join code cannot be empty.");
+                throw new ValidationException("Join code cannot be empty.");
 
             var challenge = await _challengeRepo.GetByJoinCodeAsync(code);
 
@@ -172,7 +172,7 @@ namespace PhotoScavengerHunt.Services
                 return finalized;
             }
 
-            throw new ChallengeValidationException("Challenge is already completed.");
+            throw new ValidationException("Challenge is already completed.");
         }
 
         public async Task<Challenge> FinalizeChallengeAsync(int challengeId)

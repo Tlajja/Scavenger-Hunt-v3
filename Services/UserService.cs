@@ -74,7 +74,7 @@ namespace PhotoScavengerHunt.Services
                 var user = await _userRepo.GetByIdAsync(id);
                 return (true, string.Empty, user);
             }
-            catch (ChallengeNotFoundException)
+            catch (EntityNotFoundException)
             {
                 return (false, "User not found.", null);
             }
@@ -94,7 +94,7 @@ namespace PhotoScavengerHunt.Services
                 await _userRepo.SaveChangesAsync();
                 return (true, string.Empty);
             }
-            catch (ChallengeNotFoundException)
+            catch (EntityNotFoundException)
             {
                 return (false, "User not found.");
             }
