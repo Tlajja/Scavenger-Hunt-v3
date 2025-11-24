@@ -62,6 +62,244 @@ namespace PhotoScavengerHunt.Migrations
                             AuthorId = 0,
                             CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Blue mailbox"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Clock"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Reflection in water or glass"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Bench with a view"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Fire hydrant"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Something with wheels (not a car)"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Something perfectly symmetrical"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Tree with colorful leaves"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Animal or pet (no humans visible)"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Flower growing in an unexpected place"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Cloud that looks like something"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Interesting rock or stone"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Door with a vibrant color"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Park"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Interesting street art or mural"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Building with more than 10 floors"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Statue"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Street sign with an interesting name"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Warning or caution sign"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Advertisement with an animal"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Sign in a language other than your native one"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Bicycle with a basket"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Vehicle with a funny bumper sticker"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Electric vehicle or charging station"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Public transportation (bus, train, tram)"
+                        },
+                        new
+                        {
+                            Id = 27,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "House number that adds up to 10"
+                        },
+                        new
+                        {
+                            Id = 28,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Something with stripes"
+                        },
+                        new
+                        {
+                            Id = 29,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Three items of the same color in one photo"
+                        },
+                        new
+                        {
+                            Id = 30,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Perfect circle in nature or architecture"
+                        },
+                        new
+                        {
+                            Id = 31,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Coffee shop"
+                        },
+                        new
+                        {
+                            Id = 32,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Something yellow you can eat"
+                        },
+                        new
+                        {
+                            Id = 33,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ice cream shop"
+                        },
+                        new
+                        {
+                            Id = 34,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Bakery"
+                        },
+                        new
+                        {
+                            Id = 38,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Flag flying in the wind"
+                        },
+                        new
+                        {
+                            Id = 40,
+                            AuthorId = 0,
+                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Rainbow"
                         });
                 });
 

@@ -53,7 +53,41 @@ public class PhotoScavengerHuntDbContext : DbContext
 
         modelBuilder.Entity<BasicTask>().HasData(
             new BasicTask { Id = 1, Description = "Red car", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
-            new BasicTask { Id = 2, Description = "Blue mailbox", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 }
+            new BasicTask { Id = 2, Description = "Blue mailbox", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 3, Description = "Clock", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 4, Description = "Reflection in water or glass", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 5, Description = "Bench with a view", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 6, Description = "Fire hydrant", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 7, Description = "Something with wheels (not a car)", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 8, Description = "Something perfectly symmetrical", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 9, Description = "Tree with colorful leaves", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 10, Description = "Animal or pet (no humans visible)", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 11, Description = "Flower growing in an unexpected place", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 12, Description = "Cloud that looks like something", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 13, Description = "Interesting rock or stone", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 14, Description = "Door with a vibrant color", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 15, Description = "Park", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 16, Description = "Interesting street art or mural", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 17, Description = "Building with more than 10 floors", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 18, Description = "Statue", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 19, Description = "Street sign with an interesting name", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 20, Description = "Warning or caution sign", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 21, Description = "Advertisement with an animal", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 22, Description = "Sign in a language other than your native one", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 23, Description = "Bicycle with a basket", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 24, Description = "Vehicle with a funny bumper sticker", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 25, Description = "Electric vehicle or charging station", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 26, Description = "Public transportation (bus, train, tram)", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 27, Description = "House number that adds up to 10", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 28, Description = "Something with stripes", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 29, Description = "Three items of the same color in one photo", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 30, Description = "Perfect circle in nature or architecture", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 31, Description = "Coffee shop", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 32, Description = "Something yellow you can eat", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 33, Description = "Ice cream shop", CreatedAt = seedCreatedAt1, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 34, Description = "Bakery", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 38, Description = "Flag flying in the wind", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 },
+            new BasicTask { Id = 40, Description = "Rainbow", CreatedAt = seedCreatedAt2, Deadline = null, AuthorId = 0 }
         );
 
         modelBuilder.Entity<UserProfile>().HasData(
