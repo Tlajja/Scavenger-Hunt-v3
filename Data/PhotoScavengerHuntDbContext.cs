@@ -16,6 +16,7 @@ public class PhotoScavengerHuntDbContext : DbContext
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<ChallengeParticipant> ChallengeParticipants => Set<ChallengeParticipant>();
+    public DbSet<ChallengeTask> ChallengeTasks => Set<ChallengeTask>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,20 @@ public class PhotoScavengerHuntDbContext : DbContext
             .HasOne(cp => cp.User)
             .WithMany()
             .HasForeignKey(cp => cp.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure join entity
+        modelBuilder.Entity<ChallengeTask>()
+            .HasKey(ct => new { ct.ChallengeId, ct.TaskId });
+        modelBuilder.Entity<ChallengeTask>()
+            .HasOne(ct => ct.Challenge)
+            .WithMany(c => c.ChallengeTasks)
+            .HasForeignKey(ct => ct.ChallengeId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ChallengeTask>()
+            .HasOne(ct => ct.Task)
+            .WithMany() // tasks can belong to many challenges
+            .HasForeignKey(ct => ct.TaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<BasicTask>()

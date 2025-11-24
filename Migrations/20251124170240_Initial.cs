@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PhotoScavengerHunt.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,7 +20,6 @@ namespace PhotoScavengerHunt.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    TaskId = table.Column<int>(type: "int", nullable: false),
                     CreatorId = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Deadline = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -105,6 +104,30 @@ namespace PhotoScavengerHunt.Migrations
                         principalTable: "Photos",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChallengeTasks",
+                columns: table => new
+                {
+                    ChallengeId = table.Column<int>(type: "int", nullable: false),
+                    TaskId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChallengeTasks", x => new { x.ChallengeId, x.TaskId });
+                    table.ForeignKey(
+                        name: "FK_ChallengeTasks_Challenges_ChallengeId",
+                        column: x => x.ChallengeId,
+                        principalTable: "Challenges",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ChallengeTasks_Tasks_TaskId",
+                        column: x => x.TaskId,
+                        principalTable: "Tasks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -209,6 +232,11 @@ namespace PhotoScavengerHunt.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ChallengeTasks_TaskId",
+                table: "ChallengeTasks",
+                column: "TaskId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Comments_PhotoSubmissionId",
                 table: "Comments",
                 column: "PhotoSubmissionId");
@@ -221,16 +249,19 @@ namespace PhotoScavengerHunt.Migrations
                 name: "ChallengeParticipants");
 
             migrationBuilder.DropTable(
+                name: "ChallengeTasks");
+
+            migrationBuilder.DropTable(
                 name: "Comments");
 
             migrationBuilder.DropTable(
-                name: "Tasks");
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Challenges");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Tasks");
 
             migrationBuilder.DropTable(
                 name: "Photos");

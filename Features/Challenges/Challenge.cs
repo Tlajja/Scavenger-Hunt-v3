@@ -7,7 +7,6 @@ public class Challenge : IHasCreatedAt, IHasDeadline
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
-    public int TaskId { get; set; }
     public int CreatorId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -19,4 +18,5 @@ public class Challenge : IHasCreatedAt, IHasDeadline
 
     public int? WinnerId { get; set; }
     public List<ChallengeParticipant>? Participants { get; set; }
+    public List<ChallengeTask>? ChallengeTasks { get; set; }
 }

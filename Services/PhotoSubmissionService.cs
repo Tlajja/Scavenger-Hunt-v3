@@ -39,7 +39,7 @@ namespace PhotoScavengerHunt.Services
                 {
                     await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
                     var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
-                    taskId = challenge?.TaskId;
+                    taskId = challenge?.ChallengeTasks?.FirstOrDefault()?.TaskId;
                 }
                 if (!taskId.HasValue)
                     return (false, "Task does not exist.", null, null);

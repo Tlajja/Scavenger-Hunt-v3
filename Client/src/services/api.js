@@ -85,7 +85,7 @@ export async function submitPhoto(taskId, userId, photoFile) {
  }
 }
 
-// NEW: Upload photo file with streaming
+// Upload photo file with streaming
 export async function uploadPhotoFile(taskId, userId, file) {
  const formData = new FormData()
  formData.append('file', file)
@@ -117,7 +117,6 @@ export async function getHallOfFame(top =10) {
 
 // Challenges endpoints
 export async function joinChallenge(joinCode, userId) {
- // backend generates uppercase alphanumeric join codes, normalize input
  const code = (joinCode || '').trim().toUpperCase()
  return await safeFetch('/api/challenge/join', {
  method: 'POST',
@@ -135,11 +134,11 @@ export async function getChallengeById(id) {
  return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-export async function createChallenge(name, creatorId, taskId, deadlineIso = null, isPrivate = false) {
+export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false) {
  const payload = {
  Name: name,
  CreatorId: Number(creatorId),
- TaskId: Number(taskId),
+ TaskIds: Array.isArray(taskIds) ? taskIds.map(n => Number(n)) : [Number(taskIds)],
  IsPrivate: !!isPrivate,
  }
  if (deadlineIso) payload.Deadline = deadlineIso
@@ -168,7 +167,7 @@ export async function advanceChallenge(challengeId, userId) {
  })
 }
 
-// NEW: get challenges the user participates in (private + public)
+// Get challenges the user participates in (private + public)
 export async function getMyChallenges(userId) {
  return await safeFetch(`/api/challenge/mine?userId=${Number(userId)}`, { method: 'GET' })
 }

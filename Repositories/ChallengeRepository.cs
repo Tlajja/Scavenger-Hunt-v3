@@ -15,19 +15,24 @@ namespace PhotoScavengerHunt.Repositories
 
         public async Task<Challenge?> GetByIdAsync(int id)
         {
-            return await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == id);
+            // Include ChallengeTasks so downstream logic (e.g., photo upload) can resolve a TaskId.
+            return await _dbContext.Challenges
+                .Include(c => c.ChallengeTasks)
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
 
         public async Task<Challenge?> GetWithParticipantsAsync(int id)
         {
             return await _dbContext.Challenges
                 .Include(c => c.Participants)
+                .Include(c => c.ChallengeTasks)
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
         public async Task<List<Challenge>> GetByIdsAsync(IEnumerable<int> ids)
         {
             return await _dbContext.Challenges
                 .Where(c => ids.Contains(c.Id))
+                .Include(c => c.ChallengeTasks)
                 .ToListAsync();
         }
         public async Task<List<Challenge>> GetAllAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc)
@@ -38,7 +43,9 @@ namespace PhotoScavengerHunt.Repositories
             // Use the generic sorter with multiple constraints
             query = query.SortBy(sortBy);
 
-            return await query.ToListAsync();
+            return await query
+                .Include(c => c.ChallengeTasks)
+                .ToListAsync();
         }
 
         public async Task AddAsync(Challenge challenge)
@@ -58,7 +65,9 @@ namespace PhotoScavengerHunt.Repositories
 
         public async Task<Challenge> GetByJoinCodeAsync(string joinCode)
         {
-            var challenge =  await _dbContext.Challenges.FirstOrDefaultAsync(c => c.JoinCode == joinCode);
+            var challenge = await _dbContext.Challenges
+                .Include(c => c.ChallengeTasks)
+                .FirstOrDefaultAsync(c => c.JoinCode == joinCode);
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge with the provided join code does not exist.");
             return challenge;
@@ -90,12 +99,16 @@ namespace PhotoScavengerHunt.Repositories
         {
             var challenge = await _dbContext.Challenges
                 .Include(c => c.Participants)
+                .Include(c => c.ChallengeTasks)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
             if (challenge.Participants != null && challenge.Participants.Any())
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
+
+            if (challenge.ChallengeTasks != null && challenge.ChallengeTasks.Any())
+                _dbContext.ChallengeTasks.RemoveRange(challenge.ChallengeTasks);
 
             _dbContext.Challenges.Remove(challenge);
             await _dbContext.SaveChangesAsync();
@@ -119,6 +132,7 @@ namespace PhotoScavengerHunt.Repositories
         {
             var challenge = await _dbContext.Challenges
                 .Include(c => c.Participants)
+                .Include(c => c.ChallengeTasks)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");

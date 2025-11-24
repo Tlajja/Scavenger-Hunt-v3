@@ -334,9 +334,6 @@ namespace PhotoScavengerHunt.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int>("TaskId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("WinnerId")
                         .HasColumnType("int");
 
@@ -372,6 +369,21 @@ namespace PhotoScavengerHunt.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ChallengeParticipants");
+                });
+
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.ChallengeTask", b =>
+                {
+                    b.Property<int>("ChallengeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ChallengeId", "TaskId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("ChallengeTasks");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
@@ -544,6 +556,25 @@ namespace PhotoScavengerHunt.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.ChallengeTask", b =>
+                {
+                    b.HasOne("PhotoScavengerHunt.Features.Challenges.Challenge", "Challenge")
+                        .WithMany("ChallengeTasks")
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BasicTask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Challenge");
+
+                    b.Navigation("Task");
+                });
+
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
                 {
                     b.HasOne("PhotoScavengerHunt.Features.Photos.PhotoSubmission", "PhotoSubmission")
@@ -557,6 +588,8 @@ namespace PhotoScavengerHunt.Migrations
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.Challenge", b =>
                 {
+                    b.Navigation("ChallengeTasks");
+
                     b.Navigation("Participants");
                 });
 

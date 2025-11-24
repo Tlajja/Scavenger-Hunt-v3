@@ -50,16 +50,22 @@ namespace PhotoScavengerHunt.Services
         {
             await _challengeRepo.EnsureNameNotEmptyAsync(request.Name);
             await _userRepo.EnsureUserExistsAsync(request.CreatorId, "Creator user does not exist.");
-            await _taskRepo.EnsureTaskExistsAsync(request.TaskId);
+
+            var taskIdList = request.TaskIds?.Distinct().ToList() ?? new List<int>();
+            if (!taskIdList.Any())
+                throw new ChallengeValidationException("At least one task must be provided for the challenge.");
+            foreach (var tid in taskIdList)
+                await _taskRepo.EnsureTaskExistsAsync(tid);
+
             await _participantRepo.EnsureUserCanCreateChallengeAsync(request.CreatorId);
             await _challengeRepo.EnsureDeadlineIsValidAsync(request.Deadline);
-            
+
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
             var challenge = ChallengeFactory.Create(
                 name: request.Name,
-                taskId: request.TaskId,
                 creatorId: request.CreatorId,
+                taskIds: taskIdList,
                 isPrivate: request.IsPrivate,
                 joinCode: joinCode,
                 deadline: request.Deadline);
@@ -200,7 +206,7 @@ namespace PhotoScavengerHunt.Services
 
             return challenge;
         }
-        
+
         public async Task<List<Challenge>> GetChallengesForUserAsync(int userId)
         {
             var parts = await _participantRepo.GetByUserAsync(userId);
