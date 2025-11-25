@@ -18,6 +18,7 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVotesService, VotesService>();
 builder.Services.AddScoped<IPhotoSubmissionService, PhotoSubmissionService>();
+builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
 
 builder.Services.AddSingleton<ActiveUsersService>();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();

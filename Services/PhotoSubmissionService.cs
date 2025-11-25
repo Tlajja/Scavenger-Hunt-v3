@@ -2,6 +2,7 @@
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
+using System.IO;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -11,20 +12,20 @@ namespace PhotoScavengerHunt.Services
         private readonly IUserRepository _userRepo;
         private readonly ITaskRepository _taskRepo;
         private readonly IChallengeRepository _challengeRepo;
-        private readonly IWebHostEnvironment _env;
+        private readonly IStorageService _storage;
 
         public PhotoSubmissionService(
             IPhotoRepository photoRepo,
             IUserRepository userRepo,
             ITaskRepository taskRepo,
             IChallengeRepository challengeRepo,
-            IWebHostEnvironment env)
+            IStorageService storage)
         {
             _photoRepo = photoRepo;
             _userRepo = userRepo;
             _taskRepo = taskRepo;
             _challengeRepo = challengeRepo;
-            _env = env;
+            _storage = storage;
         }
 
         public async Task<(bool Success, string Message, string? PhotoUrl, int? SubmissionId)> UploadPhotoAsync(int? taskId, int userId, IFormFile file, int? challengeId = null)
@@ -56,19 +57,7 @@ namespace PhotoScavengerHunt.Services
                 if (file.Length > 10_000_000)
                     return (false, "File size cannot exceed 10MB.", null, null);
 
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                await using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                var photoUrl = $"/uploads/{uniqueFileName}";
+                var photoUrl = await _storage.UploadFileAsync(file, folder: "uploads");
                 var submission = new PhotoSubmission
                 {
                     TaskId = taskId.Value,
@@ -134,12 +123,7 @@ namespace PhotoScavengerHunt.Services
                 if (submission == null)
                     return (false, "Submission not found.");
 
-                // Delete file from server (if it exists)
-                var filePath = Path.Combine(_env.WebRootPath, submission.PhotoUrl.TrimStart('/'));
-                if (File.Exists(filePath))
-                {
-                    File.Delete(filePath);
-                }
+                await _storage.DeleteFileAsync(submission.PhotoUrl);
 
                 await _photoRepo.RemoveAsync(submission);
                 await _photoRepo.SaveChangesAsync();
