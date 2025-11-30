@@ -15,7 +15,6 @@ public interface IUserRepository
     Task RemoveAsync(UserProfile user);
     Task SaveChangesAsync();
     Task EnsureUsernameIsValidAsync(string name);
-    Task EnsureAgeIsValidAsync(int age);
     Task EnsureEmailIsUniqueAsync(string email);
     Task<UserProfile?> GetByNameAsync(string username);
     Task<UserProfile> EnsureUserExistsByNameAsync(string username);

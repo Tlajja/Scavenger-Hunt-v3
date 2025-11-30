@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
@@ -32,7 +32,6 @@ namespace PhotoScavengerHunt.Services
 
                 await _userRepo.EnsureEmailIsUniqueAsync(request.Email);
                 await _userRepo.EnsureUsernameIsValidAsync(request.Username);
-                await _userRepo.EnsureAgeIsValidAsync(request.Age);
 
                 string passwordHash = HashPassword(request.Password);
 
@@ -41,7 +40,6 @@ namespace PhotoScavengerHunt.Services
                     Email = request.Email,
                     PasswordHash = passwordHash,
                     Name = request.Username,
-                    Age = request.Age,
                     IsRegistered = true
                 };
 

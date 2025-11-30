@@ -13,11 +13,11 @@ async function safeFetch(url, opts) {
 }
 
 // Authentication endpoints
-export async function register(email, password, username, age) {
+export async function register(email, password, username) {
  return await safeFetch('/api/authentication/register', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Email: email, Password: password, Username: username, Age: age })
+ body: JSON.stringify({ Email: email, Password: password, Username: username })
  })
 }
 

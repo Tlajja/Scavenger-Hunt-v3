@@ -83,13 +83,6 @@ namespace PhotoScavengerHunt.Repositories
                 throw new ArgumentException("Username already exists.");
         }
 
-        public Task EnsureAgeIsValidAsync(int age)
-        {
-            if (age <= 0 || age > 125)
-                throw new ArgumentException("Invalid age value.");
-            return Task.CompletedTask;
-        }
-
         public async Task EnsureEmailIsUniqueAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))

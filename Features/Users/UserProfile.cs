@@ -1,4 +1,4 @@
-﻿namespace PhotoScavengerHunt.Features.Users
+namespace PhotoScavengerHunt.Features.Users
 {
     public class UserProfile
     {
@@ -6,7 +6,6 @@
         public string Email { get; set; } = "";
         public string PasswordHash { get; set; } = "";
         public string Name { get; set; } = "";
-        public int Age { get; set; }
         public bool IsRegistered { get; set; } = false;
         public int Wins { get; set; } = 0;
     }

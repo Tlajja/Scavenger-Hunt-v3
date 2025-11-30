@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
@@ -18,17 +18,15 @@ namespace PhotoScavengerHunt.Services
             _logger = logger;
         }
 
-        public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name, int age)
+        public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name)
         {
             try
             {
                 await _userRepo.EnsureUsernameIsValidAsync(name);
-                await _userRepo.EnsureAgeIsValidAsync(age);
 
                 var profile = new UserProfile
                 {
-                    Name = name,
-                    Age = age
+                    Name = name
                 };
 
                 await _userRepo.AddAsync(profile);

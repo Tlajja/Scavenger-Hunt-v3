@@ -5,7 +5,6 @@ import { register } from '../services/api.js'
 export default function Register() {
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
-  const [age, setAge] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -26,11 +25,6 @@ export default function Register() {
       return
     }
 
-    if (!age || Number(age) <= 0) {
-      setError('Age is required')
-      return
-    }
-
     if (!password || password.length < 6) {
       setError('Password must be at least 6 characters')
       return
@@ -41,7 +35,7 @@ export default function Register() {
       return
     }
 
-    const res = await register(email, password, username, Number(age))
+    const res = await register(email, password, username)
     if (!res.ok) {
       const errMsg = (res.data && (res.data.message || res.data.error)) || res.text || `Error ${res.status}`
       setError(errMsg)
@@ -135,18 +129,6 @@ export default function Register() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               placeholder="Choose a username"
-            />
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <label>Age</label>
-            <input
-              type="number"
-              value={age}
-              onChange={e => setAge(e.target.value)}
-              placeholder="Enter your age"
-              min="1"
-              max="120"
             />
           </div>
 

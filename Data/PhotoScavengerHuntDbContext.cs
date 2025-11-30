@@ -57,10 +57,10 @@ public class PhotoScavengerHuntDbContext : DbContext
         );
 
         modelBuilder.Entity<UserProfile>().HasData(
-            new UserProfile { Id = 1, Name = "Ieva", Age = 20 },
-            new UserProfile { Id = 2, Name = "Kristina", Age = 35 },
-            new UserProfile { Id = 3, Name = "Ausra", Age = 40 },
-            new UserProfile { Id = 4, Name = "Ula", Age = 61 }
+            new UserProfile { Id = 1, Name = "Ieva" },
+            new UserProfile { Id = 2, Name = "Kristina" },
+            new UserProfile { Id = 3, Name = "Ausra" },
+            new UserProfile { Id = 4, Name = "Ula" }
         );
 
         modelBuilder.Entity<PhotoSubmission>().HasData(
