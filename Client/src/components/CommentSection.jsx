@@ -1,0 +1,214 @@
+import React, { useState, useEffect } from 'react'
+import { getComments, addComment, deleteComment } from '../services/api.js'
+
+export default function CommentSection({ submissionId, currentUserId }) {
+  const [comments, setComments] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [newComment, setNewComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    if (expanded && submissionId) {
+      loadComments()
+    }
+  }, [expanded, submissionId])
+
+  async function loadComments() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await getComments(submissionId)
+      if (!res.ok) {
+        setError('Failed to load comments')
+        return
+      }
+      const data = Array.isArray(res.data) ? res.data : []
+      setComments(data)
+    } catch (e) {
+      setError('Error loading comments')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAddComment(e) {
+    e.preventDefault()
+    if (!newComment.trim() || !currentUserId) return
+
+    setSubmitting(true)
+    setError('')
+    try {
+      const res = await addComment(submissionId, currentUserId, newComment.trim())
+      if (!res.ok) {
+        const errMsg = res.data?.message || res.text || 'Failed to add comment'
+        setError(errMsg)
+        return
+      }
+      setNewComment('')
+      await loadComments()
+    } catch (e) {
+      setError('Error adding comment')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDeleteComment(commentId) {
+    if (!confirm('Delete this comment?')) return
+
+    try {
+      const res = await deleteComment(submissionId, commentId)
+      if (!res.ok) {
+        setError('Failed to delete comment')
+        return
+      }
+      await loadComments()
+    } catch (e) {
+      setError('Error deleting comment')
+    }
+  }
+
+  function formatTimestamp(timestamp) {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return 'just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return date.toLocaleDateString()
+  }
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          background: 'transparent',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          color: 'rgba(255, 255, 255, 0.8)',
+          padding: '6px 12px',
+          borderRadius: 6,
+          cursor: 'pointer',
+          fontSize: 14
+        }}
+      >
+        {expanded ? '▼' : '▶'} Comments ({comments.length})
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop: 12 }}>
+          {error && (
+            <div style={{ color: '#ff6b6b', fontSize: 14, marginBottom: 8 }}>
+              {error}
+            </div>
+          )}
+
+          {loading && <div style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14 }}>Loading comments...</div>}
+
+          {!loading && comments.length === 0 && (
+            <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 14, fontStyle: 'italic' }}>
+              No comments yet. Be the first to comment!
+            </div>
+          )}
+
+          {!loading && comments.length > 0 && (
+            <div style={{ marginBottom: 12, maxHeight: 300, overflowY: 'auto' }}>
+              {comments.map(comment => {
+                const commentId = comment.id ?? comment.Id
+                const userId = comment.userId ?? comment.UserId
+                const text = comment.text ?? comment.Text ?? ''
+                const timestamp = comment.timestamp ?? comment.Timestamp
+                const isOwner = Number(userId) === Number(currentUserId)
+
+                return (
+                  <div
+                    key={commentId}
+                    style={{
+                      background: 'rgba(100, 108, 255, 0.1)',
+                      borderRadius: 8,
+                      padding: 12,
+                      marginBottom: 8
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 4 }}>
+                          User {userId} • {formatTimestamp(timestamp)}
+                        </div>
+                        <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
+                          {text}
+                        </div>
+                      </div>
+                      {isOwner && (
+                        <button
+                          onClick={() => handleDeleteComment(commentId)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#ff6b6b',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            padding: '4px 8px'
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {currentUserId && (
+            <form onSubmit={handleAddComment} style={{ marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  disabled={submitting}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: 6,
+                    color: 'white',
+                    fontSize: 14
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || submitting}
+                  style={{
+                    padding: '8px 16px',
+                    background: submitting ? 'rgba(100, 108, 255, 0.5)' : '#646cff',
+                    border: 'none',
+                    borderRadius: 6,
+                    color: 'white',
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    fontSize: 14
+                  }}
+                >
+                  {submitting ? '...' : 'Post'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+

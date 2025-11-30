@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChallengeById, getTaskById, leaveChallenge, advanceChallenge, API_BASE } from '../services/api.js'
+import CommentSection from '../components/CommentSection.jsx'
 
 export default function ChallengeRoom() {
   const { challengeId } = useParams()
@@ -587,6 +588,7 @@ export default function ChallengeRoom() {
                           Vote
                         </button>
                       </div>
+                      <CommentSection submissionId={s.id} currentUserId={userId} />
                     </div>
                   ))}
                 </div>
