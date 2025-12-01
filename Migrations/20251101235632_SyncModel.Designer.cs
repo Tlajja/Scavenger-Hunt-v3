@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    partial class PhotoScavengerHuntDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251101235632_SyncModel")]
+    partial class SyncModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -20,121 +23,6 @@ namespace PhotoScavengerHunt.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("HuntTask", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AuthorId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tasks");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AuthorId = 0,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Red car"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            AuthorId = 0,
-                            CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "Blue mailbox"
-                        });
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.Challenge", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreatorId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsPrivate")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("JoinCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TaskId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("WinnerId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Challenges");
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.ChallengeParticipant", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ChallengeId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChallengeId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ChallengeParticipants");
-                });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
                 {
@@ -172,9 +60,6 @@ namespace PhotoScavengerHunt.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ChallengeId")
-                        .HasColumnType("int");
-
                     b.Property<string>("PhotoUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -211,6 +96,50 @@ namespace PhotoScavengerHunt.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Tasks.HuntTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tasks");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AuthorId = 0,
+                            Deadline = new DateTime(2025, 10, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Red car",
+                            Status = 0
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AuthorId = 0,
+                            Deadline = new DateTime(2025, 10, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Description = "Blue mailbox",
+                            Status = 0
+                        });
+                });
+
             modelBuilder.Entity("PhotoScavengerHunt.Features.Users.UserProfile", b =>
                 {
                     b.Property<int>("Id")
@@ -237,9 +166,6 @@ namespace PhotoScavengerHunt.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Wins")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("Users");
@@ -252,8 +178,7 @@ namespace PhotoScavengerHunt.Migrations
                             Email = "",
                             IsRegistered = false,
                             Name = "Ieva",
-                            PasswordHash = "",
-                            Wins = 0
+                            PasswordHash = ""
                         },
                         new
                         {
@@ -262,8 +187,7 @@ namespace PhotoScavengerHunt.Migrations
                             Email = "",
                             IsRegistered = false,
                             Name = "Kristina",
-                            PasswordHash = "",
-                            Wins = 0
+                            PasswordHash = ""
                         },
                         new
                         {
@@ -272,8 +196,7 @@ namespace PhotoScavengerHunt.Migrations
                             Email = "",
                             IsRegistered = false,
                             Name = "Ausra",
-                            PasswordHash = "",
-                            Wins = 0
+                            PasswordHash = ""
                         },
                         new
                         {
@@ -282,28 +205,8 @@ namespace PhotoScavengerHunt.Migrations
                             Email = "",
                             IsRegistered = false,
                             Name = "Ula",
-                            PasswordHash = "",
-                            Wins = 0
+                            PasswordHash = ""
                         });
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.ChallengeParticipant", b =>
-                {
-                    b.HasOne("PhotoScavengerHunt.Features.Challenges.Challenge", "Challenge")
-                        .WithMany("Participants")
-                        .HasForeignKey("ChallengeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhotoScavengerHunt.Features.Users.UserProfile", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Challenge");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
@@ -315,11 +218,6 @@ namespace PhotoScavengerHunt.Migrations
                         .IsRequired();
 
                     b.Navigation("PhotoSubmission");
-                });
-
-            modelBuilder.Entity("PhotoScavengerHunt.Features.Challenges.Challenge", b =>
-                {
-                    b.Navigation("Participants");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.PhotoSubmission", b =>
