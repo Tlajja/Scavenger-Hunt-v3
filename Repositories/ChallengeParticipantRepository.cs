@@ -46,13 +46,6 @@ namespace PhotoScavengerHunt.Repositories
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task EnsureUserCanCreateChallengeAsync(int userId)
-        {
-            var adminCount = await CountAdminChallengesForUserAsync(userId);
-            if (adminCount >= 1)
-                throw new ChallengeLimitException("A user can create only one challenge at a time.");
-        }
-
         public async Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId)
         {
             // check if user exists
@@ -69,21 +62,6 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync(cp => cp.UserId == userId && cp.ChallengeId == challengeId);
             if (existingAny != null)
                 throw new ChallengeValidationException("User is already a participant in this challenge.");
-        }
-
-        public async Task TransferAdminAsync(int challengeId, int fromUserId, int toUserId)
-        {
-            var from = await GetParticipantAsync(challengeId, fromUserId);
-            var to = await GetParticipantAsync(challengeId, toUserId);
-            if (from == null || to == null)
-                throw new ChallengeNotFoundException("Participant(s) not found for transfer.");
-
-            if (from.Role != ChallengeRole.Admin)
-                throw new ChallengeValidationException("Source user is not an admin.");
-
-            from.Role = ChallengeRole.Participant;
-            to.Role = ChallengeRole.Admin;
-            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId)

@@ -10,8 +10,6 @@ public interface IChallengeRepository
     Task<List<Challenge>> GetAllAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc);
     Task AddAsync(Challenge challenge);
     Task SaveChangesAsync();
-    Task EnsureNameNotEmptyAsync(string name);
-    Task EnsureDeadlineIsValidAsync(DateTime? deadline);
     Task DeleteCascadeAsync(int challengeId);
     Task<(int WinnerId, int TotalVotes)?> GetTopUserByVotesAsync(int challengeId);
     Task<bool> AnyByJoinCodeAsync(string joinCode);

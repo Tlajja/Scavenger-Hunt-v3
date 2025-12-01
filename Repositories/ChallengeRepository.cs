@@ -64,28 +64,6 @@ namespace PhotoScavengerHunt.Repositories
             return challenge;
         }
 
-        public Task EnsureNameNotEmptyAsync(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ChallengeValidationException("Challenge name cannot be empty.");
-            return Task.CompletedTask;
-        }
-
-        public Task EnsureDeadlineIsValidAsync(DateTime? deadline)
-        {
-            if (deadline.HasValue)
-            {
-                var now = DateTime.UtcNow;
-                if (deadline.Value <= now)
-                    throw new ChallengeValidationException("Deadline must be in the future.");
-
-                var maxDeadline = now.AddDays(7);
-                if (deadline.Value > maxDeadline)
-                    throw new ChallengeValidationException("Deadline cannot be more than 7 days from now.");
-            }
-            return Task.CompletedTask;
-        }
-
         public async Task DeleteCascadeAsync(int challengeId)
         {
             var challenge = await _dbContext.Challenges

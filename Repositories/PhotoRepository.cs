@@ -58,14 +58,6 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync(p => p.Id == submissionId);
         }
 
-        public async Task<PhotoSubmission> EnsureSubmissionExistsAsync(int submissionId)
-        {
-            var submission = await GetSubmissionWithCommentsAsync(submissionId);
-            if (submission == null)
-                throw new ArgumentException("Submission not found.");
-            return submission;
-        }
-
         public async Task AddCommentAsync(Comment comment)
         {
             await _dbContext.Comments.AddAsync(comment);

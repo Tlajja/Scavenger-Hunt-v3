@@ -2,6 +2,7 @@
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Exceptions;
 using System.IO;
 
 namespace PhotoScavengerHunt.Services
@@ -45,8 +46,11 @@ namespace PhotoScavengerHunt.Services
                 if (!taskId.HasValue)
                     return (false, "Task does not exist.", null, null);
 
-                await _taskRepo.EnsureTaskExistsAsync(taskId.Value);
-                await _userRepo.EnsureUserExistsAsync(userId);
+                if(!await _taskRepo.ExistsAsync(taskId.Value))
+                    throw new ChallengeNotFoundException("Task does not exist.");
+                
+                if(!await _userRepo.ExistsAsync(userId))
+                throw new ChallengeNotFoundException("User does not exist.");
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
