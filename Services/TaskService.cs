@@ -17,14 +17,14 @@ namespace PhotoScavengerHunt.Services
             _logger = logger;
         }
 
-        public async Task<BasicTask> CreateTaskAsync(CreateTaskRequest req)
+        public async Task<HuntTask> CreateTaskAsync(CreateTaskRequest req)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(req.Description))
                     throw new ArgumentException("Task description cannot be empty.");
 
-                var task = BasicTaskFactory.Create(
+                var task = HuntTaskFactory.Create(
                     description: req.Description,
                     authorId: req.AuthorId,
                     deadline: req.Deadline);
@@ -45,7 +45,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<BasicTask> CreateUserTaskAsync(CreateTaskRequest req)
+        public async Task<HuntTask> CreateUserTaskAsync(CreateTaskRequest req)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace PhotoScavengerHunt.Services
                 if (!await _userRepo.ExistsAsync(req.AuthorId))
                     throw new ArgumentException("User does not exist.");
 
-                var task = BasicTaskFactory.Create(
+                var task = HuntTaskFactory.Create(
                     description: req.Description,
                     authorId: req.AuthorId,
                     deadline: req.Deadline);
@@ -75,7 +75,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<IEnumerable<BasicTask>> GetTasksAsync()
+        public async Task<IEnumerable<HuntTask>> GetTasksAsync()
         {
             try
             {
@@ -88,7 +88,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<BasicTask?> GetTaskByIdAsync(int id)
+        public async Task<HuntTask?> GetTaskByIdAsync(int id)
         {
             try
             {
@@ -101,7 +101,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<BasicTask?> GetRandomTaskForUserAsync(int userId)
+        public async Task<HuntTask?> GetRandomTaskForUserAsync(int userId)
         {
             try
             {

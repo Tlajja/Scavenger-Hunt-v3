@@ -1,7 +1,7 @@
 ﻿using PhotoScavengerHunt.Features.Challenges.Abstractions;
 using PhotoScavengerHunt.Interfaces;
 
-public class BasicTask : IHasCreatedAt, IHasDeadline
+public class HuntTask : IHasCreatedAt, IHasDeadline
 {
     public int Id { get; set; }
     public string Description { get; set; } = "";

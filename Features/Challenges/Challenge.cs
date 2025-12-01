@@ -18,5 +18,5 @@ public class Challenge : IHasCreatedAt, IHasDeadline
 
     public int? WinnerId { get; set; }
     public List<ChallengeParticipant>? Participants { get; set; }
-    public List<ChallengeTask>? ChallengeTasks { get; set; }
+    public List<ChallengeTask> ChallengeTasks { get; set; } = new();
 }

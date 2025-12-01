@@ -183,7 +183,13 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateChallenge_ValidRequest_ReturnsCreatedAtAction()
         {
-            var request = new CreateChallengeRequest("Controller Challenge", 200, 102, DateTime.UtcNow.AddDays(7), true);
+            var request = new CreateChallengeRequest(
+                "Controller Challenge",
+                creatorId: 102,
+                taskIds: new[] { 200 },
+                deadline: DateTime.UtcNow.AddDays(7),
+                isPrivate: true
+            );
 
             var result = await _controller.CreateChallenge(request);
 
@@ -194,7 +200,13 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task CreateChallenge_EmptyName_ReturnsBadRequest()
         {
-            var request = new CreateChallengeRequest("", 200, 100, DateTime.UtcNow.AddDays(7), false);
+            var request = new CreateChallengeRequest(
+                "",
+                creatorId: 100,
+                taskIds: new[] { 200 },
+                deadline: DateTime.UtcNow.AddDays(7),
+                isPrivate: false
+            );
 
             IActionResult result;
             try

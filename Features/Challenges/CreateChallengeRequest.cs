@@ -17,4 +17,26 @@ public record CreateChallengeRequest
         Deadline = deadline;
         IsPrivate = isPrivate;
     }
+
+    public virtual bool Equals(CreateChallengeRequest? other)
+    {
+        if (ReferenceEquals(this, other)) return true;
+        if (other is null) return false;
+        if (!string.Equals(Name, other.Name, StringComparison.Ordinal)) return false;
+        if (CreatorId != other.CreatorId) return false;
+        if (IsPrivate != other.IsPrivate) return false;
+        if (Deadline != other.Deadline) return false;
+        return (TaskIds ?? Enumerable.Empty<int>()).SequenceEqual(other.TaskIds ?? Enumerable.Empty<int>());
+    }
+
+    public override int GetHashCode()
+    {
+        var hc = new HashCode();
+        hc.Add(Name, StringComparer.Ordinal);
+        hc.Add(CreatorId);
+        foreach (var id in TaskIds ?? Enumerable.Empty<int>()) hc.Add(id);
+        hc.Add(Deadline);
+        hc.Add(IsPrivate);
+        return hc.ToHashCode();
+    }
 }

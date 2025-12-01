@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Exceptions;
+using PhotoScavengerHunt.Features.Tasks;
 
 namespace PhotoScavengerHunt.Repositories
 {
@@ -16,7 +17,7 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Tasks.AnyAsync(t => t.Id == id);
         }
 
-        public async Task<BasicTask?> GetByIdAsync(int id)
+        public async Task<HuntTask?> GetByIdAsync(int id)
         {
             return await _dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == id);
         }
@@ -27,19 +28,19 @@ namespace PhotoScavengerHunt.Repositories
                 throw new ChallengeNotFoundException("Task does not exist.");
         }
 
-        public async Task<List<BasicTask>> GetAllAsync()
+        public async Task<List<HuntTask>> GetAllAsync()
         {
             return await _dbContext.Tasks.ToListAsync();
         }
 
-        public async Task<List<BasicTask>> GetAllNonExpiredAsync()
+        public async Task<List<HuntTask>> GetAllNonExpiredAsync()
         {
             return await _dbContext.Tasks
                 .Where(t => t.Deadline == null || t.Deadline > DateTime.UtcNow)
                 .ToListAsync();
         }
 
-        public async Task<BasicTask?> GetRandomAsync(int? excludeAuthorId = null)
+        public async Task<HuntTask?> GetRandomAsync(int? excludeAuthorId = null)
         {
             // Only consider tasks that are not expired (no deadline or deadline in the future)
             var query = _dbContext.Tasks
@@ -57,7 +58,7 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<BasicTask?> GetRandomForUserAsync(int userId)
+        public async Task<HuntTask?> GetRandomForUserAsync(int userId)
         {
             // Only consider tasks that are not expired (no deadline or deadline in the future)
             var query = _dbContext.Tasks
@@ -71,15 +72,23 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync();
         }
 
-        public async Task AddAsync(BasicTask task)
+        public async Task AddAsync(HuntTask task)
         {
             await _dbContext.Tasks.AddAsync(task);
         }
 
-        public Task RemoveAsync(BasicTask task)
+        public async Task RemoveAsync(HuntTask task)
         {
+            if (task == null) throw new ArgumentNullException(nameof(task));
+
+            // Remove any ChallengeTask references to this task first to avoid FK restriction errors
+            var dependents = _dbContext.ChallengeTasks.Where(ct => ct.TaskId == task.Id);
+            if (await dependents.AnyAsync())
+            {
+                _dbContext.ChallengeTasks.RemoveRange(dependents);
+            }
+
             _dbContext.Tasks.Remove(task);
-            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()

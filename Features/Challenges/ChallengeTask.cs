@@ -8,5 +8,5 @@ public class ChallengeTask
 
  [JsonIgnore]
  public Challenge? Challenge { get; set; }
- public BasicTask? Task { get; set; }
+ public HuntTask? Task { get; set; }
 }
