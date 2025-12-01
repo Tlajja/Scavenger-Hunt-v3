@@ -7,6 +7,8 @@ export default function Vote() {
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [tasksForChallenge, setTasksForChallenge] = useState([])
+  const [selectedTask, setSelectedTask] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -23,10 +25,10 @@ export default function Vote() {
     load()
   }, [])
 
-  async function loadSubmissions(challengeId) {
+  async function loadSubmissionsByTask(taskId) {
     setLoading(true); setError(''); setSubs([])
     try {
-      const res = await fetch(`/api/photosubmissions?challengeId=${challengeId}`)
+      const res = await fetch(`/api/photosubmissions?taskId=${taskId}`)
       if (!res.ok) throw new Error(`Failed to load submissions (${res.status})`)
       const data = await res.json()
       // normalize property names to frontend-friendly shape
@@ -79,6 +81,30 @@ export default function Vote() {
     }
   }
 
+  // when challenge changes, fetch its tasks to let user choose task first
+  async function onChallengeChange(challengeId) {
+    setSelected(challengeId)
+    setTasksForChallenge([])
+    setSelectedTask(null)
+    if (!challengeId) { setSubs([]); return }
+    try {
+      const cres = await fetch(`/api/challenge/${challengeId}`)
+      if (!cres.ok) return
+      const ch = await cres.json()
+      const refs = Array.isArray(ch?.challengeTasks ?? ch?.ChallengeTasks) ? (ch.challengeTasks ?? ch.ChallengeTasks) : []
+      const ids = refs.map(t => Number(t.taskId ?? t.TaskId ?? t.task?.id ?? t.task?.Id ?? 0)).filter(Boolean)
+      const tasks = await Promise.all(ids.map(id => fetch(`/api/tasks/${id}`).then(r=>r.ok? r.json(): null)))
+      const good = tasks.filter(Boolean)
+      setTasksForChallenge(good)
+    } catch {}
+  }
+
+  function onSelectTask(tid) {
+    setSelectedTask(tid)
+    if (tid) loadSubmissionsByTask(tid)
+    else setSubs([])
+  }
+
   async function vote(subId) {
     try {
       const id = subId ?? (typeof subId === 'object' ? subId.id : null)
@@ -102,15 +128,7 @@ export default function Vote() {
 
       <div style={{ marginBottom: 12 }}>
         <label>Challenges in voting stage: </label>
-        <select
-          value={selected ?? ''}
-          onChange={e => {
-            const id = e.target.value || null
-            setSelected(id)
-            if (id) loadSubmissions(id)
-            else setSubs([])
-          }}
-        >
+        <select value={selected ?? ''} onChange={e => onChallengeChange(e.target.value)}>
           <option value="">-- choose --</option>
           {challenges
             .filter(c => Number(c.status) === 1) // status 1 = Closed / voting stage per your design
@@ -120,6 +138,16 @@ export default function Vote() {
               </option>
             ))}
         </select>
+        {/* task selector */}
+        {tasksForChallenge.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <label>Task: </label>
+            <select value={selectedTask ?? ''} onChange={e => onSelectTask(e.target.value)}>
+              <option value="">-- choose task --</option>
+              {tasksForChallenge.map(t => <option key={t.id ?? t.Id} value={t.id ?? t.Id}>{t.description ?? t.Description}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       {loading && <div>Loading submissions…</div>}

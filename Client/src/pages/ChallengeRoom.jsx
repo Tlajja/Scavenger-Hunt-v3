@@ -15,6 +15,9 @@ export default function ChallengeRoom() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [tasksForChallenge, setTasksForChallenge] = useState([])
+  const [submitTaskId, setSubmitTaskId] = useState('')
+  const [voteTaskId, setVoteTaskId] = useState('')
   
   const [photoFile, setPhotoFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
@@ -51,15 +54,33 @@ export default function ChallengeRoom() {
       const challengeData = cRes.data
       setChallenge(challengeData)
 
-      const taskId = challengeData.taskId ?? challengeData.TaskId
-      if (taskId) {
-        const tRes = await getTaskById(taskId)
-        if (tRes.ok) setTask(tRes.data)
+      // load all tasks for this challenge (ChallengeTasks relation)
+      const refs = Array.isArray(challengeData?.challengeTasks ?? challengeData?.ChallengeTasks)
+        ? (challengeData.challengeTasks ?? challengeData.ChallengeTasks)
+        : []
+      const ids = refs.map(t => Number(t.taskId ?? t.TaskId ?? t.task?.id ?? t.task?.Id ?? 0)).filter(Boolean)
+      if (ids.length > 0) {
+        const fetched = await Promise.all(ids.map(id => getTaskById(id)))
+        const valid = fetched.filter(r => r?.ok).map(r => r.data)
+        setTasksForChallenge(valid)
+        // default preview/task card to the first task
+        setTask(valid[0] ?? null)
+        setSubmitTaskId(String(valid[0]?.id ?? valid[0]?.Id ?? ''))
+      } else {
+        setTasksForChallenge([])
+        setTask(null)
+        setSubmitTaskId('')
       }
 
       const status = Number(challengeData.status ?? 0)
       if (status === 1) {
-        await loadSubmissions()
+        // If voting stage, default voteTaskId to first task and load its submissions
+        if (ids.length > 0) {
+          setVoteTaskId(String(ids[0]))
+          await loadSubmissionsByTask(ids[0])
+        } else {
+          await loadSubmissions()
+        }
       } else if (status === 2) {
         await loadLeaderboard()
       }
@@ -70,9 +91,14 @@ export default function ChallengeRoom() {
     }
   }
 
-  async function loadSubmissions() {
+// load submissions for a specific task (used in voting)
+  async function loadSubmissionsByTask(taskId) {
     try {
-      const res = await fetch(`${API_BASE}/api/photosubmissions?challengeId=${challengeId}`)
+      setSubmissions([])
+      const tid = Number(taskId)
+      if (!tid) { setSubmissions([]); return }
+      // use explicit task route to avoid ambiguity
+      const res = await fetch(`${API_BASE}/api/photosubmissions/task/${tid}`)
       if (!res.ok) return
       const data = await res.json()
       const arr = Array.isArray(data) ? data : []
@@ -92,7 +118,8 @@ export default function ChallengeRoom() {
       }))
       setSubmissions(normalized)
 
-      normalized.forEach(async (item, idx) => {
+      // fetch blobs and patch submissions by id (safer than using the index)
+      normalized.forEach(async (item) => {
         if (!item.photoUrl) return
         try {
           const r = await fetch(item.photoUrl)
@@ -101,8 +128,7 @@ export default function ChallengeRoom() {
           const reader = new FileReader()
           reader.onloadend = () => {
             setSubmissions(prev => {
-              const copy = [...prev]
-              if (copy[idx]) copy[idx] = { ...copy[idx], photoDataUrl: reader.result }
+              const copy = prev.map(p => p.id === item.id ? { ...p, photoDataUrl: reader.result } : p)
               return copy
             })
           }
@@ -110,6 +136,12 @@ export default function ChallengeRoom() {
         } catch {}
       })
     } catch {}
+  }
+
+  async function loadSubmissions() {
+    // require a selected vote task — show empty until user picks one
+    if (!voteTaskId) { setSubmissions([]); return }
+    await loadSubmissionsByTask(Number(voteTaskId))
   }
 
   async function loadLeaderboard() {
@@ -166,7 +198,9 @@ export default function ChallengeRoom() {
       }
       setMessage('Vote recorded!')
       setTimeout(() => setMessage(''), 2000)
-      await loadSubmissions()
+      // refresh current task votes if any
+      if (voteTaskId) await loadSubmissionsByTask(voteTaskId)
+      else await loadSubmissions()
     } catch (e) {
       setMessage(String(e))
     }
@@ -235,12 +269,17 @@ export default function ChallengeRoom() {
       setMessage('Please select a photo')
       return
     }
+    if (!submitTaskId) {
+      setMessage('Please choose a task to submit to.')
+      return
+    }
 
     setUploading(true)
     setUploadProgress(0)
 
     const formData = new FormData()
     formData.append('challengeId', challengeId)
+    formData.append('taskId', submitTaskId)
     formData.append('userId', userId)
     formData.append('file', photoFile)
 
@@ -279,6 +318,11 @@ export default function ChallengeRoom() {
       setPhotoFile(null)
       setPreviewUrl(null)
       setTimeout(() => setMessage(''), 3000)
+      // refresh submissions if currently in vote tab for this task
+      if (activeTab === 'vote' && submitTaskId) {
+        setVoteTaskId(submitTaskId)
+        await loadSubmissionsByTask(submitTaskId)
+      }
     } catch (err) {
       setMessage('Network error')
     } finally {
@@ -484,6 +528,21 @@ export default function ChallengeRoom() {
             <form onSubmit={handleSubmitPhoto}>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Upload Your Photo</h3>
               
+              {/* Task selector for submit */}
+              {tasksForChallenge.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Choose Task</label>
+                  <select value={submitTaskId} onChange={e => {
+                      const v = e.target.value
+                      setSubmitTaskId(v)
+                      const t = tasksForChallenge.find(x => String(x.id ?? x.Id) === v)
+                      if (t) setTask(t)
+                    }} disabled={uploading} style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}>
+                    <option value="">-- choose a task --</option>
+                    {tasksForChallenge.map(t => <option key={t.id ?? t.Id} value={t.id ?? t.Id}>{t.description ?? t.Description}</option>)}
+                  </select>
+                </div>
+              )}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/gif"
@@ -546,6 +605,23 @@ export default function ChallengeRoom() {
           {activeTab === 'vote' && status === 1 && (
             <div>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Vote for Submissions</h3>
+              {/* task selector for voting */}
+              {tasksForChallenge.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Select Task to Vote</label>
+                  <select value={voteTaskId} onChange={async e => {
+                      const v = e.target.value
+                      setVoteTaskId(v)
+                      const t = tasksForChallenge.find(x => String(x.id ?? x.Id) === v)
+                      if (t) setTask(t)
+                      if (v) await loadSubmissionsByTask(Number(v))
+                      else setSubmissions([])
+                    }} style={{ width: '100%', padding: 8, boxSizing: 'border-box', marginBottom: 12 }}>
+                    <option value="">-- choose a task --</option>
+                    {tasksForChallenge.map(t => <option key={t.id ?? t.Id} value={t.id ?? t.Id}>{t.description ?? t.Description}</option>)}
+                  </select>
+                </div>
+              )}
               {submissions.length === 0 ? (
                 <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', padding: 40 }}>
                   No submissions yet

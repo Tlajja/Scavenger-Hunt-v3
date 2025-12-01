@@ -104,6 +104,12 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
 
+            var photos = await _dbContext.Photos.Where(p => p.ChallengeId == challengeId).ToListAsync();
+            if (photos.Any())
+            {
+                _dbContext.Photos.RemoveRange(photos);
+            }
+
             if (challenge.Participants != null && challenge.Participants.Any())
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
 

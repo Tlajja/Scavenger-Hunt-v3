@@ -34,17 +34,28 @@ namespace PhotoScavengerHunt.Services
                 if (file == null || file.Length == 0)
                     return (false, "No file uploaded.", null, null);
 
-                // if challengeId provided, resolve its TaskId
                 if (challengeId.HasValue)
                 {
                     await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
                     var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
-                    taskId = challenge?.ChallengeTasks?.FirstOrDefault()?.TaskId;
+                    if (!taskId.HasValue)
+                        taskId = challenge?.ChallengeTasks?.FirstOrDefault()?.TaskId;
                 }
                 if (!taskId.HasValue)
                     return (false, "Task does not exist.", null, null);
 
                 await _taskRepo.EnsureTaskExistsAsync(taskId.Value);
+                
+                var existingForTask = await _photoRepo.GetSubmissionsForTaskAsync(taskId.Value);
+                var duplicate = existingForTask.FirstOrDefault(s =>
+                   s.UserId == userId &&
+                   ((s.ChallengeId == null && challengeId == null) || (s.ChallengeId.HasValue && challengeId.HasValue && s.ChallengeId.Value == challengeId.Value))
+                );
+                if (duplicate != null)
+                {
+                    return (false, "You have already submitted a photo for this task in this challenge.", null, null);
+                }
+
                 await _userRepo.EnsureUserExistsAsync(userId);
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
