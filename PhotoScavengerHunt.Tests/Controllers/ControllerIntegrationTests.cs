@@ -201,7 +201,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.CreateChallenge(request);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            catch (PhotoScavengerHunt.Exceptions.ValidationException)
             {
                 result = new BadRequestObjectResult("Challenge name cannot be empty.");
             }
@@ -233,7 +233,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.JoinChallenge(request);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("Challenge not found.");
             }
@@ -272,7 +272,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.GetChallengeById(99999);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("Challenge not found.");
             }
@@ -298,7 +298,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.DeleteChallenge(300, 102);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            catch (PhotoScavengerHunt.Exceptions.ValidationException)
             {
                 result = new BadRequestObjectResult("Only challenge admins can delete challenges.");
             }
@@ -328,7 +328,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.LeaveChallenge(300, 102);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("User is not a participant of this challenge.");
             }

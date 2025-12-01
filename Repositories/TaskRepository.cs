@@ -25,7 +25,7 @@ namespace PhotoScavengerHunt.Repositories
         public async Task EnsureTaskExistsAsync(int id)
         {
             if(!await ExistsAsync(id))
-                throw new ChallengeNotFoundException("Task does not exist.");
+                throw new EntityNotFoundException("Task does not exist.");
         }
 
         public async Task<List<HuntTask>> GetAllAsync()
