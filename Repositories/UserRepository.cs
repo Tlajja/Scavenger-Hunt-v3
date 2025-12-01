@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Exceptions;
+using System.Linq;
 
 namespace PhotoScavengerHunt.Repositories
 {
@@ -103,6 +104,17 @@ namespace PhotoScavengerHunt.Repositories
             if (user == null)
                 throw new ArgumentException("Invalid username or password.");
             return user;
+        }
+
+        public async Task<Dictionary<int, string>> GetUserNamesAsync(IEnumerable<int> userIds)
+        {
+            var uniqueUserIds = userIds.Distinct().ToList();
+            if (!uniqueUserIds.Any())
+                return new Dictionary<int, string>();
+
+            return await _dbContext.Users
+                .Where(u => uniqueUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.Name);
         }
     }
 }

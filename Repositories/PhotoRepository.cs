@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
-using System.Linq;
 
 namespace PhotoScavengerHunt.Repositories
 {
@@ -57,17 +56,6 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Photos
                 .Include(p => p.Comments)
                 .FirstOrDefaultAsync(p => p.Id == submissionId);
-        }
-
-        public async Task<Dictionary<int, string>> GetUserNamesAsync(IEnumerable<int> userIds)
-        {
-            var uniqueUserIds = userIds.Distinct().ToList();
-            if (!uniqueUserIds.Any())
-                return new Dictionary<int, string>();
-
-            return await _dbContext.Users
-                .Where(u => uniqueUserIds.Contains(u.Id))
-                .ToDictionaryAsync(u => u.Id, u => u.Name);
         }
 
         public async Task<PhotoSubmission> EnsureSubmissionExistsAsync(int submissionId)

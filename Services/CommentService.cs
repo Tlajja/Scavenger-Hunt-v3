@@ -9,11 +9,13 @@ namespace PhotoScavengerHunt.Services
     public class CommentService : ICommentService
     {
         private readonly IPhotoRepository _photoRepo;
+        private readonly IUserRepository _userRepo;
         private readonly ILogger<CommentService> _logger;
 
-        public CommentService(IPhotoRepository photoRepo, ILogger<CommentService> logger)
+        public CommentService(IPhotoRepository photoRepo, IUserRepository userRepo, ILogger<CommentService> logger)
         {
             _photoRepo = photoRepo;
+            _userRepo = userRepo;
             _logger = logger;
         }
 
@@ -64,7 +66,7 @@ namespace PhotoScavengerHunt.Services
 
                 // Get usernames for all comment authors
                 var userIds = submission.Comments.Select(c => c.UserId).ToList();
-                var userNames = await _photoRepo.GetUserNamesAsync(userIds);
+                var userNames = await _userRepo.GetUserNamesAsync(userIds);
 
                 var processedComments = submission.Comments
                     .Select(comment => new

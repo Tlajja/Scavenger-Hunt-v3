@@ -10,12 +10,12 @@ namespace PhotoScavengerHunt.Controllers
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
-        private readonly IPhotoRepository _photoRepo;
+        private readonly IUserRepository _userRepo;
 
-        public CommentsController(ICommentService comService, IPhotoRepository photoRepo)
+        public CommentsController(ICommentService comService, IUserRepository userRepo)
         {
             _commentService = comService;
-            _photoRepo = photoRepo;
+            _userRepo = userRepo;
         }
 
         [HttpPost("{submissionId}")]
@@ -34,7 +34,7 @@ namespace PhotoScavengerHunt.Controllers
 
             // Get usernames for all comments
             var userIds = comments.Select(c => c.UserId).Distinct().ToList();
-            var userNames = await _photoRepo.GetUserNamesAsync(userIds);
+            var userNames = await _userRepo.GetUserNamesAsync(userIds);
 
             var processedComments = new List<object>();
             foreach (var c in comments)
