@@ -16,4 +16,5 @@ public interface IChallengeRepository
     // Get by join code - repository throws ChallengeNotFoundException if missing
     Task<Challenge> GetByJoinCodeAsync(string joinCode);
     Task<Challenge> EnsureChallengeExistsAsync(int challengeId);
+    Task<List<int>> GetTopUsersByVotesAsync(int challengeId);
 }

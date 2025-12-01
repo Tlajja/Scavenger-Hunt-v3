@@ -21,7 +21,6 @@ namespace PhotoScavengerHunt.Repositories
         public async Task AddAsync(ChallengeParticipant p)
         {
             await _dbContext.ChallengeParticipants.AddAsync(p);
-            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<List<ChallengeParticipant>> GetByChallengeAsync(int challengeId)
@@ -40,10 +39,10 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.ChallengeParticipants.Where(cp => cp.UserId == userId).ToListAsync();
         }
 
-        public async Task RemoveAsync(ChallengeParticipant participant)
+        public Task RemoveAsync(ChallengeParticipant participant)
         {
             _dbContext.ChallengeParticipants.Remove(participant);
-            await _dbContext.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
         public async Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId)

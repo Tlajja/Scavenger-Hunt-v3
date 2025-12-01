@@ -76,7 +76,6 @@ namespace PhotoScavengerHunt.Repositories
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
 
             _dbContext.Challenges.Remove(challenge);
-            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<(int WinnerId, int TotalVotes)?> GetTopUserByVotesAsync(int challengeId)
@@ -101,6 +100,20 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge == null)
                 throw new ChallengeNotFoundException("Challenge not found.");
             return challenge;
+        }
+
+        public async Task<List<int>> GetTopUsersByVotesAsync(int challengeId)
+        {
+            var grouped = await _dbContext.Photos
+                .Where(p => p.ChallengeId == challengeId)
+                .GroupBy(p => p.UserId)
+                .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.Votes) })
+                .ToListAsync();
+
+            if (grouped == null || grouped.Count == 0) return new List<int>();
+
+            var max = grouped.Max(x => x.Total);
+            return grouped.Where(x => x.Total == max).Select(x => x.UserId).ToList();
         }
     }
 }

@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from 'react'
 import { API_BASE } from '../services/api.js'
 
+function assignDenseRanks(items, valueSelector) {
+  if (!Array.isArray(items)) return []
+  const arr = [...items].sort((a,b) => (valueSelector(b) || 0) - (valueSelector(a) || 0))
+  let prevVal = null
+  let prevRank = 0
+ let nextRank = 1
+  return arr.map(it => {
+    const val = valueSelector(it) ?? 0
+    if (prevVal === null || val !== prevVal) {
+      prevRank = nextRank
+      prevVal = val
+      nextRank += 1
+    }
+    return { ...it, rank: prevRank }
+  })
+}
+
 export default function Leaderboards() {
   const [challenges, setChallenges] = useState([])
   const [selected, setSelected] = useState(null)
@@ -32,7 +49,7 @@ export default function Leaderboards() {
         const data = await res.json()
         const entries = Array.isArray(data) ? data : (Array.isArray(data?.entries) ? data.entries : [])
         // ensure each entry has a photoUrl when server provides it (if available)
-        setBoard({ source: 'leaderboard', entries })
+        setBoard({ source: 'leaderboard', entries: assignDenseRanks(entries, e => Number(e.wins ?? e.Wins ?? e.totalVotes ?? e.TotalVotes ?? 0)) })
         return
       }
 
@@ -83,7 +100,7 @@ export default function Leaderboards() {
         }))
         .sort((a, b) => (b.votes || 0) - (a.votes || 0))
 
-      setBoard({ source: 'computed', entries: out })
+      setBoard({ source: 'computed', entries: assignDenseRanks(out, e => Number(e.votes ?? e.Votes ?? 0)) })
     } catch (e) {
       setError(String(e))
     } finally {
@@ -128,6 +145,7 @@ export default function Leaderboards() {
               return (
                 <li key={e.userId ?? i} style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{ width: 46, textAlign: 'right', fontWeight: 700 }}>{medal}</div>
                     <div style={{ width: 120, height: 80, background: '#f7f7f7', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #eee' }}>
                       {e.photoUrl ? (
                         <img src={e.photoUrl} alt={`User ${e.userName} photo`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />

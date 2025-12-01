@@ -121,6 +121,7 @@ namespace PhotoScavengerHunt.Services
             };
 
             await _participantRepo.AddAsync(participant);
+            await _participantRepo.SaveChangesAsync();
             participant.Challenge = null;
             participant.User = null;
             return participant;
@@ -147,6 +148,7 @@ namespace PhotoScavengerHunt.Services
         {
             await _participantRepo.EnsureUserCanAdvanceAsync(challengeId, userId);
             await _challengeRepo.DeleteCascadeAsync(challengeId);
+            await _challengeRepo.SaveChangesAsync();
         }
 
         public async Task LeaveChallengeAsync(int challengeId, int userId)
@@ -162,6 +164,7 @@ namespace PhotoScavengerHunt.Services
                 if (!otherParticipants.Any())
                 {
                     await _challengeRepo.DeleteCascadeAsync(challengeId);
+                    await _challengeRepo.SaveChangesAsync();
                     return;
                 }
 
@@ -181,10 +184,12 @@ namespace PhotoScavengerHunt.Services
                 await _participantRepo.SaveChangesAsync();
 
                 await _participantRepo.RemoveAsync(participant);
+                await _participantRepo.SaveChangesAsync();
                 return;
             }
 
             await _participantRepo.RemoveAsync(participant);
+            await _participantRepo.SaveChangesAsync();
         }
 
         public async Task<Challenge> AdvanceChallengeAsync(int challengeId, int requestingUserId)
@@ -215,26 +220,26 @@ namespace PhotoScavengerHunt.Services
             if (challenge.WinnerId != null && challenge.Status == ChallengeStatus.Completed)
                 return challenge;
 
-            var top = await _challengeRepo.GetTopUserByVotesAsync(challengeId);
-            var winnerId = top?.WinnerId;
-            if (winnerId.HasValue)
+            var topUsers = await _challengeRepo.GetTopUsersByVotesAsync(challengeId);
+            challenge.Status = ChallengeStatus.Completed;
+            if (topUsers != null && topUsers.Count > 0)
             {
-                challenge.WinnerId = winnerId.Value;
-                challenge.Status = ChallengeStatus.Completed;
+                challenge.WinnerId = topUsers.Count == 1 ? topUsers[0] : (int?)null;
 
-                var user = await _userRepo.GetByIdAsync(winnerId.Value);
-                if (user == null)
-                    throw new ChallengeNotFoundException("User does not exist.");
-
-                user.Wins += 1;
-                await _challengeRepo.SaveChangesAsync();
+                foreach (var uid in topUsers)
+                {
+                    var user = await _userRepo.GetByIdAsync(uid);
+                    if (user == null)
+                        throw new ChallengeNotFoundException("User does not exist.");
+                    user.Wins += 1;
+                }
             }
             else
             {
                 challenge.WinnerId = null;
-                challenge.Status = ChallengeStatus.Completed;
-                await _challengeRepo.SaveChangesAsync();
             }
+
+            await _challengeRepo.SaveChangesAsync();
 
             return challenge;
         }

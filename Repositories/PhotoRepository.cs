@@ -37,13 +37,7 @@ namespace PhotoScavengerHunt.Repositories
                     return (false, "Submission not found.", null);
 
                 submission.Votes += 1;
-                await _dbContext.SaveChangesAsync();
                 return (true, null, submission);
-            }
-            catch (DbUpdateException dbEx)
-            {
-                var msg = dbEx.InnerException?.Message ?? dbEx.Message;
-                return (false, $"Database error: {msg}", null);
             }
             catch (Exception ex)
             {
