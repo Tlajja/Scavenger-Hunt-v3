@@ -73,11 +73,11 @@ namespace PhotoScavengerHunt.Services
             try
             {
                 if(!await _userRepo.ExistsAsync(id))
-                throw new ChallengeNotFoundException("User does not exist.");
+                throw new EntityNotFoundException("User does not exist.");
                 var user = await _userRepo.GetByIdAsync(id);
                 return (true, string.Empty, user);
             }
-            catch (ChallengeNotFoundException)
+            catch (EntityNotFoundException)
             {
                 return (false, "User not found.", null);
             }
@@ -94,12 +94,12 @@ namespace PhotoScavengerHunt.Services
             {
                 var user = await _userRepo.GetByIdAsync(id);
                 if (user == null)
-                    throw new ChallengeNotFoundException("User not found.");
+                    throw new EntityNotFoundException("User not found.");
                 await _userRepo.RemoveAsync(user);
                 await _userRepo.SaveChangesAsync();
                 return (true, string.Empty);
             }
-            catch (ChallengeNotFoundException)
+            catch (EntityNotFoundException)
             {
                 return (false, "User not found.");
             }

@@ -50,30 +50,30 @@ namespace PhotoScavengerHunt.Services
         public async Task<Challenge> CreateChallengeAsync(CreateChallengeRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
-                throw new ChallengeValidationException("Challenge name cannot be empty.");
+                throw new ValidationException("Challenge name cannot be empty.");
 
             if(!await _userRepo.ExistsAsync(request.CreatorId))
-                throw new ChallengeNotFoundException("User does not exist.");
+                throw new EntityNotFoundException("User does not exist.");
             
             if(!await _taskRepo.ExistsAsync(request.TaskId))
-                throw new ChallengeNotFoundException("Task does not exist.");
+                throw new EntityNotFoundException("Task does not exist.");
 
             // ensure deadline is valid
             if (request.Deadline.HasValue)
             {
                 var now = DateTime.UtcNow;
                 if (request.Deadline.Value <= now)
-                    throw new ChallengeValidationException("Deadline must be in the future.");
+                    throw new ValidationException("Deadline must be in the future.");
 
                 var maxDeadline = now.AddDays(7);
                 if (request.Deadline.Value > maxDeadline)
-                    throw new ChallengeValidationException("Deadline cannot be more than 7 days from now.");
+                    throw new ValidationException("Deadline cannot be more than 7 days from now.");
             }
 
             // check if user can create challenge
             var adminCount = await _participantRepo.CountAdminChallengesForUserAsync(request.CreatorId);
             if (adminCount >= 1)
-                throw new ChallengeLimitException("A user can create only one challenge at a time.");
+                throw new LimitExceededException("A user can create only one challenge at a time.");
             
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
@@ -106,7 +106,7 @@ namespace PhotoScavengerHunt.Services
         {
             var code = NormalizeCode(request.JoinCode);
             if (string.IsNullOrWhiteSpace(code))
-                throw new ChallengeValidationException("Join code cannot be empty.");
+                throw new ValidationException("Join code cannot be empty.");
 
             var challenge = await _challengeRepo.GetByJoinCodeAsync(code);
 
@@ -174,10 +174,10 @@ namespace PhotoScavengerHunt.Services
                 var from = await _participantRepo.GetParticipantAsync(challengeId, userId);
                 var to = await _participantRepo.GetParticipantAsync(challengeId, newAdmin.UserId);
                 if (from == null || to == null)
-                    throw new ChallengeNotFoundException("Participant(s) not found for transfer.");
+                    throw new EntityNotFoundException("Participant(s) not found for transfer.");
 
                 if (from.Role != ChallengeRole.Admin)
-                    throw new ChallengeValidationException("Source user is not an admin.");
+                    throw new ValidationException("Source user is not an admin.");
 
                 from.Role = ChallengeRole.Participant;
                 to.Role = ChallengeRole.Admin;
@@ -210,7 +210,7 @@ namespace PhotoScavengerHunt.Services
                 return finalized;
             }
 
-            throw new ChallengeValidationException("Challenge is already completed.");
+            throw new ValidationException("Challenge is already completed.");
         }
 
         public async Task<Challenge> FinalizeChallengeAsync(int challengeId)
@@ -230,7 +230,7 @@ namespace PhotoScavengerHunt.Services
                 {
                     var user = await _userRepo.GetByIdAsync(uid);
                     if (user == null)
-                        throw new ChallengeNotFoundException("User does not exist.");
+                        throw new EntityNotFoundException("User does not exist.");
                     user.Wins += 1;
                 }
             }

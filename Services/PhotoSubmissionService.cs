@@ -47,10 +47,10 @@ namespace PhotoScavengerHunt.Services
                     return (false, "Task does not exist.", null, null);
 
                 if(!await _taskRepo.ExistsAsync(taskId.Value))
-                    throw new ChallengeNotFoundException("Task does not exist.");
+                    throw new EntityNotFoundException("Task does not exist.");
                 
                 if(!await _userRepo.ExistsAsync(userId))
-                throw new ChallengeNotFoundException("User does not exist.");
+                throw new EntityNotFoundException("User does not exist.");
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();

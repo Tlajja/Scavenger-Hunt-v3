@@ -49,18 +49,18 @@ namespace PhotoScavengerHunt.Repositories
         {
             // check if user exists
             var exists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
-            if (!exists) throw new ChallengeNotFoundException("User does not exist.");
+            if (!exists) throw new EntityNotFoundException("User does not exist.");
 
             var count = await _dbContext.ChallengeParticipants
                 .Where(cp => cp.UserId == userId)
                 .CountAsync();
             if (count >= 6)
-                throw new ChallengeLimitException("A user can participate in at most 6 challenges at a time.");
+                throw new LimitExceededException("A user can participate in at most 6 challenges at a time.");
 
             var existingAny = await _dbContext.ChallengeParticipants
                 .FirstOrDefaultAsync(cp => cp.UserId == userId && cp.ChallengeId == challengeId);
             if (existingAny != null)
-                throw new ChallengeValidationException("User is already a participant in this challenge.");
+                throw new ValidationException("User is already a participant in this challenge.");
         }
 
         public async Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId)
@@ -68,7 +68,7 @@ namespace PhotoScavengerHunt.Repositories
             var p = await _dbContext.ChallengeParticipants
                 .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
             if (p == null)
-                throw new ChallengeNotFoundException("User is not a participant of this challenge.");
+                throw new EntityNotFoundException("User is not a participant of this challenge.");
             return p;
         }
 
@@ -76,14 +76,14 @@ namespace PhotoScavengerHunt.Repositories
         {
             var challenge = await _dbContext.Challenges.FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge not found.");
+                throw new EntityNotFoundException("Challenge not found.");
 
             if (challenge.CreatorId == userId) return;
 
             var participant = await _dbContext.ChallengeParticipants
                 .FirstOrDefaultAsync(cp => cp.ChallengeId == challengeId && cp.UserId == userId);
             if (participant == null || participant.Role != ChallengeRole.Admin)
-                throw new ChallengeValidationException("Not authorized to advance challenge stage.");
+                throw new ValidationException("Not authorized to advance challenge stage.");
         }
 
         public async Task SaveChangesAsync()

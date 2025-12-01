@@ -60,7 +60,7 @@ namespace PhotoScavengerHunt.Repositories
         {
             var challenge =  await _dbContext.Challenges.FirstOrDefaultAsync(c => c.JoinCode == joinCode);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge with the provided join code does not exist.");
+                throw new EntityNotFoundException("Challenge with the provided join code does not exist.");
             return challenge;
         }
 
@@ -70,7 +70,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Include(c => c.Participants)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge not found.");
+                throw new EntityNotFoundException("Challenge not found.");
 
             if (challenge.Participants != null && challenge.Participants.Any())
                 _dbContext.ChallengeParticipants.RemoveRange(challenge.Participants);
@@ -98,7 +98,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Include(c => c.Participants)
                 .FirstOrDefaultAsync(c => c.Id == challengeId);
             if (challenge == null)
-                throw new ChallengeNotFoundException("Challenge not found.");
+                throw new EntityNotFoundException("Challenge not found.");
             return challenge;
         }
 
