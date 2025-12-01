@@ -124,6 +124,7 @@ export default function CommentSection({ submissionId, currentUserId }) {
               {comments.map(comment => {
                 const commentId = comment.id ?? comment.Id
                 const userId = comment.userId ?? comment.UserId
+                const userName = comment.userName ?? comment.UserName ?? `User ${userId}`
                 const text = comment.text ?? comment.Text ?? ''
                 const timestamp = comment.timestamp ?? comment.Timestamp
                 const isOwner = Number(userId) === Number(currentUserId)
@@ -141,7 +142,7 @@ export default function CommentSection({ submissionId, currentUserId }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 4 }}>
-                          User {userId} • {formatTimestamp(timestamp)}
+                          {userName} • {formatTimestamp(timestamp)}
                         </div>
                         <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
                           {text}

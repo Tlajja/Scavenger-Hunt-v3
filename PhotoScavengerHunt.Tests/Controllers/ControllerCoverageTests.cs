@@ -18,12 +18,14 @@ namespace PhotoScavengerHunt.Tests.Controllers
     {
         private readonly CommentsController _controller;
         private readonly Mock<ICommentService> _service;
+        private readonly Mock<IPhotoRepository> _photoRepo;
 
         public CommentsControllerTests()
         {
             _service = new Mock<ICommentService>();
+            _photoRepo = new Mock<IPhotoRepository>();
 
-            _controller = new CommentsController(_service.Object);
+            _controller = new CommentsController(_service.Object, _photoRepo.Object);
             SeedTestData();
         }
 

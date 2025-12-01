@@ -2,6 +2,7 @@
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
+using System.Linq;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -61,11 +62,16 @@ namespace PhotoScavengerHunt.Services
                 if (submission == null)
                     return (false, "Submission not found.", null);
 
+                // Get usernames for all comment authors
+                var userIds = submission.Comments.Select(c => c.UserId).ToList();
+                var userNames = await _photoRepo.GetUserNamesAsync(userIds);
+
                 var processedComments = submission.Comments
                     .Select(comment => new
                     {
                         comment.Id,
                         comment.UserId,
+                        UserName = userNames.GetValueOrDefault(comment.UserId, $"User {comment.UserId}"),
                         comment.Text,
                         comment.Timestamp,
                         IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),

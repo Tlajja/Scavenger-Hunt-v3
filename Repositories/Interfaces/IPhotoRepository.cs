@@ -17,4 +17,5 @@ public interface IPhotoRepository
     Task<List<PhotoSubmission>> GetSubmissionsForChallengeAsync(int challengeId);
     Task<PhotoSubmission?> FindByIdAsync(int submissionId);
     Task RemoveAsync(PhotoSubmission submission);
+    Task<Dictionary<int, string>> GetUserNamesAsync(IEnumerable<int> userIds);
 }

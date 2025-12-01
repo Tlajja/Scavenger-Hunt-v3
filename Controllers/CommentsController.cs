@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -9,10 +10,12 @@ namespace PhotoScavengerHunt.Controllers
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
+        private readonly IPhotoRepository _photoRepo;
 
-        public CommentsController(ICommentService comService)
+        public CommentsController(ICommentService comService, IPhotoRepository photoRepo)
         {
             _commentService = comService;
+            _photoRepo = photoRepo;
         }
 
         [HttpPost("{submissionId}")]
@@ -29,11 +32,27 @@ namespace PhotoScavengerHunt.Controllers
 
             var comments = result.Comments ?? new List<Comment>();
 
-            var processedComments = new List<Comment>();
+            // Get usernames for all comments
+            var userIds = comments.Select(c => c.UserId).Distinct().ToList();
+            var userNames = await _photoRepo.GetUserNamesAsync(userIds);
+
+            var processedComments = new List<object>();
             foreach (var c in comments)
             {
                 Console.WriteLine($"User {c.UserId} commented at {c.Timestamp}: {c.Text}");
-                processedComments.Add(c);
+                var processedComment = new
+                {
+                    c.Id,
+                    c.UserId,
+                    UserName = userNames.GetValueOrDefault(c.UserId, $"User {c.UserId}"),
+                    c.Text,
+                    c.Timestamp,
+                    IsRecent = c.Timestamp > DateTime.UtcNow.AddHours(-24),
+                    Preview = c.Text?.Length > 50
+                        ? c.Text.Substring(0, 50) + "..."
+                        : c.Text
+                };
+                processedComments.Add(processedComment);
             }
 
             return Ok(processedComments);
