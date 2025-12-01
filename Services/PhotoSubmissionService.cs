@@ -46,14 +46,16 @@ namespace PhotoScavengerHunt.Services
 
                 await _taskRepo.EnsureTaskExistsAsync(taskId.Value);
                 
-                var existingForTask = await _photoRepo.GetSubmissionsForTaskAsync(taskId.Value);
-                var duplicate = existingForTask.FirstOrDefault(s =>
-                   s.UserId == userId &&
-                   ((s.ChallengeId == null && challengeId == null) || (s.ChallengeId.HasValue && challengeId.HasValue && s.ChallengeId.Value == challengeId.Value))
-                );
-                if (duplicate != null)
+                if (challengeId.HasValue)
                 {
-                    return (false, "You have already submitted a photo for this task in this challenge.", null, null);
+                    var existingForTask = await _photoRepo.GetSubmissionsForTaskAsync(taskId.Value);
+                    var duplicate = existingForTask.FirstOrDefault(s =>
+                        s.UserId == userId && s.ChallengeId.HasValue && s.ChallengeId.Value == challengeId.Value
+                    );
+                    if (duplicate != null)
+                    {
+                        return (false, "You have already submitted a photo for this task in this challenge.", null, null);
+                    }
                 }
 
                 await _userRepo.EnsureUserExistsAsync(userId);
