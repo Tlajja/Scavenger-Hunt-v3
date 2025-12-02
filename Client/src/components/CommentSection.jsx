@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { getComments, addComment, deleteComment } from '../services/api.js'
+import React, { useState, useEffect, useRef } from 'react'
+import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { API_BASE, getComments, addComment, deleteComment } from '../services/api.js'
 
 export default function CommentSection({ submissionId, currentUserId }) {
   const [comments, setComments] = useState([])
@@ -8,10 +9,64 @@ export default function CommentSection({ submissionId, currentUserId }) {
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const connectionRef = useRef(null)
 
   useEffect(() => {
     if (expanded && submissionId) {
       loadComments()
+    }
+  }, [expanded, submissionId])
+
+  useEffect(() => {
+    let disposed = false
+
+    async function start() {
+      if (!expanded || !submissionId) return
+
+      if (connectionRef.current) {
+        try { await connectionRef.current.stop() } catch {}
+        connectionRef.current = null
+      }
+
+      const base = (API_BASE || '').replace(/\/$/, '')
+      const url = `${base}/hubs/comments`
+
+      const conn = new HubConnectionBuilder()
+        .withUrl(url)
+        .withAutomaticReconnect()
+        .configureLogging(
+          import.meta.env.DEV ? LogLevel.Information : LogLevel.Error
+        )
+        .build()
+
+      conn.on('CommentsUpdated', updatedSubmissionId => {
+        if (Number(updatedSubmissionId) === Number(submissionId)) {
+          loadComments()
+        }
+      })
+
+      try {
+        await conn.start()
+        if (disposed) {
+          await conn.stop().catch(() => {})
+          return
+        }
+        connectionRef.current = conn
+        await conn.invoke('JoinSubmission', Number(submissionId))
+      } catch {
+        // Swallow errors; REST path still works
+      }
+    }
+
+    start()
+
+    return () => {
+      disposed = true
+      if (connectionRef.current) {
+        const c = connectionRef.current
+        connectionRef.current = null
+        c.stop().catch(() => {})
+      }
     }
   }, [expanded, submissionId])
 

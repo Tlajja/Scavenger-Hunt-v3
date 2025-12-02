@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
@@ -11,12 +12,18 @@ namespace PhotoScavengerHunt.Services
         private readonly IPhotoRepository _photoRepo;
         private readonly IUserRepository _userRepo;
         private readonly ILogger<CommentService> _logger;
+        private readonly IHubContext<CommentsHub>? _commentsHub;
 
-        public CommentService(IPhotoRepository photoRepo, IUserRepository userRepo, ILogger<CommentService> logger)
+        public CommentService(
+            IPhotoRepository photoRepo,
+            IUserRepository userRepo,
+            ILogger<CommentService> logger,
+            IHubContext<CommentsHub>? commentsHub = null)
         {
             _photoRepo = photoRepo;
             _userRepo = userRepo;
             _logger = logger;
+            _commentsHub = commentsHub;
         }
 
         public async Task<(bool Success, string Error, List<Comment>? Comments)> AddCommentAsync(int submissionId, AddCommentRequest request)
@@ -44,6 +51,14 @@ namespace PhotoScavengerHunt.Services
                 submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId) ?? submission;
 
                 _logger.LogInformation("Comment added by user {UserId} to submission {SubmissionId}", request.UserId, submissionId);
+
+                if (_commentsHub != null)
+                {
+                    await _commentsHub
+                        .Clients
+                        .Group(CommentsHub.GetSubmissionGroupName(submissionId))
+                        .SendAsync("CommentsUpdated", submissionId);
+                }
 
                 return (true, "", submission.Comments.ToList());
             }
@@ -109,6 +124,14 @@ namespace PhotoScavengerHunt.Services
 
                 await _photoRepo.RemoveCommentAsync(commentToRemove);
                 await _photoRepo.SaveChangesAsync();
+
+                if (_commentsHub != null)
+                {
+                    await _commentsHub
+                        .Clients
+                        .Group(CommentsHub.GetSubmissionGroupName(submissionId))
+                        .SendAsync("CommentsUpdated", submissionId);
+                }
 
                 _logger.LogInformation("Comment {CommentId} deleted from submission {SubmissionId}", commentId, submissionId);
                 return (true, "");
