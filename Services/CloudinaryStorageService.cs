@@ -55,7 +55,6 @@ namespace PhotoScavengerHunt.Services
             if (string.IsNullOrWhiteSpace(fileUrl)) return;
             try
             {
-                // Extract public_id if you stored it; fallback: try to derive from URL
                 var publicId = fileUrl.Split('/').LastOrDefault()?.Split('.').FirstOrDefault();
                 if (string.IsNullOrWhiteSpace(publicId)) return;
                 var delParams = new DeletionParams(publicId) { ResourceType = ResourceType.Image };

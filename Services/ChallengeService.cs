@@ -12,17 +12,23 @@ namespace PhotoScavengerHunt.Services
         private readonly IUserRepository _userRepo;
         private readonly ITaskRepository _taskRepo;
         private readonly IChallengeParticipantRepository _participantRepo;
+        private readonly IPhotoRepository _photoRepo;
+        private readonly IStorageService _storageService;
 
         public ChallengeService(
             IChallengeRepository challengeRepo,
             IUserRepository userRepo,
             ITaskRepository taskRepo,
-            IChallengeParticipantRepository participantRepo)
+            IChallengeParticipantRepository participantRepo,
+            IPhotoRepository photoRepo,
+            IStorageService storageService)
         {
             _challengeRepo = challengeRepo;
             _userRepo = userRepo;
             _taskRepo = taskRepo;
             _participantRepo = participantRepo;
+            _photoRepo = photoRepo;
+            _storageService = storageService;
         }
 
         private static string NormalizeCode(string code) =>
@@ -147,6 +153,25 @@ namespace PhotoScavengerHunt.Services
         public async Task DeleteChallengeAsync(int challengeId, int userId)
         {
             await _participantRepo.EnsureUserCanAdvanceAsync(challengeId, userId);
+
+            var photos = await _photoRepo.GetByChallengeAsync(challengeId);
+            if (photos != null && photos.Any())
+            {
+                foreach (var p in photos)
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(p.PhotoUrl))
+                        {
+                            await _storageService.DeleteFileAsync(p.PhotoUrl);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
             await _challengeRepo.DeleteCascadeAsync(challengeId);
             await _challengeRepo.SaveChangesAsync();
         }
