@@ -1,5 +1,3 @@
-// Replace the entire ModelValidationTests.cs file with this:
-
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Features.Challenges;
@@ -9,14 +7,12 @@ using Xunit;
 
 namespace PhotoScavengerHunt.Tests.Models
 {
-    // These tests focus on VALIDATION LOGIC and NULL HANDLING, not simple property getters/setters
     
     public class HuntTaskFactoryTests
     {
         [Fact]
         public void Create_NullDescription_ThrowsArgumentException()
         {
-            // This tests actual business logic: rejecting invalid input
             var exception = Assert.Throws<ArgumentException>(
                 () => HuntTaskFactory.Create(null!, 1)
             );
@@ -57,7 +53,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_NullName_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
-                () => ChallengeFactory.Create(null!, 1, 1)
+                () => ChallengeFactory.Create(null!, creatorId: 1, taskIds: new[] { 1 })
             );
             Assert.Contains("name", exception.Message.ToLower());
         }
@@ -66,7 +62,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_EmptyName_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
-                () => ChallengeFactory.Create("", 1, 1)
+                () => ChallengeFactory.Create("", creatorId: 1, taskIds: new[] { 1 })
             );
             Assert.Contains("name", exception.Message.ToLower());
         }
@@ -75,7 +71,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_WhitespaceName_ThrowsArgumentException()
         {
             var exception = Assert.Throws<ArgumentException>(
-                () => ChallengeFactory.Create("   ", 1, 1)
+                () => ChallengeFactory.Create("   ", creatorId: 1, taskIds: new[] { 1 })
             );
             Assert.Contains("name", exception.Message.ToLower());
         }
@@ -83,10 +79,10 @@ namespace PhotoScavengerHunt.Tests.Models
         [Fact]
         public void Create_ValidInput_SetsDefaultValues()
         {
-            var challenge = ChallengeFactory.Create("Test", 1, 2);
+            var challenge = ChallengeFactory.Create("Test", creatorId: 2, taskIds: new[] { 1 });
             
             Assert.Equal("Test", challenge.Name);
-            Assert.Equal(1, challenge.TaskId);
+            Assert.Contains(challenge.ChallengeTasks, ct => ct.TaskId == 1);
             Assert.Equal(2, challenge.CreatorId);
             Assert.Equal(ChallengeStatus.Open, challenge.Status);
             Assert.NotEqual(default(DateTime), challenge.CreatedAt);
@@ -96,7 +92,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_WithDeadline_UsesProvidedDeadline()
         {
             var deadline = DateTime.UtcNow.AddDays(3);
-            var challenge = ChallengeFactory.Create("Test", 1, 2, deadline: deadline);
+            var challenge = ChallengeFactory.Create("Test", creatorId: 2, taskIds: new[] { 1 }, deadline: deadline);
             
             Assert.Equal(deadline, challenge.Deadline);
         }
@@ -105,7 +101,7 @@ namespace PhotoScavengerHunt.Tests.Models
         public void Create_WithoutDeadline_SetsDefault7Days()
         {
             var beforeCreate = DateTime.UtcNow.AddDays(6);
-            var challenge = ChallengeFactory.Create("Test", 1, 2);
+            var challenge = ChallengeFactory.Create("Test", creatorId: 2, taskIds: new[] { 1 });
             var afterCreate = DateTime.UtcNow.AddDays(8);
             
             Assert.NotNull(challenge.Deadline);
@@ -217,9 +213,9 @@ namespace PhotoScavengerHunt.Tests.Models
         public void CreateChallengeRequest_Equality_WorksCorrectly()
         {
             var deadline = DateTime.UtcNow.AddDays(7);
-            var request1 = new CreateChallengeRequest("Test", 1, 1, deadline, true);
-            var request2 = new CreateChallengeRequest("Test", 1, 1, deadline, true);
-            var request3 = new CreateChallengeRequest("Different", 1, 1, deadline, true);
+            var request1 = new CreateChallengeRequest("Test", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
+            var request2 = new CreateChallengeRequest("Test", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
+            var request3 = new CreateChallengeRequest("Different", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
 
             Assert.Equal(request1, request2);
             Assert.NotEqual(request1, request3);

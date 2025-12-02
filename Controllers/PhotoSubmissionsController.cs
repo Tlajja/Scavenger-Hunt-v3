@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Services.Interfaces;
-using PhotoScavengerHunt.Features.Photos;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -73,14 +72,14 @@ namespace PhotoScavengerHunt.Controllers
         {
             try
             {
-                if (challengeId.HasValue)
-                {
-                    var subs = await _submissionService.GetSubmissionsForChallengeAsync(challengeId.Value);
-                    return Ok(subs);
-                }
                 if (taskId.HasValue)
                 {
                     var subs = await _submissionService.GetSubmissionsForTaskAsync(taskId.Value);
+                    return Ok(subs);
+                }
+                if (challengeId.HasValue)
+                {
+                    var subs = await _submissionService.GetSubmissionsForChallengeAsync(challengeId.Value);
                     return Ok(subs);
                 }
                 return BadRequest(new { error = "Provide either challengeId or taskId as query parameter." });

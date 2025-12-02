@@ -98,23 +98,23 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 { 
                     Id = 300, 
                     Name = "Test Challenge 1", 
-                    TaskId = 200, 
                     JoinCode = "TEST01", 
                     CreatorId = 100, 
                     CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), 
                     IsPrivate = false,
-                    Status = ChallengeStatus.Open
+                    Status = ChallengeStatus.Open,
+                    ChallengeTasks = new List<ChallengeTask> { new ChallengeTask {TaskId = 200 } }
                 },
                 new Challenge 
                 { 
                     Id = 301, 
                     Name = "Test Challenge 2", 
-                    TaskId = 201, 
                     JoinCode = "TEST02", 
                     CreatorId = 101, 
                     CreatedAt = new DateTime(2025, 1, 2, 0, 0, 0, DateTimeKind.Utc), 
                     IsPrivate = true,
-                    Status = ChallengeStatus.Open
+                    Status = ChallengeStatus.Open,
+                    ChallengeTasks = new List<ChallengeTask> { new ChallengeTask { TaskId = 201} }
                 }
             };
 

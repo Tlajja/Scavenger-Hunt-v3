@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Services.Interfaces;
-using PhotoScavengerHunt.Exceptions;
 
 namespace PhotoScavengerHunt.Controllers
 {
@@ -19,6 +18,23 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateChallenge([FromBody] CreateChallengeRequest request)
         {
+            if ((request.TaskIds == null || !request.TaskIds.Any()) && Request.ContentType?.Contains("application/json") == true)
+            {
+                try
+                {
+                    using var sr = new StreamReader(Request.Body);
+                    var body = await sr.ReadToEndAsync();
+                    if (!string.IsNullOrWhiteSpace(body) && body.Contains("\"TaskId\""))
+                    {
+                        var doc = System.Text.Json.JsonDocument.Parse(body);
+                        if (doc.RootElement.TryGetProperty("TaskId", out var tidProp) && tidProp.TryGetInt32(out var singleId))
+                        {
+                            request = new CreateChallengeRequest(request.Name, request.CreatorId, new[] { singleId }, request.Deadline, request.IsPrivate);
+                        }
+                    }
+                }
+                catch {}
+            }
             var challenge = await _challengeService.CreateChallengeAsync(request);
             return CreatedAtAction(nameof(GetChallengeById), new { id = challenge.Id }, challenge);
         }
@@ -28,7 +44,7 @@ namespace PhotoScavengerHunt.Controllers
         {
             var participant = await _challengeService.JoinChallengeAsync(request);
             var joinCode = (request.JoinCode ?? string.Empty).Trim().ToUpperInvariant();
-            return Ok(new {participant, joinCode });
+            return Ok(new { participant, joinCode });
         }
 
         [HttpGet]
@@ -72,7 +88,7 @@ namespace PhotoScavengerHunt.Controllers
             var challenge = await _challengeService.AdvanceChallengeAsync(id, userId);
             return Ok(challenge);
         }
-        
+
         [HttpGet("mine")]
         public async Task<IActionResult> GetMyChallenges([FromQuery] int userId)
         {

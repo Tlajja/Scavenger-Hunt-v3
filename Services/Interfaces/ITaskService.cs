@@ -9,6 +9,6 @@ public interface ITaskService
     Task<HuntTask> CreateUserTaskAsync(CreateTaskRequest req);
     Task<IEnumerable<HuntTask>> GetTasksAsync();
     Task<HuntTask?> GetTaskByIdAsync(int id);
+    Task<HuntTask?> GetRandomTaskForUserAsync(int userId);
     Task DeleteUserTaskAsync(int userId, int taskId);
 }
-

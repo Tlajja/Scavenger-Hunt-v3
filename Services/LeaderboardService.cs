@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Features.Leaderboard;
+﻿using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 

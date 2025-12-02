@@ -13,6 +13,8 @@ export default function SubmitPhoto() {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const userId = localStorage.getItem('userId') || ''
+  const [tasksForChallenge, setTasksForChallenge] = useState([])
+  const [selectedTaskId, setSelectedTaskId] = useState('')
 
   useEffect(() => {
     let mounted = true
@@ -42,21 +44,39 @@ export default function SubmitPhoto() {
     let mounted = true
     async function loadPreview() {
       setSelectedTask(null)
+      setTasksForChallenge([])
+      setSelectedTaskId('')
       if (!challengeId) return
       try {
         const cres = await getChallengeById(Number(challengeId))
         if (!mounted || !cres.ok) return
         const ch = cres.data
-        const tId = Number(ch?.taskId ?? ch?.TaskId ?? 0)
-        if (!tId) return
-        const tres = await getTaskById(tId)
-        if (!mounted || !tres.ok) return
-        setSelectedTask(tres.data)
+        // collect task ids from challenge -> fetch each task to show to user
+        const taskRefs = Array.isArray(ch?.challengeTasks ?? ch?.ChallengeTasks)
+          ? ch.challengeTasks ?? ch.ChallengeTasks
+          : (ch?.ChallengeTasks ?? []).map(x => x)
+        const ids = taskRefs.map(t => Number(t.taskId ?? t.TaskId ?? t.task?.id ?? t.task?.Id ?? 0)).filter(Boolean)
+        if (ids.length === 0) return
+        const tasks = await Promise.all(ids.map(id => getTaskById(id)))
+        const valid = tasks.filter(r => r?.ok).map(r => r.data)
+        if (!mounted) return
+        setTasksForChallenge(valid)
+        // default the preview to first task
+        setSelectedTask(valid[0] ?? null)
+        setSelectedTaskId(String(valid[0]?.id ?? valid[0]?.Id ?? ''))
       } catch {}
     }
     loadPreview()
     return () => { mounted = false }
   }, [challengeId])
+
+  // when user picks a task in the UI
+  function handleSelectTask(e) {
+    const tid = e.target.value
+    setSelectedTaskId(tid)
+    const t = tasksForChallenge.find(x => String(x.id ?? x.Id) === tid)
+    setSelectedTask(t ?? null)
+  }
 
   function handleFileChange(e) {
     const file = e.target.files[0]
@@ -114,12 +134,16 @@ export default function SubmitPhoto() {
       setMessage('Please select a photo file.')
       return 
     }
+    if (!selectedTaskId) {
+      setMessage('Please choose which task to submit to.')
+      return
+    }
 
     setUploading(true)
     setUploadProgress(0)
 
     try {
-      const result = await uploadWithProgress(challengeId, userId, photoFile)
+      const result = await uploadWithProgress(challengeId, selectedTaskId, userId, photoFile)
 
       if (!result.ok) {
         const err = (result.data && (result.data.message || result.data.error)) || result.text || `Error ${result.status}`
@@ -144,10 +168,11 @@ export default function SubmitPhoto() {
   }
 
   // update uploadWithProgress to accept challengeId name and only send challengeId
-  function uploadWithProgress(challengeId, userId, file) {
+  function uploadWithProgress(challengeId, taskId, userId, file) {
     return new Promise((resolve, reject) => {
       const formData = new FormData()
       formData.append('challengeId', challengeId)
+      formData.append('taskId', taskId)
       formData.append('userId', userId)
       formData.append('file', file)
 
@@ -218,6 +243,18 @@ export default function SubmitPhoto() {
         </div>
       )}
        {/* rest of the form (file input, preview, upload) */}
+
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ display: 'block', marginBottom: 6 }}>Choose Task</label>
+        <select value={selectedTaskId} onChange={handleSelectTask} disabled={uploading || tasksForChallenge.length===0} style={{ width:'100%', padding:8, boxSizing:'border-box' }}>
+          <option value="">-- choose a task --</option>
+          {tasksForChallenge.map(t => (
+            <option key={t.id ?? t.Id} value={t.id ?? t.Id}>
+              {t.description ?? t.Description}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div style={{ marginBottom: 10 }}>
         <label style={{ display: 'block', marginBottom: 6 }}>Upload Photo</label>

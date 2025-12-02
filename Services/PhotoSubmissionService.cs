@@ -36,18 +36,30 @@ namespace PhotoScavengerHunt.Services
                 if (file == null || file.Length == 0)
                     return (false, "No file uploaded.", null, null);
 
-                // if challengeId provided, resolve its TaskId
                 if (challengeId.HasValue)
                 {
                     await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
                     var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
-                    taskId = challenge?.TaskId;
+                    if (!taskId.HasValue)
+                        taskId = challenge?.ChallengeTasks?.FirstOrDefault()?.TaskId;
                 }
                 if (!taskId.HasValue)
                     return (false, "Task does not exist.", null, null);
 
                 if(!await _taskRepo.ExistsAsync(taskId.Value))
                     throw new EntityNotFoundException("Task does not exist.");
+
+                if (challengeId.HasValue)
+                {
+                    var existingForTask = await _photoRepo.GetSubmissionsForTaskAsync(taskId.Value);
+                    var duplicate = existingForTask.FirstOrDefault(s =>
+                        s.UserId == userId && s.ChallengeId.HasValue && s.ChallengeId.Value == challengeId.Value
+                    );
+                    if (duplicate != null)
+                    {
+                        return (false, "You have already submitted a photo for this task in this challenge.", null, null);
+                    }
+                }
                 
                 if(!await _userRepo.ExistsAsync(userId))
                 throw new EntityNotFoundException("User does not exist.");
