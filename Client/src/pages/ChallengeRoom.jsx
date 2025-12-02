@@ -466,18 +466,42 @@ export default function ChallengeRoom() {
           </div>
         </div>
 
-        {task && (
-          <div className="card" style={{ marginBottom: 32 }}>
-            <h3 style={{ color: 'white', marginBottom: 12 }}>📋 Task</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 16 }}>
-              {task.description ?? task.Description}
-            </p>
-            {task.deadline && (
-              <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
-                Deadline: {new Date(task.deadline).toLocaleString()}
+        {/* Task summary / list
+              - show single task preview in submit/vote phases
+              - in leaderboard phase show all tasks that were part of the challenge
+        */}
+        {activeTab === 'leaderboard' ? (
+          tasksForChallenge && tasksForChallenge.length > 0 ? (
+            <div className="card" style={{ marginBottom: 32 }}>
+              <h3 style={{ color: 'white', marginBottom: 12 }}>📋 Tasks in this challenge</h3>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {tasksForChallenge.map((t) => (
+                  <li key={t.id ?? t.Id} style={{ marginBottom: 8 }}>
+                    <div style={{ color: 'white', fontWeight: 600 }}>{t.description ?? t.Description}</div>
+                    {(t.deadline ?? t.Deadline) && (
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                        Deadline: {new Date(t.deadline ?? t.Deadline).toLocaleString()}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        ) : (
+          task && (
+            <div className="card" style={{ marginBottom: 32 }}>
+              <h3 style={{ color: 'white', marginBottom: 12 }}>📋 Task</h3>
+              <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 16 }}>
+                {task.description ?? task.Description}
               </p>
-            )}
-          </div>
+              {task.deadline && (
+                <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
+                  Deadline: {new Date(task.deadline).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )
         )}
 
         {message && (
