@@ -11,6 +11,8 @@ using PhotoScavengerHunt.Services.Interfaces;
 using Moq;
 using Xunit;
 using System.Text;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace PhotoScavengerHunt.Tests.Controllers
 {
@@ -44,21 +46,24 @@ namespace PhotoScavengerHunt.Tests.Controllers
         private readonly PhotoSubmissionsController _controller;
         private readonly PhotoSubmissionService _submissionService;
         private readonly VotesService _votesService;
-        private readonly Mock<IWebHostEnvironment> _mockEnv;
+        private readonly Mock<IStorageService> _mockStorage;
 
         public PhotoSubmissionsControllerTests()
         {
-            _mockEnv = new Mock<IWebHostEnvironment>();
-            var testPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(testPath);
-            _mockEnv.Setup(e => e.WebRootPath).Returns(testPath);
+            _mockStorage = new Mock<IStorageService>();
+            _mockStorage
+                .Setup(s => s.UploadFileAsync(It.IsAny<IFormFile>(), It.IsAny<string>()))
+                .ReturnsAsync("https://example.com/uploads/test.jpg");
+            _mockStorage
+                .Setup(s => s.DeleteFileAsync(It.IsAny<string>()))
+                .Returns(() => Task.CompletedTask);
 
            _submissionService = new PhotoSubmissionService(
                                 new PhotoRepository(DbContext),
                                 new UserRepository(DbContext),
                                 new TaskRepository(DbContext),
                                 new ChallengeRepository(DbContext),
-                                _mockEnv.Object
+                                _mockStorage.Object
                             );
             _votesService = new VotesService(new PhotoRepository(DbContext));
             _controller = new PhotoSubmissionsController(_submissionService, _votesService);

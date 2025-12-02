@@ -12,17 +12,23 @@ namespace PhotoScavengerHunt.Services
         private readonly IUserRepository _userRepo;
         private readonly ITaskRepository _taskRepo;
         private readonly IChallengeParticipantRepository _participantRepo;
+        private readonly IPhotoRepository _photoRepo;
+        private readonly IStorageService _storageService;
 
         public ChallengeService(
             IChallengeRepository challengeRepo,
             IUserRepository userRepo,
             ITaskRepository taskRepo,
-            IChallengeParticipantRepository participantRepo)
+            IChallengeParticipantRepository participantRepo,
+            IPhotoRepository photoRepo,
+            IStorageService storageService)
         {
             _challengeRepo = challengeRepo;
             _userRepo = userRepo;
             _taskRepo = taskRepo;
             _participantRepo = participantRepo;
+            _photoRepo = photoRepo;
+            _storageService = storageService;
         }
 
         private static string NormalizeCode(string code) =>
@@ -49,11 +55,31 @@ namespace PhotoScavengerHunt.Services
 
         public async Task<Challenge> CreateChallengeAsync(CreateChallengeRequest request)
         {
-            await _challengeRepo.EnsureNameNotEmptyAsync(request.Name);
-            await _userRepo.EnsureUserExistsAsync(request.CreatorId, "Creator user does not exist.");
-            await _taskRepo.EnsureTaskExistsAsync(request.TaskId);
-            await _participantRepo.EnsureUserCanCreateChallengeAsync(request.CreatorId);
-            await _challengeRepo.EnsureDeadlineIsValidAsync(request.Deadline);
+            if (string.IsNullOrWhiteSpace(request.Name))
+                throw new ValidationException("Challenge name cannot be empty.");
+
+            if(!await _userRepo.ExistsAsync(request.CreatorId))
+                throw new EntityNotFoundException("User does not exist.");
+            
+            if(!await _taskRepo.ExistsAsync(request.TaskId))
+                throw new EntityNotFoundException("Task does not exist.");
+
+            // ensure deadline is valid
+            if (request.Deadline.HasValue)
+            {
+                var now = DateTime.UtcNow;
+                if (request.Deadline.Value <= now)
+                    throw new ValidationException("Deadline must be in the future.");
+
+                var maxDeadline = now.AddDays(7);
+                if (request.Deadline.Value > maxDeadline)
+                    throw new ValidationException("Deadline cannot be more than 7 days from now.");
+            }
+
+            // check if user can create challenge
+            var adminCount = await _participantRepo.CountAdminChallengesForUserAsync(request.CreatorId);
+            if (adminCount >= 1)
+                throw new LimitExceededException("A user can create only one challenge at a time.");
             
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
@@ -86,7 +112,7 @@ namespace PhotoScavengerHunt.Services
         {
             var code = NormalizeCode(request.JoinCode);
             if (string.IsNullOrWhiteSpace(code))
-                throw new ChallengeValidationException("Join code cannot be empty.");
+                throw new ValidationException("Join code cannot be empty.");
 
             var challenge = await _challengeRepo.GetByJoinCodeAsync(code);
 
@@ -101,6 +127,7 @@ namespace PhotoScavengerHunt.Services
             };
 
             await _participantRepo.AddAsync(participant);
+            await _participantRepo.SaveChangesAsync();
             participant.Challenge = null;
             participant.User = null;
             return participant;
@@ -126,7 +153,27 @@ namespace PhotoScavengerHunt.Services
         public async Task DeleteChallengeAsync(int challengeId, int userId)
         {
             await _participantRepo.EnsureUserCanAdvanceAsync(challengeId, userId);
+
+            var photos = await _photoRepo.GetByChallengeAsync(challengeId);
+            if (photos != null && photos.Any())
+            {
+                foreach (var p in photos)
+                {
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(p.PhotoUrl))
+                        {
+                            await _storageService.DeleteFileAsync(p.PhotoUrl);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
             await _challengeRepo.DeleteCascadeAsync(challengeId);
+            await _challengeRepo.SaveChangesAsync();
         }
 
         public async Task LeaveChallengeAsync(int challengeId, int userId)
@@ -142,16 +189,32 @@ namespace PhotoScavengerHunt.Services
                 if (!otherParticipants.Any())
                 {
                     await _challengeRepo.DeleteCascadeAsync(challengeId);
+                    await _challengeRepo.SaveChangesAsync();
                     return;
                 }
 
                 var newAdmin = otherParticipants.First();
-                await _participantRepo.TransferAdminAsync(challengeId, userId, newAdmin.UserId);
+
+                // transfer admin role
+                var from = await _participantRepo.GetParticipantAsync(challengeId, userId);
+                var to = await _participantRepo.GetParticipantAsync(challengeId, newAdmin.UserId);
+                if (from == null || to == null)
+                    throw new EntityNotFoundException("Participant(s) not found for transfer.");
+
+                if (from.Role != ChallengeRole.Admin)
+                    throw new ValidationException("Source user is not an admin.");
+
+                from.Role = ChallengeRole.Participant;
+                to.Role = ChallengeRole.Admin;
+                await _participantRepo.SaveChangesAsync();
+
                 await _participantRepo.RemoveAsync(participant);
+                await _participantRepo.SaveChangesAsync();
                 return;
             }
 
             await _participantRepo.RemoveAsync(participant);
+            await _participantRepo.SaveChangesAsync();
         }
 
         public async Task<Challenge> AdvanceChallengeAsync(int challengeId, int requestingUserId)
@@ -172,7 +235,7 @@ namespace PhotoScavengerHunt.Services
                 return finalized;
             }
 
-            throw new ChallengeValidationException("Challenge is already completed.");
+            throw new ValidationException("Challenge is already completed.");
         }
 
         public async Task<Challenge> FinalizeChallengeAsync(int challengeId)
@@ -182,22 +245,26 @@ namespace PhotoScavengerHunt.Services
             if (challenge.WinnerId != null && challenge.Status == ChallengeStatus.Completed)
                 return challenge;
 
-            var top = await _challengeRepo.GetTopUserByVotesAsync(challengeId);
-            var winnerId = top?.WinnerId;
-            if (winnerId.HasValue)
+            var topUsers = await _challengeRepo.GetTopUsersByVotesAsync(challengeId);
+            challenge.Status = ChallengeStatus.Completed;
+            if (topUsers != null && topUsers.Count > 0)
             {
-                challenge.WinnerId = winnerId.Value;
-                challenge.Status = ChallengeStatus.Completed;
+                challenge.WinnerId = topUsers.Count == 1 ? topUsers[0] : (int?)null;
 
-                await _userRepo.IncrementWinsAsync(winnerId.Value);
-                await _challengeRepo.SaveChangesAsync();
+                foreach (var uid in topUsers)
+                {
+                    var user = await _userRepo.GetByIdAsync(uid);
+                    if (user == null)
+                        throw new EntityNotFoundException("User does not exist.");
+                    user.Wins += 1;
+                }
             }
             else
             {
                 challenge.WinnerId = null;
-                challenge.Status = ChallengeStatus.Completed;
-                await _challengeRepo.SaveChangesAsync();
             }
+
+            await _challengeRepo.SaveChangesAsync();
 
             return challenge;
         }

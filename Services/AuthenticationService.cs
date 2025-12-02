@@ -69,7 +69,9 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
                     return (false, "Username and password are required.", null);
 
-                var user = await _userRepo.EnsureUserExistsByNameAsync(request.Username);
+                var user = await _userRepo.GetByNameAsync(request.Username);
+                if (user == null)
+                    throw new ArgumentException("Invalid username or password.");
 
                 if (!user.IsRegistered)
                     return (false, "Please complete registration first.", null);

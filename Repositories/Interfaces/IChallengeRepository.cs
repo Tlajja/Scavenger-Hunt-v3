@@ -10,12 +10,11 @@ public interface IChallengeRepository
     Task<List<Challenge>> GetAllAsync(bool publicOnly = true, ChallengeSortBy sortBy = ChallengeSortBy.CreatedAtDesc);
     Task AddAsync(Challenge challenge);
     Task SaveChangesAsync();
-    Task EnsureNameNotEmptyAsync(string name);
-    Task EnsureDeadlineIsValidAsync(DateTime? deadline);
     Task DeleteCascadeAsync(int challengeId);
     Task<(int WinnerId, int TotalVotes)?> GetTopUserByVotesAsync(int challengeId);
     Task<bool> AnyByJoinCodeAsync(string joinCode);
     // Get by join code - repository throws ChallengeNotFoundException if missing
     Task<Challenge> GetByJoinCodeAsync(string joinCode);
     Task<Challenge> EnsureChallengeExistsAsync(int challengeId);
+    Task<List<int>> GetTopUsersByVotesAsync(int challengeId);
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Repositories;
+using PhotoScavengerHunt.Services.Interfaces;
 using Moq;
 using Xunit;
 using System.Text;
@@ -14,21 +15,21 @@ namespace PhotoScavengerHunt.Tests.Services
     public class PhotoSubmissionServiceTests : DatabaseTestBase
     {
         private readonly PhotoSubmissionService _service;
-        private readonly Mock<IWebHostEnvironment> _mockEnv;
-        private readonly string _testUploadsPath;
+        private readonly Mock<IStorageService> _mockStorage;
 
         public PhotoSubmissionServiceTests()
         {
-            _mockEnv = new Mock<IWebHostEnvironment>();
-            _testUploadsPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(_testUploadsPath);
-            _mockEnv.Setup(e => e.WebRootPath).Returns(_testUploadsPath);
+            _mockStorage = new Mock<IStorageService>();
+            _mockStorage.Setup(s => s.UploadFileAsync(It.IsAny<IFormFile>(), It.IsAny<string>()))
+               .ReturnsAsync("https://example.com/uploads/test.jpg");
+            _mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>()))
+               .Returns(() => Task.CompletedTask);
             
             var photoRepo = new PhotoRepository(DbContext);
             var userRepo = new UserRepository(DbContext);
             var taskRepo = new TaskRepository(DbContext);
             var challengeRepo = new ChallengeRepository(DbContext);
-            _service = new PhotoSubmissionService(photoRepo, userRepo, taskRepo, challengeRepo, _mockEnv.Object);
+            _service = new PhotoSubmissionService(photoRepo, userRepo, taskRepo, challengeRepo, _mockStorage.Object);
 
             SeedTestData();
         }
@@ -63,7 +64,8 @@ namespace PhotoScavengerHunt.Tests.Services
             Assert.Equal("Photo uploaded successfully.", result.Message);
             Assert.NotNull(result.PhotoUrl);
             Assert.NotNull(result.SubmissionId);
-            Assert.StartsWith("/uploads/", result.PhotoUrl);
+            Assert.StartsWith("https://", result.PhotoUrl);
+            Assert.Contains("/uploads/", result.PhotoUrl);
         }
 
         [Fact]
@@ -132,14 +134,11 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UploadPhotoAsync_CreatesUploadsDirectory()
         {
-            var uploadsPath = Path.Combine(_testUploadsPath, "uploads");
-            Assert.False(Directory.Exists(uploadsPath));
-
             var file = CreateMockFile("test.jpg", "content", "image/jpeg");
 
             await _service.UploadPhotoAsync(200, 100, file);
 
-            Assert.True(Directory.Exists(uploadsPath));
+            _mockStorage.Verify(s => s.UploadFileAsync(It.IsAny<IFormFile>(), "uploads"), Times.Once);
         }
 
         [Fact]
@@ -218,11 +217,6 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public override void Dispose()
         {
-            // Clean up test uploads directory
-            if (Directory.Exists(_testUploadsPath))
-            {
-                Directory.Delete(_testUploadsPath, true);
-            }
             base.Dispose();
         }
     }

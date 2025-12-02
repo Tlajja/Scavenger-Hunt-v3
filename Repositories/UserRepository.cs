@@ -23,7 +23,7 @@ namespace PhotoScavengerHunt.Repositories
         {
             var user = await GetByIdAsync(id);
             if (user == null)
-                throw new ChallengeNotFoundException("User not found.");
+                throw new EntityNotFoundException("User not found.");
             return user;
         }
 
@@ -35,14 +35,14 @@ namespace PhotoScavengerHunt.Repositories
         public async Task EnsureUserExistsAsync(int id, string? errorMessage = null)
         {
             if(!await ExistsAsync(id))
-                throw new ChallengeNotFoundException(errorMessage ?? "User does not exist.");
+                throw new EntityNotFoundException(errorMessage ?? "User does not exist.");
         }
 
         public async Task IncrementWinsAsync(int userId)
         {
             var user = await GetByIdAsync(userId);
             if (user == null)
-                throw new ChallengeNotFoundException("User does not exist.");
+                throw new EntityNotFoundException("User does not exist.");
 
             user.Wins += 1;
             await _dbContext.SaveChangesAsync();
