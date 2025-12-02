@@ -10,9 +10,7 @@ public interface IChallengeParticipantRepository
     Task<List<ChallengeParticipant>> GetByChallengeAsync(int challengeId);
     Task<List<ChallengeParticipant>> GetByUserAsync(int userId);
     Task RemoveAsync(ChallengeParticipant participant);
-    Task EnsureUserCanCreateChallengeAsync(int userId);
     Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId);
-    Task TransferAdminAsync(int challengeId, int fromUserId, int toUserId);
     Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId);
     Task EnsureUserCanAdvanceAsync(int challengeId, int userId);
     Task SaveChangesAsync();

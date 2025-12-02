@@ -1,11 +1,11 @@
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Challenges;
-using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using PhotoScavengerHunt.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Repositories;
-using Xunit;
+using Moq;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Tests.Services
 {
@@ -15,11 +15,17 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public ChallengeServiceTests()
         {
+            var photoRepo = new PhotoRepository(DbContext);
+            var mockStorage = new Mock<IStorageService>();
+            mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>())).Returns(() => Task.CompletedTask);
+
             _service =  new ChallengeService(
                         new ChallengeRepository(DbContext),
                         new UserRepository(DbContext),
                         new TaskRepository(DbContext),
-                        new ChallengeParticipantRepository(DbContext)
+                        new ChallengeParticipantRepository(DbContext), 
+                        photoRepo,
+                        mockStorage.Object
                     );
 
             SeedTestData();
@@ -60,7 +66,7 @@ namespace PhotoScavengerHunt.Tests.Services
             );
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.CreateChallengeAsync(request)
             );
         }
@@ -72,7 +78,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new CreateChallengeRequest("Test", taskIds: new[] { 99999 }, creatorId: 100, deadline: DateTime.UtcNow.AddDays(3));
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeNotFoundException>(
+            await Assert.ThrowsAsync<EntityNotFoundException>(
                 () => _service.CreateChallengeAsync(request)
             );
         }
@@ -84,7 +90,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new CreateChallengeRequest("Another", taskIds: new[] { 201 }, creatorId: 100, deadline: DateTime.UtcNow.AddDays(3));
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeLimitException>(
+            await Assert.ThrowsAsync<LimitExceededException>(
                 () => _service.CreateChallengeAsync(request)
             );
         }
@@ -96,7 +102,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new CreateChallengeRequest("Test", taskIds: new[] { 200 }, creatorId: 102, deadline: DateTime.UtcNow.AddDays(-1));
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.CreateChallengeAsync(request)
             );
         }
@@ -108,7 +114,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new CreateChallengeRequest("Test", taskIds: new[] { 200 }, creatorId: 102, deadline: DateTime.UtcNow.AddDays(8));
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.CreateChallengeAsync(request)
             );
         }
@@ -136,7 +142,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new JoinChallengeRequest("", 102);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.JoinChallengeAsync(request)
             );
         }
@@ -148,7 +154,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new JoinChallengeRequest("INVALID", 102);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeNotFoundException>(
+            await Assert.ThrowsAsync<EntityNotFoundException>(
                 () => _service.JoinChallengeAsync(request)
             );
         }
@@ -160,7 +166,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new JoinChallengeRequest("TEST01", 100);
 
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.JoinChallengeAsync(request)
             );
         }
@@ -202,7 +208,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task DeleteChallengeAsync_NonAdmin_ThrowsValidationException()
         {
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.DeleteChallengeAsync(300, 102)
             );
         }
@@ -247,7 +253,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task AdvanceChallengeAsync_NonAdmin_ThrowsValidationException()
         {
             // Act & Assert
-            await Assert.ThrowsAsync<ChallengeValidationException>(
+            await Assert.ThrowsAsync<ValidationException>(
                 () => _service.AdvanceChallengeAsync(300, 102)
             );
         }

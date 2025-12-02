@@ -47,19 +47,19 @@ public class GlobalExceptionHandlerMiddleware
 
         switch (exception)
         {
-            case ChallengeValidationException:
+            case ValidationException:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 LogToFile(exception, context.Request.Path);
                 _logger.LogWarning(exception, "Validation error: {Message}", exception.Message);
                 break;
 
-            case ChallengeNotFoundException:
+            case EntityNotFoundException:
                 response.StatusCode = (int)HttpStatusCode.NotFound;
                 LogToFile(exception, context.Request.Path);
                 _logger.LogWarning(exception, "Not found error: {Message}", exception.Message);
                 break;
 
-            case ChallengeLimitException:
+            case LimitExceededException:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 LogToFile(exception, context.Request.Path);
                 _logger.LogWarning(exception, "Limit error: {Message}", exception.Message);
@@ -107,7 +107,7 @@ public class GlobalExceptionHandlerMiddleware
             var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
             var message = $"[{timestamp}] {ex.GetType().Name}: {ex.Message} [Path: {path}]{Environment.NewLine}";
             
-            if (ex is not (ChallengeValidationException or ChallengeNotFoundException or ChallengeLimitException or ArgumentException))
+            if (ex is not (ValidationException or EntityNotFoundException or LimitExceededException or ArgumentException))
             {
                 message += $"Stack Trace: {ex.StackTrace}{Environment.NewLine}{Environment.NewLine}";
             }

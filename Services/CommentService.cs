@@ -22,7 +22,9 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Text))
                     return (false, "Comment text cannot be empty.", null);
 
-                var submission = await _photoRepo.EnsureSubmissionExistsAsync(submissionId);
+                var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
+                if (submission == null)
+                    throw new ArgumentException("Submission not found.");
 
                 var comment = new Comment
                 {
@@ -88,7 +90,9 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                var submission = await _photoRepo.EnsureSubmissionExistsAsync(submissionId);
+                var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
+                if (submission == null)
+                    throw new ArgumentException("Submission not found.");
 
                 var commentToRemove = submission.Comments.FirstOrDefault(c => c.Id == commentId);
                 if (commentToRemove == null)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Services.Interfaces;
+using PhotoScavengerHunt.Repositories;
 using PhotoScavengerHunt.Middleware;
 using PhotoScavengerHunt.Features.Users;
 using Microsoft.AspNetCore.SignalR;
@@ -18,17 +19,18 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVotesService, VotesService>();
 builder.Services.AddScoped<IPhotoSubmissionService, PhotoSubmissionService>();
+builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
 
 builder.Services.AddSingleton<ActiveUsersService>();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddSignalR();
 
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IChallengeRepository, PhotoScavengerHunt.Repositories.ChallengeRepository>();
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IUserRepository, PhotoScavengerHunt.Repositories.UserRepository>();
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ITaskRepository, PhotoScavengerHunt.Repositories.TaskRepository>();
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IChallengeParticipantRepository, PhotoScavengerHunt.Repositories.ChallengeParticipantRepository>();
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.IPhotoRepository, PhotoScavengerHunt.Repositories.PhotoRepository>();
-builder.Services.AddScoped<PhotoScavengerHunt.Repositories.ILeaderboardRepository, PhotoScavengerHunt.Repositories.LeaderboardRepository>();
+builder.Services.AddScoped<IChallengeRepository, ChallengeRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<IChallengeParticipantRepository, ChallengeParticipantRepository>();
+builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
+builder.Services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

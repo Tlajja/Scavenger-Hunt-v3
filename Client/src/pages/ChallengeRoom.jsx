@@ -2,6 +2,23 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChallengeById, getTaskById, leaveChallenge, advanceChallenge, API_BASE } from '../services/api.js'
 
+function assignDenseRanks(items, valueSelector) {
+  if (!Array.isArray(items)) return []
+  const arr = [...items].sort((a,b) => (valueSelector(b) || 0) - (valueSelector(a) || 0))
+  let prevVal = null
+  let prevRank = 0
+ let nextRank = 1
+  return arr.map(it => {
+    const val = valueSelector(it) ?? 0
+    if (prevVal === null || val !== prevVal) {
+      prevRank = nextRank
+      prevVal = val
+      nextRank += 1
+    }
+    return { ...it, rank: prevRank }
+  })
+}
+
 export default function ChallengeRoom() {
   const { challengeId } = useParams()
   const navigate = useNavigate()
@@ -150,7 +167,7 @@ export default function ChallengeRoom() {
       if (res.ok) {
         const data = await res.json()
         const entries = Array.isArray(data) ? data : (Array.isArray(data?.entries) ? data.entries : [])
-        setLeaderboard(entries)
+        setLeaderboard(assignDenseRanks(entries, e => Number(e.wins ?? e.Wins ?? e.totalVotes ?? e.TotalVotes ?? e.votes ?? e.Votes ?? 0)))
         return
       }
 
@@ -184,7 +201,7 @@ export default function ChallengeRoom() {
       })
 
       const out = Array.from(map.values()).sort((a, b) => (b.votes || 0) - (a.votes || 0))
-      setLeaderboard(out)
+      setLeaderboard(assignDenseRanks(out, e => Number(e.votes ?? e.Votes ?? 0)))
     } catch {}
   }
 
@@ -680,7 +697,8 @@ export default function ChallengeRoom() {
               ) : (
                 <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {leaderboard.map((entry, index) => {
-                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : ''
+                    const rank = entry.rank ?? (index + 1)
+                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
                     return (
                       <li key={entry.userId ?? index} style={{
                         background: 'rgba(100, 108, 255, 0.05)',

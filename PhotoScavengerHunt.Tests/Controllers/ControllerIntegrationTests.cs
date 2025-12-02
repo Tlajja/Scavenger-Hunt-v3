@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Controllers;
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
@@ -9,7 +8,7 @@ using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using PhotoScavengerHunt.Repositories;
 using Moq;
-using Xunit;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Tests.Controllers
 {
@@ -169,11 +168,17 @@ namespace PhotoScavengerHunt.Tests.Controllers
 
         public ChallengeControllerTests()
         {
+            var photoRepo = new PhotoRepository(DbContext);
+            var mockStorage = new Mock<IStorageService>();
+            mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>())).Returns(() => Task.CompletedTask);
+
             _service = new ChallengeService(
             new ChallengeRepository(DbContext),
             new UserRepository(DbContext),
             new TaskRepository(DbContext),
-            new ChallengeParticipantRepository(DbContext)
+            new ChallengeParticipantRepository(DbContext), 
+            photoRepo,
+            mockStorage.Object
         );
 
             _controller = new ChallengeController(_service);
@@ -213,7 +218,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.CreateChallenge(request);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            catch (PhotoScavengerHunt.Exceptions.ValidationException)
             {
                 result = new BadRequestObjectResult("Challenge name cannot be empty.");
             }
@@ -245,7 +250,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.JoinChallenge(request);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("Challenge not found.");
             }
@@ -284,7 +289,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.GetChallengeById(99999);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("Challenge not found.");
             }
@@ -310,7 +315,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.DeleteChallenge(300, 102);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeValidationException)
+            catch (PhotoScavengerHunt.Exceptions.ValidationException)
             {
                 result = new BadRequestObjectResult("Only challenge admins can delete challenges.");
             }
@@ -340,7 +345,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             {
                 result = await _controller.LeaveChallenge(300, 102);
             }
-            catch (PhotoScavengerHunt.Exceptions.ChallengeNotFoundException)
+            catch (PhotoScavengerHunt.Exceptions.EntityNotFoundException)
             {
                 result = new NotFoundObjectResult("User is not a participant of this challenge.");
             }

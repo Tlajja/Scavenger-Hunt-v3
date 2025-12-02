@@ -2,6 +2,23 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getHallOfFame } from '../services/api.js'
 
+function assignDenseRanks(items, valueSelector) {
+  if (!Array.isArray(items)) return []
+  const arr = [...items].sort((a,b) => (valueSelector(b) || 0) - (valueSelector(a) || 0))
+  let prevVal = null
+  let prevRank = 0
+ let nextRank = 1
+  return arr.map(it => {
+    const val = valueSelector(it) ?? 0
+    if (prevVal === null || val !== prevVal) {
+      prevRank = nextRank
+      prevVal = val
+      nextRank += 1
+    }
+    return { ...it, rank: prevRank }
+  })
+}
+
 export default function Home() {
   const [hallOfFame, setHallOfFame] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,7 +43,10 @@ export default function Home() {
           if (res.ok) data = res.data
         }
 
-        if (mounted) setHallOfFame(Array.isArray(data) ? data : [])
+        if (mounted) {
+          const items = Array.isArray(data) ? data : []
+          setHallOfFame(assignDenseRanks(items, e => Number(e.wins ?? e.Wins ?? e.totalVotes ?? e.TotalVotes ?? 0)))
+        }
       } catch {}
       finally {
         if (mounted) setLoading(false)
@@ -166,7 +186,8 @@ export default function Home() {
               </thead>
               <tbody>
                 {hallOfFame.map((entry, index) => {
-                  const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : ''
+                  const rank = entry.rank ?? (index + 1)
+                  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
                   return (
                     <tr key={entry.userId ?? index} style={{
                       background: 'rgba(100, 108, 255, 0.05)',

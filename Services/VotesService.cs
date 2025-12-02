@@ -15,7 +15,11 @@ namespace PhotoScavengerHunt.Services
 
         public async Task<(bool Success, string? ErrorMessage, PhotoSubmission? Result)> UpvotePhotoAsync(int submissionId)
         {
-            return await _photoRepo.UpvoteAsync(submissionId);
+            var result = await _photoRepo.UpvoteAsync(submissionId);
+            if (!result.Success) 
+                return result;
+            await _photoRepo.SaveChangesAsync();
+            return (true, null, result.Result);
         }
     }
 }
