@@ -37,13 +37,7 @@ namespace PhotoScavengerHunt.Repositories
                     return (false, "Submission not found.", null);
 
                 submission.Votes += 1;
-                await _dbContext.SaveChangesAsync();
                 return (true, null, submission);
-            }
-            catch (DbUpdateException dbEx)
-            {
-                var msg = dbEx.InnerException?.Message ?? dbEx.Message;
-                return (false, $"Database error: {msg}", null);
             }
             catch (Exception ex)
             {
@@ -56,14 +50,6 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Photos
                 .Include(p => p.Comments)
                 .FirstOrDefaultAsync(p => p.Id == submissionId);
-        }
-
-        public async Task<PhotoSubmission> EnsureSubmissionExistsAsync(int submissionId)
-        {
-            var submission = await GetSubmissionWithCommentsAsync(submissionId);
-            if (submission == null)
-                throw new ArgumentException("Submission not found.");
-            return submission;
         }
 
         public async Task AddCommentAsync(Comment comment)

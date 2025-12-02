@@ -21,7 +21,6 @@ namespace PhotoScavengerHunt.Repositories
         public async Task AddAsync(ChallengeParticipant p)
         {
             await _dbContext.ChallengeParticipants.AddAsync(p);
-            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<List<ChallengeParticipant>> GetByChallengeAsync(int challengeId)
@@ -40,17 +39,10 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.ChallengeParticipants.Where(cp => cp.UserId == userId).ToListAsync();
         }
 
-        public async Task RemoveAsync(ChallengeParticipant participant)
+        public Task RemoveAsync(ChallengeParticipant participant)
         {
             _dbContext.ChallengeParticipants.Remove(participant);
-            await _dbContext.SaveChangesAsync();
-        }
-
-        public async Task EnsureUserCanCreateChallengeAsync(int userId)
-        {
-            var adminCount = await CountAdminChallengesForUserAsync(userId);
-            if (adminCount >= 1)
-                throw new LimitExceededException("A user can create only one challenge at a time.");
+            return Task.CompletedTask;
         }
 
         public async Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId)
@@ -69,21 +61,6 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync(cp => cp.UserId == userId && cp.ChallengeId == challengeId);
             if (existingAny != null)
                 throw new ValidationException("User is already a participant in this challenge.");
-        }
-
-        public async Task TransferAdminAsync(int challengeId, int fromUserId, int toUserId)
-        {
-            var from = await GetParticipantAsync(challengeId, fromUserId);
-            var to = await GetParticipantAsync(challengeId, toUserId);
-            if (from == null || to == null)
-                throw new EntityNotFoundException("Participant(s) not found for transfer.");
-
-            if (from.Role != ChallengeRole.Admin)
-                throw new ValidationException("Source user is not an admin.");
-
-            from.Role = ChallengeRole.Participant;
-            to.Role = ChallengeRole.Admin;
-            await _dbContext.SaveChangesAsync();
         }
 
         public async Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId)

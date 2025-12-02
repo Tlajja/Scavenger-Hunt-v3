@@ -22,12 +22,6 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        public async Task EnsureTaskExistsAsync(int id)
-        {
-            if(!await ExistsAsync(id))
-                throw new EntityNotFoundException("Task does not exist.");
-        }
-
         public async Task<List<HuntTask>> GetAllAsync()
         {
             return await _dbContext.Tasks.ToListAsync();

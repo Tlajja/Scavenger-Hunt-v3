@@ -32,7 +32,9 @@ namespace PhotoScavengerHunt.Services
 
                 await _userRepo.EnsureEmailIsUniqueAsync(request.Email);
                 await _userRepo.EnsureUsernameIsValidAsync(request.Username);
-                await _userRepo.EnsureAgeIsValidAsync(request.Age);
+                
+                if (request.Age <= 0 || request.Age > 125)
+                    throw new ArgumentException("Invalid age value.");
 
                 string passwordHash = HashPassword(request.Password);
 
@@ -71,7 +73,9 @@ namespace PhotoScavengerHunt.Services
                 if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
                     return (false, "Username and password are required.", null);
 
-                var user = await _userRepo.EnsureUserExistsByNameAsync(request.Username);
+                var user = await _userRepo.GetByNameAsync(request.Username);
+                if (user == null)
+                    throw new ArgumentException("Invalid username or password.");
 
                 if (!user.IsRegistered)
                     return (false, "Please complete registration first.", null);

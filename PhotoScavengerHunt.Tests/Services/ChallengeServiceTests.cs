@@ -1,11 +1,11 @@
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Challenges;
-using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using PhotoScavengerHunt.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Repositories;
-using Xunit;
+using Moq;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Tests.Services
 {
@@ -15,11 +15,17 @@ namespace PhotoScavengerHunt.Tests.Services
 
         public ChallengeServiceTests()
         {
+            var photoRepo = new PhotoRepository(DbContext);
+            var mockStorage = new Mock<IStorageService>();
+            mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>())).Returns(() => Task.CompletedTask);
+
             _service =  new ChallengeService(
                         new ChallengeRepository(DbContext),
                         new UserRepository(DbContext),
                         new TaskRepository(DbContext),
-                        new ChallengeParticipantRepository(DbContext)
+                        new ChallengeParticipantRepository(DbContext), 
+                        photoRepo,
+                        mockStorage.Object
                     );
 
             SeedTestData();

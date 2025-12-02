@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using PhotoScavengerHunt.Controllers;
 using PhotoScavengerHunt.Services;
 using PhotoScavengerHunt.Features.Users;
@@ -9,7 +8,7 @@ using PhotoScavengerHunt.Features.Leaderboard;
 using PhotoScavengerHunt.Tests.Infrastructure;
 using PhotoScavengerHunt.Repositories;
 using Moq;
-using Xunit;
+using PhotoScavengerHunt.Services.Interfaces;
 
 namespace PhotoScavengerHunt.Tests.Controllers
 {
@@ -169,11 +168,17 @@ namespace PhotoScavengerHunt.Tests.Controllers
 
         public ChallengeControllerTests()
         {
+            var photoRepo = new PhotoRepository(DbContext);
+            var mockStorage = new Mock<IStorageService>();
+            mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>())).Returns(() => Task.CompletedTask);
+
             _service = new ChallengeService(
             new ChallengeRepository(DbContext),
             new UserRepository(DbContext),
             new TaskRepository(DbContext),
-            new ChallengeParticipantRepository(DbContext)
+            new ChallengeParticipantRepository(DbContext), 
+            photoRepo,
+            mockStorage.Object
         );
 
             _controller = new ChallengeController(_service);
