@@ -11,11 +11,12 @@ export default function CommentSection({ submissionId, currentUserId }) {
   const [expanded, setExpanded] = useState(false)
   const connectionRef = useRef(null)
 
+  // Load comment count on mount to show accurate count even when collapsed
   useEffect(() => {
-    if (expanded && submissionId) {
+    if (submissionId) {
       loadComments()
     }
-  }, [expanded, submissionId])
+  }, [submissionId])
 
   useEffect(() => {
     let disposed = false
