@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    partial class PhotoScavengerHuntDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201210710_SyncModelChanges")]
+    partial class SyncModelChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -469,6 +472,9 @@ namespace PhotoScavengerHunt.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Age")
+                        .HasColumnType("int");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -495,6 +501,7 @@ namespace PhotoScavengerHunt.Migrations
                         new
                         {
                             Id = 1,
+                            Age = 20,
                             Email = "",
                             IsRegistered = false,
                             Name = "Ieva",
@@ -504,6 +511,7 @@ namespace PhotoScavengerHunt.Migrations
                         new
                         {
                             Id = 2,
+                            Age = 35,
                             Email = "",
                             IsRegistered = false,
                             Name = "Kristina",
@@ -513,6 +521,7 @@ namespace PhotoScavengerHunt.Migrations
                         new
                         {
                             Id = 3,
+                            Age = 40,
                             Email = "",
                             IsRegistered = false,
                             Name = "Ausra",
@@ -522,6 +531,7 @@ namespace PhotoScavengerHunt.Migrations
                         new
                         {
                             Id = 4,
+                            Age = 61,
                             Email = "",
                             IsRegistered = false,
                             Name = "Ula",

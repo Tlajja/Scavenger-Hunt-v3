@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PhotoScavengerHunt.Features.Tasks;
+﻿using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 
@@ -99,6 +98,26 @@ namespace PhotoScavengerHunt.Services
             {
                 _logger.LogError(ex, "Error fetching task by ID {TaskId}.", id);
                 throw new InvalidOperationException("An error occurred while fetching the task.", ex);
+            }
+        }
+
+        public async Task<HuntTask?> GetRandomTaskForUserAsync(int userId)
+        {
+            try
+            {
+                if (!await _userRepo.ExistsAsync(userId))
+                    throw new ArgumentException("User does not exist.");
+                return await _taskRepo.GetRandomForUserAsync(userId);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Validation failed while getting random task for user.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching random task for user {UserId}.", userId);
+                throw new InvalidOperationException("An error occurred while fetching a random task.", ex);
             }
         }
 

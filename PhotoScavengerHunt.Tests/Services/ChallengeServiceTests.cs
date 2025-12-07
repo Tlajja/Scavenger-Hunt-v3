@@ -36,11 +36,11 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             // Arrange
             var request = new CreateChallengeRequest(
-                Name: "New Challenge",
-                TaskId: 200,
-                CreatorId: 102,
-                Deadline: DateTime.UtcNow.AddDays(3),
-                IsPrivate: false
+                "New Challenge",
+                creatorId: 102,
+                taskIds: new[] { 200 },
+                deadline: DateTime.UtcNow.AddDays(3),
+                isPrivate: false
             );
 
             // Act
@@ -49,7 +49,7 @@ namespace PhotoScavengerHunt.Tests.Services
             // Assert
             Assert.NotNull(challenge);
             Assert.Equal("New Challenge", challenge.Name);
-            Assert.Equal(200, challenge.TaskId);
+            Assert.Contains(challenge.ChallengeTasks, ct => ct.TaskId == 200);
             Assert.Equal(102, challenge.CreatorId);
             Assert.NotEmpty(challenge.JoinCode);
         }
@@ -58,7 +58,12 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateChallengeAsync_EmptyName_ThrowsValidationException()
         {
             // Arrange
-            var request = new CreateChallengeRequest("", 200, 100, DateTime.UtcNow.AddDays(3));
+            var request = new CreateChallengeRequest
+            ("",
+             taskIds: new[] { 200 }, 
+             creatorId: 100, 
+             deadline: DateTime.UtcNow.AddDays(3)
+            );
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(
@@ -70,7 +75,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateChallengeAsync_NonExistentTask_ThrowsNotFoundException()
         {
             // Arrange
-            var request = new CreateChallengeRequest("Test", 99999, 100, DateTime.UtcNow.AddDays(3));
+            var request = new CreateChallengeRequest("Test", taskIds: new[] { 99999 }, creatorId: 100, deadline: DateTime.UtcNow.AddDays(3));
 
             // Act & Assert
             await Assert.ThrowsAsync<EntityNotFoundException>(
@@ -82,7 +87,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateChallengeAsync_UserAlreadyHasChallenge_ThrowsLimitException()
         {
             // Arrange - user 100 already has challenge 300 as admin
-            var request = new CreateChallengeRequest("Another", 201, 100, DateTime.UtcNow.AddDays(3));
+            var request = new CreateChallengeRequest("Another", taskIds: new[] { 201 }, creatorId: 100, deadline: DateTime.UtcNow.AddDays(3));
 
             // Act & Assert
             await Assert.ThrowsAsync<LimitExceededException>(
@@ -94,7 +99,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateChallengeAsync_PastDeadline_ThrowsValidationException()
         {
             // Arrange
-            var request = new CreateChallengeRequest("Test", 200, 102, DateTime.UtcNow.AddDays(-1));
+            var request = new CreateChallengeRequest("Test", taskIds: new[] { 200 }, creatorId: 102, deadline: DateTime.UtcNow.AddDays(-1));
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(
@@ -106,7 +111,7 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateChallengeAsync_DeadlineTooFar_ThrowsValidationException()
         {
             // Arrange
-            var request = new CreateChallengeRequest("Test", 200, 102, DateTime.UtcNow.AddDays(8));
+            var request = new CreateChallengeRequest("Test", taskIds: new[] { 200 }, creatorId: 102, deadline: DateTime.UtcNow.AddDays(8));
 
             // Act & Assert
             await Assert.ThrowsAsync<ValidationException>(

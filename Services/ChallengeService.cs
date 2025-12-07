@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Exceptions;
 using PhotoScavengerHunt.Repositories;
@@ -60,9 +59,15 @@ namespace PhotoScavengerHunt.Services
 
             if(!await _userRepo.ExistsAsync(request.CreatorId))
                 throw new EntityNotFoundException("User does not exist.");
-            
-            if(!await _taskRepo.ExistsAsync(request.TaskId))
-                throw new EntityNotFoundException("Task does not exist.");
+
+            var taskIdList = request.TaskIds?.Distinct().ToList() ?? new List<int>();
+            if (!taskIdList.Any())
+                throw new ValidationException("At least one task must be provided for the challenge.");
+            foreach (var tid in taskIdList)
+            {
+                if(!await _taskRepo.ExistsAsync(tid))
+                    throw new EntityNotFoundException("Task does not exist.");
+            }
 
             // ensure deadline is valid
             if (request.Deadline.HasValue)
@@ -85,8 +90,8 @@ namespace PhotoScavengerHunt.Services
 
             var challenge = ChallengeFactory.Create(
                 name: request.Name,
-                taskId: request.TaskId,
                 creatorId: request.CreatorId,
+                taskIds: taskIdList,
                 isPrivate: request.IsPrivate,
                 joinCode: joinCode,
                 deadline: request.Deadline);
@@ -268,7 +273,7 @@ namespace PhotoScavengerHunt.Services
 
             return challenge;
         }
-        
+
         public async Task<List<Challenge>> GetChallengesForUserAsync(int userId)
         {
             var parts = await _participantRepo.GetByUserAsync(userId);

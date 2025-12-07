@@ -70,6 +70,26 @@ namespace PhotoScavengerHunt.Controllers
             }
         }
 
+        [HttpGet("random/{userId}")]
+        public async Task<IActionResult> GetRandomTaskForUser(int userId)
+        {
+            try
+            {
+                var task = await _taskService.GetRandomTaskForUserAsync(userId);
+                if (task is null) return NotFound("No available tasks for this user.");
+                return Ok(task);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _taskLogger.LogError(ex, "Error getting random task for user.");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTaskById(int id)
         {
