@@ -18,8 +18,7 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             _mockLogger = CreateMockLogger<CommentService>();
             var photoRepo = new PhotoRepository(DbContext);
-            var userRepo = new UserRepository(DbContext);
-            _service = new CommentService(photoRepo, userRepo, _mockLogger.Object);
+            _service = new CommentService(photoRepo, _mockLogger.Object);
 
 
             SeedTestData();

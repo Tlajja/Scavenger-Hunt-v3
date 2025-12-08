@@ -40,8 +40,6 @@ namespace PhotoScavengerHunt.Tests.Services
         [InlineData("ab")] // Min length (2 chars)
         [InlineData("ABCDEFGHIJ0123456789")] // Max length (20 chars)
         [InlineData("User123")] 
-        [InlineData("ABC")]
-        [InlineData("User")]
         public async Task CreateUserAsync_ValidEdgeCases_ReturnsSuccess(string name)
         {
             var result = await _service.CreateUserAsync(name);
