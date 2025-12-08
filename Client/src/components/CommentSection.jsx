@@ -11,7 +11,6 @@ export default function CommentSection({ submissionId, currentUserId }) {
   const [expanded, setExpanded] = useState(false)
   const connectionRef = useRef(null)
 
-  // Load comment count on mount to show accurate count even when collapsed
   useEffect(() => {
     if (submissionId) {
       loadComments()
@@ -55,7 +54,6 @@ export default function CommentSection({ submissionId, currentUserId }) {
         connectionRef.current = conn
         await conn.invoke('JoinSubmission', Number(submissionId))
       } catch {
-        // Swallow errors; REST path still works
       }
     }
 
@@ -95,17 +93,27 @@ export default function CommentSection({ submissionId, currentUserId }) {
 
     setSubmitting(true)
     setError('')
+    const commentText = newComment.trim()
+    setNewComment('')
+    
     try {
-      const res = await addComment(submissionId, currentUserId, newComment.trim())
+      const res = await addComment(submissionId, currentUserId, commentText)
       if (!res.ok) {
         const errMsg = res.data?.message || res.text || 'Failed to add comment'
         setError(errMsg)
+        setNewComment(commentText)
         return
       }
-      setNewComment('')
-      await loadComments()
+      
+      if (res.data && Array.isArray(res.data)) {
+        setComments(res.data)
+      } else {
+        await loadComments()
+      }
     } catch (e) {
       setError('Error adding comment')
+      setNewComment(commentText)
+      await loadComments()
     } finally {
       setSubmitting(false)
     }
@@ -129,7 +137,6 @@ export default function CommentSection({ submissionId, currentUserId }) {
   function formatTimestamp(timestamp) {
     if (!timestamp) return ''
     
-    // Ensure UTC parsing - if timestamp doesn't have 'Z', treat it as UTC
     const timestampStr = typeof timestamp === 'string' && !timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)
       ? timestamp + 'Z'
       : timestamp

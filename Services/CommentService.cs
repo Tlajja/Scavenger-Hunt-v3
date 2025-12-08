@@ -26,7 +26,32 @@ namespace PhotoScavengerHunt.Services
             _commentsHub = commentsHub;
         }
 
-        public async Task<(bool Success, string Error, List<Comment>? Comments)> AddCommentAsync(int submissionId, AddCommentRequest request)
+        private async Task<List<object>> ProcessCommentsWithUsernamesAsync(List<Comment> comments)
+        {
+            if (comments == null || !comments.Any())
+                return new List<object>();
+
+            var userIds = comments.Select(c => c.UserId).ToList();
+            var userNames = await _userRepo.GetUserNamesAsync(userIds);
+
+            return comments
+                .Select(comment => new
+                {
+                    comment.Id,
+                    comment.UserId,
+                    UserName = userNames.GetValueOrDefault(comment.UserId, $"User {comment.UserId}"),
+                    comment.Text,
+                    comment.Timestamp,
+                    IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
+                    Preview = comment.Text.Length > 50
+                        ? comment.Text[..50] + "..."
+                        : comment.Text
+                })
+                .Cast<object>()
+                .ToList();
+        }
+
+        public async Task<(bool Success, string Error, List<object>? Comments)> AddCommentAsync(int submissionId, AddCommentRequest request)
         {
             try
             {
@@ -48,9 +73,13 @@ namespace PhotoScavengerHunt.Services
                 await _photoRepo.AddCommentAsync(comment);
                 await _photoRepo.SaveChangesAsync();
 
-                submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId) ?? submission;
+                submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
+                if (submission == null)
+                    throw new ArgumentException("Submission not found after adding comment.");
 
                 _logger.LogInformation("Comment added by user {UserId} to submission {SubmissionId}", request.UserId, submissionId);
+
+                var processedComments = await ProcessCommentsWithUsernamesAsync(submission.Comments.ToList());
 
                 if (_commentsHub != null)
                 {
@@ -60,7 +89,7 @@ namespace PhotoScavengerHunt.Services
                         .SendAsync("CommentsUpdated", submissionId);
                 }
 
-                return (true, "", submission.Comments.ToList());
+                return (true, "", processedComments);
             }
             catch (ArgumentException aex)
             {
@@ -81,26 +110,7 @@ namespace PhotoScavengerHunt.Services
                 if (submission == null)
                     return (false, "Submission not found.", null);
 
-                // Get usernames for all comment authors
-                var userIds = submission.Comments.Select(c => c.UserId).ToList();
-                var userNames = await _userRepo.GetUserNamesAsync(userIds);
-
-                var processedComments = submission.Comments
-                    .Select(comment => new
-                    {
-                        comment.Id,
-                        comment.UserId,
-                        UserName = userNames.GetValueOrDefault(comment.UserId, $"User {comment.UserId}"),
-                        comment.Text,
-                        comment.Timestamp,
-                        IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
-                        Preview = comment.Text.Length > 50
-                            ? comment.Text[..50] + "..."
-                            : comment.Text
-                    })
-                    .Cast<object>()
-                    .ToList();
-
+                var processedComments = await ProcessCommentsWithUsernamesAsync(submission.Comments.ToList());
                 return (true, "", processedComments);
             }
             catch (Exception ex)
