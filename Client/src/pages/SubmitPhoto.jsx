@@ -18,6 +18,20 @@ export default function SubmitPhoto() {
   const [challengeTasksMeta, setChallengeTasksMeta] = useState([])
   const [countdownText, setCountdownText] = useState('')
 
+  const fmtVilnius = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: 'Europe/Vilnius'
+  })
+  function formatVilnius(msOrDateLike) {
+    try {
+      const d = typeof msOrDateLike === 'number' ? new Date(msOrDateLike) : new Date(msOrDateLike)
+      return fmtVilnius.format(d)
+    } catch {
+      return String(msOrDateLike)
+    }
+  }
+
   function parseDeadlineUtc(dl) {
     if (!dl) return null
     const s = String(dl)
@@ -279,18 +293,20 @@ export default function SubmitPhoto() {
             const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(selectedTaskId))
             const dl = meta?.deadline ?? meta?.Deadline
             if (dl) {
+              const normalized = parseDeadlineUtc(dl)
               return (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
-                  Deadline: {new Date(dl).toLocaleString()} ({countdownText})
+                  Deadline: {normalized !== null ? formatVilnius(normalized) : formatVilnius(dl)} ({countdownText})
                 </div>
               )
             }
             // fallback: show task global deadline if any
             const tdl = selectedTask.deadline ?? selectedTask.Deadline
             if (tdl) {
+              const normalizedTask = parseDeadlineUtc(tdl)
               return (
                 <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
-                  Deadline: {new Date(tdl).toLocaleString()}
+                  Deadline: {normalizedTask !== null ? formatVilnius(normalizedTask) : formatVilnius(tdl)}
                 </div>
               )
             }

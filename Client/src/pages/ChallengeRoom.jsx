@@ -43,6 +43,20 @@ export default function ChallengeRoom() {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
+  const fmtVilnius = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: 'Europe/Vilnius'
+  })
+  function formatVilnius(msOrDateLike) {
+    try {
+      const d = typeof msOrDateLike === 'number' ? new Date(msOrDateLike) : new Date(msOrDateLike)
+      return fmtVilnius.format(d)
+    } catch {
+      return String(msOrDateLike)
+    }
+  }
+
   const participants = challenge?.members ?? challenge?.Participants ?? challenge?.participants ?? challenge?.participantsList ?? []
   const isAdmin = Array.isArray(participants) && participants.some(p => 
     Number(p.userId ?? p.UserId ?? p.id ?? p.Id) === userId && Number(p.role ?? p.Role ?? 0) === 1)
@@ -525,18 +539,32 @@ export default function ChallengeRoom() {
                       const dl = meta?.deadline ?? meta?.Deadline
                       if (dl) {
                         const countdown = countdownByTask[String(t.id ?? t.Id)] || ''
+                        const normalized = (() => {
+                          const s = String(dl)
+                          const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                          const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                          const ms = Date.parse(normalizedStr)
+                          return Number.isFinite(ms) ? ms : null
+                        })()
                         return (
                           <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
-                            Deadline: {new Date(dl).toLocaleString()} {countdown && `(${countdown})`}
+                            Deadline: {normalized !== null ? formatVilnius(normalized) : formatVilnius(dl)} {countdown && `(${countdown})`}
                           </div>
                         )
                       }
                       const tdl = t.deadline ?? t.Deadline
                       if (tdl) {
                         // Global deadline fallback
+                        const normalizedTask = (() => {
+                          const s = String(tdl)
+                          const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                          const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                          const ms = Date.parse(normalizedStr)
+                          return Number.isFinite(ms) ? ms : null
+                        })()
                         return (
                           <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
-                            Deadline: {new Date(tdl).toLocaleString()}
+                            Deadline: {normalizedTask !== null ? formatVilnius(normalizedTask) : formatVilnius(tdl)}
                           </div>
                         )
                       }
@@ -559,17 +587,31 @@ export default function ChallengeRoom() {
                 const dl = meta?.deadline ?? meta?.Deadline
                 if (dl) {
                   const countdown = countdownByTask[String(task.id ?? task.Id)] || ''
+                  const normalized = (() => {
+                    const s = String(dl)
+                    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                    const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                    const ms = Date.parse(normalizedStr)
+                    return Number.isFinite(ms) ? ms : null
+                  })()
                   return (
                     <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
-                      Deadline: {new Date(dl).toLocaleString()} {countdown && `(${countdown})`}
+                      Deadline: {normalized !== null ? formatVilnius(normalized) : formatVilnius(dl)} {countdown && `(${countdown})`}
                     </p>
                   )
                 }
                 const tdl = task.deadline ?? task.Deadline
                 if (tdl) {
+                  const normalizedTask = (() => {
+                    const s = String(tdl)
+                    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                    const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                    const ms = Date.parse(normalizedStr)
+                    return Number.isFinite(ms) ? ms : null
+                  })()
                   return (
                     <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
-                      Deadline: {new Date(tdl).toLocaleString()}
+                      Deadline: {normalizedTask !== null ? formatVilnius(normalizedTask) : formatVilnius(tdl)}
                     </p>
                   )
                 }
