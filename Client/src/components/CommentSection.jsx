@@ -18,10 +18,16 @@ export default function CommentSection({ submissionId, currentUserId }) {
   }, [submissionId])
 
   useEffect(() => {
+    if (expanded && submissionId) {
+      loadComments()
+    }
+  }, [expanded, submissionId])
+
+  useEffect(() => {
     let disposed = false
 
     async function start() {
-      if (!expanded || !submissionId) return
+      if (!submissionId) return
 
       if (connectionRef.current) {
         try { await connectionRef.current.stop() } catch {}
@@ -67,7 +73,7 @@ export default function CommentSection({ submissionId, currentUserId }) {
         c.stop().catch(() => {})
       }
     }
-  }, [expanded, submissionId])
+  }, [submissionId])
 
   async function loadComments() {
     setLoading(true)
