@@ -13,12 +13,18 @@ namespace PhotoScavengerHunt.Tests.Services
     {
         private readonly CommentService _service;
         private readonly Mock<ILogger<CommentService>> _mockLogger;
+        private readonly Mock<IUserRepository> _mockUserRepo;
 
         public CommentServiceTests()
         {
             _mockLogger = CreateMockLogger<CommentService>();
             var photoRepo = new PhotoRepository(DbContext);
-            _service = new CommentService(photoRepo, _mockLogger.Object);
+            _mockUserRepo = new Mock<IUserRepository>();
+            _mockUserRepo
+                .Setup(r => r.GetUserNamesAsync(It.IsAny<List<int>>()))
+                .ReturnsAsync((List<int> ids) => ids.Distinct().ToDictionary(id => id, id => $"User {id}"));
+
+            _service = new CommentService(photoRepo, _mockUserRepo.Object, _mockLogger.Object);
 
 
             SeedTestData();

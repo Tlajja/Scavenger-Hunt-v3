@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 
@@ -20,14 +21,19 @@ namespace PhotoScavengerHunt.Controllers
         {
             if (string.IsNullOrWhiteSpace(request.Text))
             {
-                return BadRequest("Comment text cannot be empty.\n");
+                return BadRequest("Comment text cannot be empty.");
             }
 
             var result = await _commentService.AddCommentAsync(submissionId, request);
             if (!result.Success)
-                return BadRequest(result.Error);
+            {
+                if (string.Equals(result.Error, "Submission not found.", StringComparison.InvariantCultureIgnoreCase))
+                    return NotFound(result.Error);
 
-            var comments = result.Comments ?? new List<object>();
+                return BadRequest(result.Error);
+            }
+
+            var comments = result.Comments ?? new List<Comment>();
             return Ok(comments);
         }
 
@@ -38,7 +44,7 @@ namespace PhotoScavengerHunt.Controllers
             if (!result.Success)
                 return NotFound(result.Error);
 
-            var comments = result.Comments ?? new List<object>();
+            var comments = result.Comments ?? new List<Comment>();
             return Ok(comments);
         }
 

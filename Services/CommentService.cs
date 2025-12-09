@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Exceptions;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 using System.Linq;
@@ -26,32 +27,23 @@ namespace PhotoScavengerHunt.Services
             _commentsHub = commentsHub;
         }
 
-        private async Task<List<object>> ProcessCommentsWithUsernamesAsync(List<Comment> comments)
+        private async Task<List<Comment>> ProcessCommentsWithUsernamesAsync(List<Comment> comments)
         {
             if (comments == null || !comments.Any())
-                return new List<object>();
+                return new List<Comment>();
 
             var userIds = comments.Select(c => c.UserId).ToList();
             var userNames = await _userRepo.GetUserNamesAsync(userIds);
 
-            return comments
-                .Select(comment => new
-                {
-                    comment.Id,
-                    comment.UserId,
-                    UserName = userNames.GetValueOrDefault(comment.UserId, $"User {comment.UserId}"),
-                    comment.Text,
-                    comment.Timestamp,
-                    IsRecent = comment.Timestamp > DateTime.UtcNow.AddHours(-24),
-                    Preview = comment.Text.Length > 50
-                        ? comment.Text[..50] + "..."
-                        : comment.Text
-                })
-                .Cast<object>()
-                .ToList();
+            foreach (var comment in comments)
+            {
+                comment.UserName = userNames.GetValueOrDefault(comment.UserId, $"User {comment.UserId}");
+            }
+
+            return comments;
         }
 
-        public async Task<(bool Success, string Error, List<object>? Comments)> AddCommentAsync(int submissionId, AddCommentRequest request)
+        public async Task<(bool Success, string Error, List<Comment>? Comments)> AddCommentAsync(int submissionId, AddCommentRequest request)
         {
             try
             {
@@ -60,7 +52,7 @@ namespace PhotoScavengerHunt.Services
 
                 var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
                 if (submission == null)
-                    throw new ArgumentException("Submission not found.");
+                    throw new EntityNotFoundException("Submission not found.");
 
                 var comment = new Comment
                 {
@@ -75,7 +67,7 @@ namespace PhotoScavengerHunt.Services
 
                 submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
                 if (submission == null)
-                    throw new ArgumentException("Submission not found after adding comment.");
+                    throw new EntityNotFoundException("Submission not found after adding comment.");
 
                 _logger.LogInformation("Comment added by user {UserId} to submission {SubmissionId}", request.UserId, submissionId);
 
@@ -91,9 +83,9 @@ namespace PhotoScavengerHunt.Services
 
                 return (true, "", processedComments);
             }
-            catch (ArgumentException aex)
+            catch (EntityNotFoundException nfex)
             {
-                return (false, aex.Message, null);
+                return (false, nfex.Message, null);
             }
             catch (Exception ex)
             {
@@ -102,7 +94,7 @@ namespace PhotoScavengerHunt.Services
             }
         }
 
-        public async Task<(bool Success, string Error, List<object>? Comments)> GetCommentsAsync(int submissionId)
+        public async Task<(bool Success, string Error, List<Comment>? Comments)> GetCommentsAsync(int submissionId)
         {
             try
             {
@@ -126,7 +118,7 @@ namespace PhotoScavengerHunt.Services
             {
                 var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
                 if (submission == null)
-                    throw new ArgumentException("Submission not found.");
+                    throw new EntityNotFoundException("Submission not found.");
 
                 var commentToRemove = submission.Comments.FirstOrDefault(c => c.Id == commentId);
                 if (commentToRemove == null)
@@ -146,9 +138,9 @@ namespace PhotoScavengerHunt.Services
                 _logger.LogInformation("Comment {CommentId} deleted from submission {SubmissionId}", commentId, submissionId);
                 return (true, "");
             }
-            catch (ArgumentException aex)
+            catch (EntityNotFoundException nfex)
             {
-                return (false, aex.Message);
+                return (false, nfex.Message);
             }
             catch (Exception ex)
             {
