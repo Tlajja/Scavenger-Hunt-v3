@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { submitPhoto, getChallenges, getChallengeById, getTaskById } from '../services/api.js'
+import { getChallenges, getChallengeById, getTaskById } from '../services/api.js'
 
 export default function SubmitPhoto() {
   const [photoFile, setPhotoFile] = useState(null)
@@ -15,6 +15,18 @@ export default function SubmitPhoto() {
   const userId = localStorage.getItem('userId') || ''
   const [tasksForChallenge, setTasksForChallenge] = useState([])
   const [selectedTaskId, setSelectedTaskId] = useState('')
+  const [challengeTasksMeta, setChallengeTasksMeta] = useState([])
+  const [countdownText, setCountdownText] = useState('')
+
+  function parseDeadlineUtc(dl) {
+    if (!dl) return null
+    const s = String(dl)
+    // If the deadline string has no timezone, assume UTC and append 'Z'
+    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+    const normalized = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+    const ms = Date.parse(normalized)
+    return Number.isFinite(ms) ? ms : null
+  }
 
   useEffect(() => {
     let mounted = true
@@ -25,21 +37,21 @@ export default function SubmitPhoto() {
         const cres = await getChallenges(false)
         if (!mounted) return
         const raw = Array.isArray(cres.data) ? cres.data : []
-        const open = raw.filter(c => Number(c.status ?? c.Status ?? 0) === 0) // Open
+        const open = raw.filter(c => Number(c.status ?? c.Status ?? 0) === 0)
         setChallenges(open)
       } catch (err) {
         if (!mounted) return
         setError(String(err))
       } finally {
-        if (!mounted) return
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
     load()
     return () => { mounted = false }
   }, [])
 
-  // when challenge selection changes, load the challenge details and its task preview
   useEffect(() => {
     let mounted = true
     async function loadPreview() {
@@ -55,6 +67,7 @@ export default function SubmitPhoto() {
         const taskRefs = Array.isArray(ch?.challengeTasks ?? ch?.ChallengeTasks)
           ? ch.challengeTasks ?? ch.ChallengeTasks
           : (ch?.ChallengeTasks ?? []).map(x => x)
+        setChallengeTasksMeta(taskRefs)
         const ids = taskRefs.map(t => Number(t.taskId ?? t.TaskId ?? t.task?.id ?? t.task?.Id ?? 0)).filter(Boolean)
         if (ids.length === 0) return
         const tasks = await Promise.all(ids.map(id => getTaskById(id)))
@@ -77,6 +90,30 @@ export default function SubmitPhoto() {
     const t = tasksForChallenge.find(x => String(x.id ?? x.Id) === tid)
     setSelectedTask(t ?? null)
   }
+
+  useEffect(() => {
+    let timerId = null
+    function updateCountdown() {
+      if (!selectedTaskId) { setCountdownText(''); return }
+      const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(selectedTaskId))
+      const dl = meta?.deadline ?? meta?.Deadline
+      const end = parseDeadlineUtc(dl)
+      if (end === null) { setCountdownText(''); return }
+      const now = Date.now()
+      const diffMs = end - now
+      if (diffMs <= 0) { setCountdownText('Expired'); return }
+      const totalSeconds = Math.floor(diffMs / 1000)
+      const days = Math.floor(totalSeconds / 86400)
+      const hours = Math.floor((totalSeconds % 86400) / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      const fmt = days > 0 ? `${days}d ${hours}h ${minutes}m` : (hours > 0 ? `${hours}h ${minutes}m ${seconds}s` : `${minutes}m ${seconds}s`)
+      setCountdownText(fmt)
+    }
+    updateCountdown()
+    timerId = setInterval(updateCountdown, 1000)
+    return () => { if (timerId) clearInterval(timerId) }
+  }, [selectedTaskId, challengeTasksMeta])
 
   function handleFileChange(e) {
     const file = e.target.files[0]
@@ -237,9 +274,28 @@ export default function SubmitPhoto() {
         <div style={{ marginBottom: 12, padding: 10, border: '1px solid #eee', borderRadius: 4 }}>
           <div style={{ fontWeight: 600 }}>Task preview</div>
           <div style={{ marginTop: 6 }}>{selectedTask.description ?? selectedTask.Description}</div>
-          {selectedTask.deadline && (
-            <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>Deadline: {new Date(selectedTask.deadline ?? selectedTask.Deadline).toLocaleString()}</div>
-          )}
+          {/* Show per-challenge effective deadline with countdown if present */}
+          {(() => {
+            const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(selectedTaskId))
+            const dl = meta?.deadline ?? meta?.Deadline
+            if (dl) {
+              return (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
+                  Deadline: {new Date(dl).toLocaleString()} ({countdownText})
+                </div>
+              )
+            }
+            // fallback: show task global deadline if any
+            const tdl = selectedTask.deadline ?? selectedTask.Deadline
+            if (tdl) {
+              return (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>
+                  Deadline: {new Date(tdl).toLocaleString()}
+                </div>
+              )
+            }
+            return null
+          })()}
         </div>
       )}
        {/* rest of the form (file input, preview, upload) */}

@@ -16,6 +16,9 @@ export default function CreateChallenge() {
  const [showCreateTask, setShowCreateTask] = useState(false)
  const [taskDescription, setTaskDescription] = useState('')
  const [taskDeadline, setTaskDeadline] = useState('')
+ const [taskTimerMinutes, setTaskTimerMinutes] = useState('')
+ const [taskTimerHours, setTaskTimerHours] = useState('')
+ const [taskDeadlineMode, setTaskDeadlineMode] = useState('none')
  const [creatingTask, setCreatingTask] = useState(false)
  const [generating, setGenerating] = useState(false)
 
@@ -41,14 +44,29 @@ export default function CreateChallenge() {
  setCreatingTask(true)
  setError('')
  try {
- const iso = toIsoForServer(taskDeadline)
- const res = await createUserTask(taskDescription, iso, userId)
+   let iso = null
+   let timerVal = null
+   if (taskDeadlineMode === 'absolute') {
+     iso = toIsoForServer(taskDeadline)
+     if (!iso) { setError('Please pick a deadline date/time or choose another mode'); return }
+   } else if (taskDeadlineMode === 'timer') {
+     const mins = Number(taskTimerMinutes) || 0
+     const hrs = Number(taskTimerHours) || 0
+     if ((!Number.isFinite(mins) || mins < 0) || (!Number.isFinite(hrs) || hrs < 0)) { setError('Timer values must be non-negative'); return }
+     const totalSeconds = (hrs * 3600) + (mins * 60)
+     if (totalSeconds <= 0) { setError('Provide at least 1 minute or hour for the timer'); return }
+     timerVal = totalSeconds
+   }
+   const res = await createUserTask(taskDescription, iso, userId, timerVal)
  if (!res.ok) { setError((res.data && (res.data.message || res.data.error)) || res.text || 'Failed to create task'); return }
  const newTask = res.data
  setTasks(prev => [...prev, newTask])
  addSelectedTask(newTask.id ?? newTask.Id)
  setTaskDescription('')
- setTaskDeadline('')
+   setTaskDeadline('')
+   setTaskTimerMinutes('')
+   setTaskTimerHours('')
+   setTaskDeadlineMode('none')
  } catch { setError('Network error') } finally { setCreatingTask(false) }
  }
 
@@ -60,10 +78,12 @@ export default function CreateChallenge() {
  if (!res.ok) { setError(res.text || 'No random task available for you'); return }
  const randomTask = res.data
  if (!randomTask) { setError('No random task available'); return }
- const idVal = String(randomTask.id ?? randomTask.Id)
- const exists = tasks.some(t => String(t.id ?? t.Id) === idVal)
- if (!exists) setTasks(prev => [...prev, randomTask])
- addSelectedTask(idVal)
+      setTaskDescription(String(randomTask.description ?? randomTask.Description ?? ''))
+      setTaskDeadline('')
+      setTaskDeadlineMode('none')
+      setTaskTimerHours('')
+      setTaskTimerMinutes('')
+      setShowCreateTask(true)
  } catch { setError('Network error while generating task') } finally { setGenerating(false) }
  }
 
@@ -108,6 +128,16 @@ export default function CreateChallenge() {
  ))}
  </div>
  )}
+ {tasks.length > 0 && (
+ <div style={{ marginBottom:12, display: 'flex', flexDirection: 'column', gap:8 }}>
+ {tasks.map(t => (
+ <div key={t.id ?? t.Id} style={{ display: 'flex', gap:8, alignItems: 'center', background: 'rgba(100,108,255,0.08)', padding:10, borderRadius:6 }}>
+ <div style={{ flex:1, color: 'white' }}>{t.description ?? t.Description}</div>
+ <button type="button" onClick={() => addSelectedTask(String(t.id ?? t.Id))} disabled={creating} style={{ background: 'transparent', border: '1px solid #38b000', color: '#38b000' }}>Add with Deadline Options</button>
+ </div>
+ ))}
+ </div>
+ )}
  <div style={{ display: 'flex', flexDirection: 'column', gap:8 }}>
  <button type="button" onClick={() => setShowCreateTask(true)} disabled={creating} style={{ width: '100%', background: 'rgba(100,108,255,0.1)', border: '1px solid #646cff', boxShadow: 'none' }}>+ Create Task for Challenge</button>
  <button type="button" onClick={handleGenerateTask} disabled={creating || generating} style={{ width: '100%', background: 'rgba(56,176,0,0.1)', border: '1px solid #38b000', boxShadow: 'none', color: '#38b000' }}>{generating ? 'Generating...' : 'Generate Random Task'}</button>
@@ -121,9 +151,41 @@ export default function CreateChallenge() {
  <textarea value={taskDescription} onChange={e => setTaskDescription(e.target.value)} placeholder="Describe what participants need to photograph" rows={3} disabled={creatingTask} />
  </div>
  <div style={{ marginBottom:16 }}>
- <label>Task Deadline (Optional)</label>
- <input type="datetime-local" value={taskDeadline} onChange={e => setTaskDeadline(e.target.value)} disabled={creatingTask} />
- <div style={{ fontSize:12, color: 'rgba(255,255,255,0.6)', marginTop:6 }}>Leave blank for 7 days from now</div>
+   <label>Task Deadline Mode</label>
+   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+     <label style={{ display: 'flex', alignItems: 'center', gap:6 }}>
+       <input type="radio" name="dlmode" value="none" checked={taskDeadlineMode === 'none'} onChange={() => setTaskDeadlineMode('none')} disabled={creatingTask} />
+       <span>No deadline</span>
+     </label>
+     <label style={{ display: 'flex', alignItems: 'center', gap:6 }}>
+       <input type="radio" name="dlmode" value="absolute" checked={taskDeadlineMode === 'absolute'} onChange={() => setTaskDeadlineMode('absolute')} disabled={creatingTask} />
+       <span>Fixed deadline</span>
+     </label>
+     <label style={{ display: 'flex', alignItems: 'center', gap:6 }}>
+       <input type="radio" name="dlmode" value="timer" checked={taskDeadlineMode === 'timer'} onChange={() => setTaskDeadlineMode('timer')} disabled={creatingTask} />
+       <span>Timer</span>
+     </label>
+   </div>
+   {taskDeadlineMode === 'absolute' && (
+     <div style={{ marginTop: 10 }}>
+       <label>Task Deadline</label>
+       <input type="datetime-local" value={taskDeadline} onChange={e => setTaskDeadline(e.target.value)} disabled={creatingTask} />
+       <div style={{ fontSize:12, color: 'rgba(255,255,255,0.6)', marginTop:6 }}>Pick a specific deadline date/time</div>
+     </div>
+   )}
+   {taskDeadlineMode === 'timer' && (
+     <div style={{ marginTop: 10, display: 'flex', gap: 10 }}>
+       <div>
+         <label>Hours</label>
+         <input type="number" min="0" step="1" value={taskTimerHours} onChange={e => setTaskTimerHours(e.target.value)} disabled={creatingTask} />
+       </div>
+       <div>
+         <label>Minutes</label>
+         <input type="number" min="0" step="1" value={taskTimerMinutes} onChange={e => setTaskTimerMinutes(e.target.value)} disabled={creatingTask} />
+       </div>
+       <div style={{ alignSelf: 'flex-end', fontSize:12, color: 'rgba(255,255,255,0.6)' }}>Countdown starts when the challenge is created</div>
+     </div>
+   )}
  </div>
  <div style={{ display: 'flex', gap:12 }}>
  <button onClick={handleCreateTask} disabled={creatingTask || !taskDescription.trim()} style={{ flex:1 }}>{creatingTask ? 'Creating...' : 'Create Task'}</button>

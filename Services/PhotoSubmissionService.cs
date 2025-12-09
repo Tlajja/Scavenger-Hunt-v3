@@ -3,7 +3,6 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 using PhotoScavengerHunt.Exceptions;
-using System.IO;
 
 namespace PhotoScavengerHunt.Services
 {
