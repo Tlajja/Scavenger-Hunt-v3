@@ -38,19 +38,19 @@ export async function getTaskById(id) {
  return await safeFetch(`/api/tasks/${Number(id)}`, { method: 'GET' })
 }
 
-export async function createTask(description, deadline) {
+export async function createTask(description, deadline, timerSeconds = null) {
  return await safeFetch('/api/tasks', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId:0 })
+   body: JSON.stringify({ Description: description, Deadline: deadline, TimerSeconds: timerSeconds, AuthorId:0 })
  })
 }
 
-export async function createUserTask(description, deadline, authorId) {
+export async function createUserTask(description, deadline, authorId, timerSeconds = null) {
  return await safeFetch('/api/tasks/user', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Description: description, Deadline: deadline, AuthorId: authorId })
+   body: JSON.stringify({ Description: description, Deadline: deadline, TimerSeconds: timerSeconds, AuthorId: authorId })
  })
 }
 

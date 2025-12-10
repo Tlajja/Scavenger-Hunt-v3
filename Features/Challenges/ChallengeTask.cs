@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using PhotoScavengerHunt.Features.Tasks;
 namespace PhotoScavengerHunt.Features.Challenges;
 
 public class ChallengeTask
@@ -9,4 +10,6 @@ public class ChallengeTask
  [JsonIgnore]
  public Challenge? Challenge { get; set; }
  public HuntTask? Task { get; set; }
+ 
+ public DateTime? Deadline { get; set; }
 }

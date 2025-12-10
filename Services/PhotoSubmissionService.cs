@@ -3,7 +3,6 @@ using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 using PhotoScavengerHunt.Exceptions;
-using System.IO;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -40,6 +39,16 @@ namespace PhotoScavengerHunt.Services
                 {
                     await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
                     var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
+                    // If the challenge itself has a deadline and it's expired, block submission
+                    if (challenge?.Deadline != null && challenge.Deadline <= DateTime.UtcNow)
+                    {
+                        return (false, "Challenge deadline has expired. Submissions are closed.", null, null);
+                    }
+                    // If challenge status is not Open (submission phase), block submission
+                    if (challenge != null && challenge.Status != Features.Challenges.ChallengeStatus.Open)
+                    {
+                        return (false, "Challenge is not in submission phase.", null, null);
+                    }
                     if (!taskId.HasValue)
                         taskId = challenge?.ChallengeTasks?.FirstOrDefault()?.TaskId;
                 }
@@ -48,6 +57,27 @@ namespace PhotoScavengerHunt.Services
 
                 if(!await _taskRepo.ExistsAsync(taskId.Value))
                     throw new EntityNotFoundException("Task does not exist.");
+
+                // Enforce task/challenge task deadline constraints
+                DateTime? effectiveDeadline = null;
+                if (challengeId.HasValue)
+                {
+                    var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
+                    var meta = challenge?.ChallengeTasks?.FirstOrDefault(ct => ct.TaskId == taskId.Value);
+                    effectiveDeadline = meta?.Deadline;
+                }
+
+                // Fallback to the task's own deadline if per-challenge deadline is not set
+                if (effectiveDeadline == null)
+                {
+                    var task = await _taskRepo.GetByIdAsync(taskId.Value);
+                    effectiveDeadline = task?.Deadline;
+                }
+
+                if (effectiveDeadline != null && effectiveDeadline <= DateTime.UtcNow)
+                {
+                    return (false, "Task deadline has expired. You cannot submit a photo for this task.", null, null);
+                }
 
                 if (challengeId.HasValue)
                 {

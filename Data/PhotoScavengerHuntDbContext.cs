@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Features.Photos;
-using PhotoScavengerHunt.Features.Tasks;
 using PhotoScavengerHunt.Features.Users;
 
 public class PhotoScavengerHuntDbContext : DbContext
@@ -62,7 +61,6 @@ public class PhotoScavengerHuntDbContext : DbContext
             .Property(t => t.Deadline)
             .IsRequired(false);
 
-        // Seed with deterministic timestamps to avoid EF PendingModelChangesWarning
         var seedCreatedAt1 = new DateTime(2025,1,1,0,0,0, DateTimeKind.Utc);
         var seedCreatedAt2 = new DateTime(2025,1,2,0,0,0, DateTimeKind.Utc);
 
