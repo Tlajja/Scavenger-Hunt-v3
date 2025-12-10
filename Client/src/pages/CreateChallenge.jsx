@@ -247,47 +247,6 @@ export default function CreateChallenge() {
                             </div>
                         )}
 
-                        {tasks.length > 0 && (
-                            <div
-                                style={{
-                                    marginBottom: 12,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 8,
-                                }}
-                            >
-                                {tasks.map(t => (
-                                    <div
-                                        key={t.id ?? t.Id}
-                                        style={{
-                                            display: 'flex',
-                                            gap: 8,
-                                            alignItems: 'center',
-                                            background: 'rgba(100,108,255,0.08)',
-                                            padding: 10,
-                                            borderRadius: 6,
-                                        }}
-                                    >
-                                        <div style={{ flex: 1, color: 'white' }}>
-                                            {t.description ?? t.Description}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => addSelectedTask(String(t.id ?? t.Id))}
-                                            disabled={creating}
-                                            style={{
-                                                background: 'transparent',
-                                                border: '1px solid #38b000',
-                                                color: '#38b000',
-                                            }}
-                                        >
-                                            Add with Deadline Options
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <button
                                 type="button"
