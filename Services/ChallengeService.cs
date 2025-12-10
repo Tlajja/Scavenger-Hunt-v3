@@ -99,6 +99,25 @@ namespace PhotoScavengerHunt.Services
             await _challengeRepo.AddAsync(challenge);
             await _challengeRepo.SaveChangesAsync();
 
+            if (challenge.ChallengeTasks?.Count > 0)
+            {
+                var taskIds = challenge.ChallengeTasks.Select(ct => ct.TaskId).ToList();
+                var tasks = await _taskRepo.GetByIdsAsync(taskIds);
+                var taskMap = tasks.ToDictionary(t => t.Id, t => t);
+                foreach (var ct in challenge.ChallengeTasks)
+                {
+                    if (taskMap.TryGetValue(ct.TaskId, out var t) && t.TimerSeconds.HasValue && t.TimerSeconds.Value > 0)
+                    {
+                        ct.Deadline = challenge.CreatedAt.AddSeconds(t.TimerSeconds.Value);
+                    }
+                    else
+                    {
+                        ct.Deadline = null;
+                    }
+                }
+                await _challengeRepo.SaveChangesAsync();
+            }
+
             var participant = new ChallengeParticipant
             {
                 ChallengeId = challenge.Id,

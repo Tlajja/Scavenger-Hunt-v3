@@ -22,6 +22,12 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == id);
         }
 
+        public async Task<List<HuntTask>> GetByIdsAsync(IEnumerable<int> ids)
+        {
+            var set = ids?.ToList() ?? new List<int>();
+            return await _dbContext.Tasks.Where(t => set.Contains(t.Id)).ToListAsync();
+        }
+
         public async Task<List<HuntTask>> GetAllAsync()
         {
             return await _dbContext.Tasks.ToListAsync();

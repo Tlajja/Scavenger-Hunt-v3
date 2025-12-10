@@ -21,7 +21,7 @@
 
             foreach (var id in taskIds.Distinct())
             {
-                challenge.ChallengeTasks.Add(new ChallengeTask { Challenge = challenge, TaskId = id });
+                challenge.ChallengeTasks.Add(new ChallengeTask { Challenge = challenge, TaskId = id, Deadline = null });
             }
 
             return challenge;

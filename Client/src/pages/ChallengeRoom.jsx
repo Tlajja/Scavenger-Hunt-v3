@@ -33,6 +33,8 @@ export default function ChallengeRoom() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [tasksForChallenge, setTasksForChallenge] = useState([])
+  const [challengeTasksMeta, setChallengeTasksMeta] = useState([])
+  const [countdownByTask, setCountdownByTask] = useState({})
   const [submitTaskId, setSubmitTaskId] = useState('')
   const [voteTaskId, setVoteTaskId] = useState('')
   
@@ -40,6 +42,20 @@ export default function ChallengeRoom() {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+
+  const fmtVilnius = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: 'Europe/Vilnius'
+  })
+  function formatVilnius(msOrDateLike) {
+    try {
+      const d = typeof msOrDateLike === 'number' ? new Date(msOrDateLike) : new Date(msOrDateLike)
+      return fmtVilnius.format(d)
+    } catch {
+      return String(msOrDateLike)
+    }
+  }
 
   const participants = challenge?.members ?? challenge?.Participants ?? challenge?.participants ?? challenge?.participantsList ?? []
   const isAdmin = Array.isArray(participants) && participants.some(p => 
@@ -75,6 +91,7 @@ export default function ChallengeRoom() {
       const refs = Array.isArray(challengeData?.challengeTasks ?? challengeData?.ChallengeTasks)
         ? (challengeData.challengeTasks ?? challengeData.ChallengeTasks)
         : []
+      setChallengeTasksMeta(refs)
       const ids = refs.map(t => Number(t.taskId ?? t.TaskId ?? t.task?.id ?? t.task?.Id ?? 0)).filter(Boolean)
       if (ids.length > 0) {
         const fetched = await Promise.all(ids.map(id => getTaskById(id)))
@@ -107,6 +124,44 @@ export default function ChallengeRoom() {
       setLoading(false)
     }
   }
+
+  // Countdown updater for each task in the challenge
+  useEffect(() => {
+    let timerId = null
+    function parseDeadlineUtc(dl) {
+      if (!dl) return null
+      const s = String(dl)
+      const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+      const normalized = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+      const ms = Date.parse(normalized)
+      return Number.isFinite(ms) ? ms : null
+    }
+    function fmtCountdown(endTimeMs) {
+      const diffMs = endTimeMs - Date.now()
+      if (diffMs <= 0) return 'Expired'
+      const totalSeconds = Math.floor(diffMs / 1000)
+      const days = Math.floor(totalSeconds / 86400)
+      const hours = Math.floor((totalSeconds % 86400) / 3600)
+      const minutes = Math.floor((totalSeconds % 3600) / 60)
+      const seconds = totalSeconds % 60
+      if (days > 0) return `${days}d ${hours}h ${minutes}m`
+      if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`
+      return `${minutes}m ${seconds}s`
+    }
+    function updateAll() {
+      const map = {}
+      for (const ct of challengeTasksMeta) {
+        const tid = String(ct.taskId ?? ct.TaskId)
+        const endMs = parseDeadlineUtc(ct.deadline ?? ct.Deadline)
+        if (endMs === null) continue
+        map[tid] = fmtCountdown(endMs)
+      }
+      setCountdownByTask(map)
+    }
+    updateAll()
+    timerId = setInterval(updateAll, 1000)
+    return () => { if (timerId) clearInterval(timerId) }
+  }, [challengeTasksMeta])
 
 // load submissions for a specific task (used in voting)
   async function loadSubmissionsByTask(taskId) {
@@ -478,11 +533,43 @@ export default function ChallengeRoom() {
                 {tasksForChallenge.map((t) => (
                   <li key={t.id ?? t.Id} style={{ marginBottom: 8 }}>
                     <div style={{ color: 'white', fontWeight: 600 }}>{t.description ?? t.Description}</div>
-                    {(t.deadline ?? t.Deadline) && (
-                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
-                        Deadline: {new Date(t.deadline ?? t.Deadline).toLocaleString()}
-                      </div>
-                    )}
+                    {(() => {
+                      // Prefer per-challenge deadline
+                      const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(t.id ?? t.Id))
+                      const dl = meta?.deadline ?? meta?.Deadline
+                      if (dl) {
+                        const countdown = countdownByTask[String(t.id ?? t.Id)] || ''
+                        const normalized = (() => {
+                          const s = String(dl)
+                          const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                          const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                          const ms = Date.parse(normalizedStr)
+                          return Number.isFinite(ms) ? ms : null
+                        })()
+                        return (
+                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                            Deadline: {normalized !== null ? formatVilnius(normalized) : formatVilnius(dl)} {countdown && `(${countdown})`}
+                          </div>
+                        )
+                      }
+                      const tdl = t.deadline ?? t.Deadline
+                      if (tdl) {
+                        // Global deadline fallback
+                        const normalizedTask = (() => {
+                          const s = String(tdl)
+                          const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                          const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                          const ms = Date.parse(normalizedStr)
+                          return Number.isFinite(ms) ? ms : null
+                        })()
+                        return (
+                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                            Deadline: {normalizedTask !== null ? formatVilnius(normalizedTask) : formatVilnius(tdl)}
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
                   </li>
                 ))}
               </ul>
@@ -495,11 +582,41 @@ export default function ChallengeRoom() {
               <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: 16 }}>
                 {task.description ?? task.Description}
               </p>
-              {task.deadline && (
-                <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
-                  Deadline: {new Date(task.deadline).toLocaleString()}
-                </p>
-              )}
+              {(() => {
+                const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(task.id ?? task.Id))
+                const dl = meta?.deadline ?? meta?.Deadline
+                if (dl) {
+                  const countdown = countdownByTask[String(task.id ?? task.Id)] || ''
+                  const normalized = (() => {
+                    const s = String(dl)
+                    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                    const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                    const ms = Date.parse(normalizedStr)
+                    return Number.isFinite(ms) ? ms : null
+                  })()
+                  return (
+                    <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
+                      Deadline: {normalized !== null ? formatVilnius(normalized) : formatVilnius(dl)} {countdown && `(${countdown})`}
+                    </p>
+                  )
+                }
+                const tdl = task.deadline ?? task.Deadline
+                if (tdl) {
+                  const normalizedTask = (() => {
+                    const s = String(tdl)
+                    const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
+                    const normalizedStr = hasTz ? s : (s.endsWith('Z') ? s : s + 'Z')
+                    const ms = Date.parse(normalizedStr)
+                    return Number.isFinite(ms) ? ms : null
+                  })()
+                  return (
+                    <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 14, marginTop: 8 }}>
+                      Deadline: {normalizedTask !== null ? formatVilnius(normalizedTask) : formatVilnius(tdl)}
+                    </p>
+                  )
+                }
+                return null
+              })()}
             </div>
           )
         )}
