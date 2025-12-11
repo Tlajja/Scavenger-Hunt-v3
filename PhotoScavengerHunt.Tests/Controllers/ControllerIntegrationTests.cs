@@ -30,8 +30,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
             var request = new RegisterRequest(
                 Email: "controller@test.com",
                 Password: "password123",
-                Username: "ControllerUser",
-                Age: 25
+                Username: "ControllerUser"
             );
 
             var result = await _controller.Register(request);
@@ -44,7 +43,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task Register_InvalidRequest_ReturnsBadRequest()
         {
-            var request = new RegisterRequest("", "pass", "user", 25);
+            var request = new RegisterRequest("", "pass", "user");
 
             var result = await _controller.Register(request);
 
@@ -56,7 +55,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         {
             // First register
             await _service.RegisterAsync(new RegisterRequest(
-                "login@test.com", "password123", "LoginUser", 25));
+                "login@test.com", "password123", "LoginUser"));
             
             var request = new LoginRequest("LoginUser", "password123");
 

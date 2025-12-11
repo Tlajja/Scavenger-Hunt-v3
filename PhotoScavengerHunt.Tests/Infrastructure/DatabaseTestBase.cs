@@ -60,7 +60,6 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 { 
                     Id = 100, 
                     Name = "TestUser1", 
-                    Age = 25, 
                     Email = "test1@test.com", 
                     IsRegistered = true, 
                     PasswordHash = "hash1" 
@@ -69,7 +68,6 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 { 
                     Id = 101, 
                     Name = "TestUser2", 
-                    Age = 30, 
                     Email = "test2@test.com", 
                     IsRegistered = true, 
                     PasswordHash = "hash2" 
@@ -78,7 +76,6 @@ namespace PhotoScavengerHunt.Tests.Infrastructure
                 { 
                     Id = 102, 
                     Name = "TestUser3", 
-                    Age = 35, 
                     Email = "test3@test.com", 
                     IsRegistered = false  // Unregistered user for testing
                 }

@@ -9,6 +9,7 @@ namespace PhotoScavengerHunt.Controllers
     {
         private readonly IPhotoSubmissionService _submissionService;
         private readonly IVotesService _votesService;
+        
         public PhotoSubmissionsController(IPhotoSubmissionService submissionService, IVotesService votesService)
         {
             _submissionService = submissionService;

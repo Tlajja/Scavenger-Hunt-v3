@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { API_BASE } from '../services/api.js'
+import CommentSection from '../components/CommentSection.jsx'
 
 export default function Vote() {
   const [challenges, setChallenges] = useState([])
@@ -9,6 +10,7 @@ export default function Vote() {
   const [error, setError] = useState('')
   const [tasksForChallenge, setTasksForChallenge] = useState([])
   const [selectedTask, setSelectedTask] = useState(null)
+  const userId = Number(localStorage.getItem('userId') || 0)
 
   useEffect(() => {
     async function load() {
@@ -172,6 +174,7 @@ export default function Vote() {
               <div>Votes: {s.votes ?? s.Votes ?? 0}</div>
               <button onClick={() => vote(s.id ?? s.Id)}>Vote</button>
             </div>
+            <CommentSection submissionId={s.id} currentUserId={userId} />
           </div>
         ))}
       </div>

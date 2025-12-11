@@ -26,72 +26,53 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateUserAsync_ValidInput_ReturnsSuccess()
         {
             var name = "NewTestUser";
-            var age = 28;
 
-            var result = await _service.CreateUserAsync(name, age);
+            var result = await _service.CreateUserAsync(name);
 
             Assert.True(result.Success);
             Assert.Empty(result.Error);
             Assert.NotNull(result.User);
             Assert.Equal(name, result.User.Name);
-            Assert.Equal(age, result.User.Age);
             Assert.False(result.User.IsRegistered); // Default should be false
         }
 
         [Theory]
-        [InlineData("ab", 25)] // Min length (2 chars)
-        [InlineData("ABCDEFGHIJ0123456789", 25)] // Max length (20 chars)
-        [InlineData("User123", 25)] 
-        [InlineData("ABC", 1)] // Min age
-        [InlineData("User", 125)] // Max age
-        public async Task CreateUserAsync_ValidEdgeCases_ReturnsSuccess(string name, int age)
+        [InlineData("ab")] // Min length (2 chars)
+        [InlineData("ABCDEFGHIJ0123456789")] // Max length (20 chars)
+        [InlineData("User123")] 
+        public async Task CreateUserAsync_ValidEdgeCases_ReturnsSuccess(string name)
         {
-            var result = await _service.CreateUserAsync(name, age);
+            var result = await _service.CreateUserAsync(name);
 
             Assert.True(result.Success);
             Assert.NotNull(result.User);
         }
 
         [Theory]
-        [InlineData("a", 25, "Invalid username format")]
-        [InlineData("ABCDEFGHIJ01234567890", 25, "Invalid username format")] 
-        [InlineData("user name", 25, "Invalid username format")] 
-        [InlineData("user-name", 25, "Invalid username format")] 
-        [InlineData("user_name", 25, "Invalid username format")] 
-        [InlineData("user@name", 25, "Invalid username format")] 
-        [InlineData("", 25, "Invalid username format")] 
-        [InlineData("   ", 25, "Invalid username format")] 
+        [InlineData("a", "Invalid username format")]
+        [InlineData("ABCDEFGHIJ01234567890", "Invalid username format")] 
+        [InlineData("user name", "Invalid username format")] 
+        [InlineData("user-name", "Invalid username format")] 
+        [InlineData("user_name", "Invalid username format")] 
+        [InlineData("user@name", "Invalid username format")] 
+        [InlineData("", "Invalid username format")] 
+        [InlineData("   ", "Invalid username format")] 
         public async Task CreateUserAsync_InvalidUsername_ReturnsError(
-            string name, int age, string expectedErrorSubstring)
+            string name, string expectedErrorSubstring)
         {
-            var result = await _service.CreateUserAsync(name, age);
+            var result = await _service.CreateUserAsync(name);
 
             Assert.False(result.Success);
             Assert.Contains(expectedErrorSubstring, result.Error);
             Assert.Null(result.User);
         }
 
-        [Theory]
-        [InlineData("ValidUser", 0, "Invalid age value.")]
-        [InlineData("ValidUser", -1, "Invalid age value.")]
-        [InlineData("ValidUser", 126, "Invalid age value.")]
-        [InlineData("ValidUser", 1000, "Invalid age value.")]
-        public async Task CreateUserAsync_InvalidAge_ReturnsError(
-            string name, int age, string expectedError)
-        {
-            var result = await _service.CreateUserAsync(name, age);
-
-            Assert.False(result.Success);
-            Assert.Equal(expectedError, result.Error);
-        }
-
         [Fact]
         public async Task CreateUserAsync_DuplicateName_ReturnsError()
         {
             var name = "TestUser1";
-            var age = 30;
 
-            var result = await _service.CreateUserAsync(name, age);
+            var result = await _service.CreateUserAsync(name);
 
             Assert.False(result.Success);
             Assert.Equal("Username already exists.", result.Error);
@@ -188,16 +169,14 @@ namespace PhotoScavengerHunt.Tests.Services
         public async Task CreateUserAsync_IsPersisted()
         {
             var name = "PersistentUser";
-            var age = 32;
 
-            var createResult = await _service.CreateUserAsync(name, age);
+            var createResult = await _service.CreateUserAsync(name);
             var userId = createResult.User!.Id;
 
             var getResult = await _service.GetUserByIdAsync(userId);
 
             Assert.NotNull(getResult.User);
             Assert.Equal(name, getResult.User.Name);
-            Assert.Equal(age, getResult.User.Age);
         }
 
         [Fact]
@@ -228,9 +207,9 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             // Arrange - Database may be case-sensitive or case-insensitive
             // This test documents the current behavior
-            var result1 = await _service.CreateUserAsync("CaseTest", 25);
+            var result1 = await _service.CreateUserAsync("CaseTest");
             
-            var result2 = await _service.CreateUserAsync("CASETEST", 25);
+            var result2 = await _service.CreateUserAsync("CASETEST");
 
             Assert.True(result1.Success);
         }

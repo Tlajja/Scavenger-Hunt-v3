@@ -13,11 +13,11 @@ async function safeFetch(url, opts) {
 }
 
 // Authentication endpoints
-export async function register(email, password, username, age) {
+export async function register(email, password, username) {
  return await safeFetch('/api/authentication/register', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ Email: email, Password: password, Username: username, Age: age })
+ body: JSON.stringify({ Email: email, Password: password, Username: username })
  })
 }
 
@@ -170,4 +170,23 @@ export async function advanceChallenge(challengeId, userId) {
 // Get challenges the user participates in (private + public)
 export async function getMyChallenges(userId) {
  return await safeFetch(`/api/challenge/mine?userId=${Number(userId)}`, { method: 'GET' })
+}
+
+// Comments endpoints
+export async function getComments(submissionId) {
+  return await safeFetch(`/api/comments/${Number(submissionId)}`, { method: 'GET' })
+}
+
+export async function addComment(submissionId, userId, text) {
+  return await safeFetch(`/api/comments/${Number(submissionId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ UserId: Number(userId), Text: text })
+  })
+}
+
+export async function deleteComment(submissionId, commentId) {
+  return await safeFetch(`/api/comments/${Number(submissionId)}/${Number(commentId)}`, {
+    method: 'DELETE'
+  })
 }

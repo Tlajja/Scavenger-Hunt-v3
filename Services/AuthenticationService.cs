@@ -1,4 +1,4 @@
-﻿using PhotoScavengerHunt.Features.Users;
+using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
 using System.Security.Cryptography;
@@ -31,9 +31,6 @@ namespace PhotoScavengerHunt.Services
 
                 await _userRepo.EnsureEmailIsUniqueAsync(request.Email);
                 await _userRepo.EnsureUsernameIsValidAsync(request.Username);
-                
-                if (request.Age <= 0 || request.Age > 125)
-                    throw new ArgumentException("Invalid age value.");
 
                 string passwordHash = HashPassword(request.Password);
 
@@ -42,7 +39,6 @@ namespace PhotoScavengerHunt.Services
                     Email = request.Email,
                     PasswordHash = passwordHash,
                     Name = request.Username,
-                    Age = request.Age,
                     IsRegistered = true
                 };
 

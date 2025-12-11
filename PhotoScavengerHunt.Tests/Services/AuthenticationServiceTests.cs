@@ -26,8 +26,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new RegisterRequest(
                 Email: "newuser@test.com",
                 Password: "password123",
-                Username: "NewUser",
-                Age: 25
+                Username: "NewUser"
             );
 
             var result = await _service.RegisterAsync(request);
@@ -48,19 +47,17 @@ namespace PhotoScavengerHunt.Tests.Services
         }
 
         [Theory]
-        [InlineData("", "password123", "user", 25, "Email, password, and username are required.")]
-        [InlineData("test@test.com", "", "user", 25, "Email, password, and username are required.")]
-        [InlineData("test@test.com", "password123", "", 25, "Email, password, and username are required.")]
-        [InlineData("invalid-email", "password123", "user", 25, "Invalid email format.")]
-        [InlineData("test@test.com", "short", "user", 25, "Password must be at least 6 characters long.")]
-        [InlineData("test@test.com", "password123", "u", 25, "Invalid username format")]
-        [InlineData("test@test.com", "password123", "user with spaces", 25, "Invalid username format")]
-        [InlineData("test@test.com", "password123", "user", 0, "Invalid age value.")]
-        [InlineData("test@test.com", "password123", "user", 126, "Invalid age value.")]
+        [InlineData("", "password123", "user", "Email, password, and username are required.")]
+        [InlineData("test@test.com", "", "user", "Email, password, and username are required.")]
+        [InlineData("test@test.com", "password123", "", "Email, password, and username are required.")]
+        [InlineData("invalid-email", "password123", "user", "Invalid email format.")]
+        [InlineData("test@test.com", "short", "user", "Password must be at least 6 characters long.")]
+        [InlineData("test@test.com", "password123", "u", "Invalid username format")]
+        [InlineData("test@test.com", "password123", "user with spaces", "Invalid username format")]
         public async Task RegisterAsync_InvalidInput_ReturnsError(
-            string email, string password, string username, int age, string expectedError)
+            string email, string password, string username, string expectedError)
         {
-            var request = new RegisterRequest(email, password, username, age);
+            var request = new RegisterRequest(email, password, username);
 
             var result = await _service.RegisterAsync(request);
 
@@ -75,8 +72,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new RegisterRequest(
                 Email: "test1@test.com", // Already exists in seed data
                 Password: "password123",
-                Username: "UniqueUser",
-                Age: 25
+                Username: "UniqueUser"
             );
 
             var result = await _service.RegisterAsync(request);
@@ -91,8 +87,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var request = new RegisterRequest(
                 Email: "unique@test.com",
                 Password: "password123",
-                Username: "TestUser1", // Already exists in seed data
-                Age: 25
+                Username: "TestUser1" // Already exists in seed data
             );
 
             var result = await _service.RegisterAsync(request);
@@ -108,8 +103,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var registerRequest = new RegisterRequest(
                 Email: "login@test.com",
                 Password: "password123",
-                Username: "LoginUser",
-                Age: 25
+                Username: "LoginUser"
             );
             await _service.RegisterAsync(registerRequest);
 
@@ -173,8 +167,7 @@ namespace PhotoScavengerHunt.Tests.Services
             var registerRequest = new RegisterRequest(
                 Email: "wrongpass@test.com",
                 Password: "correctpass",
-                Username: "WrongPassUser",
-                Age: 25
+                Username: "WrongPassUser"
             );
             await _service.RegisterAsync(registerRequest);
 
@@ -189,8 +182,8 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task PasswordHashing_IsDeterministic()
         {
-            var request1 = new RegisterRequest("hash1@test.com", "samepass", "HashUser1", 25);
-            var request2 = new RegisterRequest("hash2@test.com", "samepass", "HashUser2", 25);
+            var request1 = new RegisterRequest("hash1@test.com", "samepass", "HashUser1");
+            var request2 = new RegisterRequest("hash2@test.com", "samepass", "HashUser2");
 
             await _service.RegisterAsync(request1);
             await _service.RegisterAsync(request2);

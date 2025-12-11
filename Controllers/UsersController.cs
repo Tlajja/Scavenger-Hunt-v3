@@ -15,9 +15,9 @@ namespace PhotoScavengerHunt.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateUser(string name, int age)
+        public async Task<IActionResult> CreateUser(string name)
         {
-            var result = await _userService.CreateUserAsync(name, age);
+            var result = await _userService.CreateUserAsync(name);
 
             if (!result.Success)
                 return BadRequest(result.Error);

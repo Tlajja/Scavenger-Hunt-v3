@@ -1,4 +1,5 @@
 using PhotoScavengerHunt.Features.Users;
+using System.Collections.Generic;
 
 namespace PhotoScavengerHunt.Repositories;
 
@@ -14,4 +15,6 @@ public interface IUserRepository
     Task EnsureUsernameIsValidAsync(string name);
     Task EnsureEmailIsUniqueAsync(string email);
     Task<UserProfile?> GetByNameAsync(string username);
+    Task<UserProfile> EnsureUserExistsByNameAsync(string username);
+    Task<Dictionary<int, string>> GetUserNamesAsync(IEnumerable<int> userIds);
 }

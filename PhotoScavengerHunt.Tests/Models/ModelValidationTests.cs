@@ -235,12 +235,11 @@ namespace PhotoScavengerHunt.Tests.Models
         [Fact]
         public void RegisterRequest_AllProperties_SetCorrectly()
         {
-            var request = new RegisterRequest("test@test.com", "pass123", "User", 25);
+            var request = new RegisterRequest("test@test.com", "pass123", "User");
             
             Assert.Equal("test@test.com", request.Email);
             Assert.Equal("pass123", request.Password);
             Assert.Equal("User", request.Username);
-            Assert.Equal(25, request.Age);
         }
     }
 

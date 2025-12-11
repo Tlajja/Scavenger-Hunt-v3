@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PhotoScavengerHunt.Migrations
 {
     [DbContext(typeof(PhotoScavengerHuntDbContext))]
-    partial class PhotoScavengerHuntDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251209132722_AddCommentUserName")]
+    partial class AddCommentUserName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,9 +46,6 @@ namespace PhotoScavengerHunt.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("TimerSeconds")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -382,9 +382,6 @@ namespace PhotoScavengerHunt.Migrations
                     b.Property<int>("TaskId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
-
                     b.HasKey("ChallengeId", "TaskId");
 
                     b.HasIndex("TaskId");
@@ -412,6 +409,10 @@ namespace PhotoScavengerHunt.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

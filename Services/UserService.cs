@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Services.Interfaces;
 using PhotoScavengerHunt.Repositories;
@@ -17,19 +17,15 @@ namespace PhotoScavengerHunt.Services
             _logger = logger;
         }
 
-        public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name, int age)
+        public async Task<(bool Success, string Error, UserProfile? User)> CreateUserAsync(string name)
         {
             try
             {
                 await _userRepo.EnsureUsernameIsValidAsync(name);
-                
-                if (age <= 0 || age > 125)
-                    throw new ArgumentException("Invalid age value.");
 
                 var profile = new UserProfile
                 {
-                    Name = name,
-                    Age = age
+                    Name = name
                 };
 
                 await _userRepo.AddAsync(profile);
