@@ -263,10 +263,15 @@ export default function ChallengeRoom() {
 
   async function handleVote(subId) {
     try {
-      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote`, { method: 'POST' })
+      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
-        const txt = await res.text()
-        setMessage(`Vote failed: ${txt}`)
+        const raw = await res.text()
+        let msg = raw
+        try {
+          const j = JSON.parse(raw)
+          msg = j.error || j.message || raw
+        } catch {}
+        setMessage(`Vote failed: ${msg}`)
         return
       }
       setMessage('Vote recorded!')
