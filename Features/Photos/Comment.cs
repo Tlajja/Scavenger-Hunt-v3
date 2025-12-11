@@ -9,6 +9,8 @@ namespace PhotoScavengerHunt.Features.Photos
         public int UserId { get; set; }
         public string Text { get; set; } = "";
         public DateTime Timestamp { get; set; }
+
+        [NotMapped]
         public string UserName { get; set; } = "";
 
         public int PhotoSubmissionId { get; set; }
