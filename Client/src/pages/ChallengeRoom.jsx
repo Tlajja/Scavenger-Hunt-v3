@@ -236,19 +236,12 @@ export default function ChallengeRoom() {
       arr.forEach(s => {
         const uid = s.userId ?? s.UserId ?? 0
         const votes = Number(s.votes ?? s.Votes ?? 0)
-        const rawPhoto = s.photoUrl ?? s.PhotoUrl ?? ''
-        const photoUrl = rawPhoto
-          ? (rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://')
-              ? rawPhoto
-              : ((API_BASE || '').replace(/\/$/, '') + (rawPhoto.startsWith('/') ? rawPhoto : '/' + rawPhoto)))
-          : null
 
         if (!map.has(uid)) {
           map.set(uid, {
             userId: uid,
             userName: s.userName ?? s.UserName ?? `User ${uid}`,
-            votes,
-            photoUrl
+            votes
           })
         } else {
           const item = map.get(uid)
@@ -872,25 +865,6 @@ export default function ChallengeRoom() {
                         }}>
                           {medal || `#${index + 1}`}
                         </div>
-                        {entry.photoUrl && (
-                          <div style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}>
-                            <img
-                              src={entry.photoUrl}
-                              alt={entry.userName}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          </div>
-                        )}
                         <div style={{ flex: 1 }}>
                           <div style={{ color: 'white', fontWeight: 600, fontSize: 18 }}>
                             {entry.userName}
