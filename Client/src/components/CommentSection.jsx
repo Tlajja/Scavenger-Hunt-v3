@@ -219,7 +219,7 @@ export default function CommentSection({ submissionId, currentUserId }) {
                         <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.6)', marginBottom: 4 }}>
                           {userName} • {formatTimestamp(timestamp)}
                         </div>
-                        <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
+                        <div style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14, wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'pre-wrap', maxWidth: '100%' }}>
                           {text}
                         </div>
                       </div>
