@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChallengeById, getTaskById, leaveChallenge, advanceChallenge, API_BASE } from '../services/api.js'
 import CommentSection from '../components/CommentSection.jsx'
@@ -43,6 +43,9 @@ export default function ChallengeRoom() {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  
+  const scrollContainerRef = useRef(null)
+  const refreshTimeoutRef = useRef(null)
 
   const fmtVilnius = new Intl.DateTimeFormat(undefined, {
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -167,7 +170,6 @@ export default function ChallengeRoom() {
 // load submissions for a specific task (used in voting)
   async function loadSubmissionsByTask(taskId) {
     try {
-      setSubmissions([])
       const tid = Number(taskId)
       if (!tid) { setSubmissions([]); return }
       // use explicit task route to avoid ambiguity
@@ -254,10 +256,20 @@ export default function ChallengeRoom() {
     } catch {}
   }
 
+
   async function handleVote(subId) {
     try {
+      // Optimistically update the vote count immediately (like YouTube)
+      setSubmissions(prev => prev.map(s => 
+        s.id === subId ? { ...s, votes: (s.votes ?? 0) + 1 } : s
+      ))
+      
       const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
+        // Revert optimistic update on error
+        setSubmissions(prev => prev.map(s => 
+          s.id === subId ? { ...s, votes: Math.max(0, (s.votes ?? 1) - 1) } : s
+        ))
         const raw = await res.text()
         let msg = raw
         try {
@@ -269,9 +281,26 @@ export default function ChallengeRoom() {
       }
       setMessage('Vote recorded!')
       setTimeout(() => setMessage(''), 2000)
-      // refresh current task votes if any
-      if (voteTaskId) await loadSubmissionsByTask(voteTaskId)
-      else await loadSubmissions()
+      
+      // Refresh in background after a delay to sync with server (so other users see updates)
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+      refreshTimeoutRef.current = setTimeout(async () => {
+        const savedScroll = window.scrollY || document.documentElement.scrollTop
+        if (voteTaskId) {
+          await loadSubmissionsByTask(voteTaskId)
+        } else {
+          await loadSubmissions()
+        }
+        // Restore scroll position after refresh
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedScroll, behavior: 'instant' })
+          setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 100)
+        })
+        refreshTimeoutRef.current = null
+      }, 1500) // Refresh after 1.5 seconds
     } catch (e) {
       setMessage(String(e))
     }
@@ -290,6 +319,37 @@ export default function ChallengeRoom() {
 
   async function handleAdvance() {
     if (!confirm('Advance to next stage?')) return
+    
+    const status = Number(challenge?.status ?? 0)
+    
+    // If we're in voting stage (status 1), sync all votes before advancing
+    if (status === 1) {
+      setMessage('Syncing votes...')
+      
+      // Cancel any pending refresh timeouts
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = null
+      }
+      
+      // Refresh submissions for all tasks to ensure votes are synced
+      const taskIds = tasksForChallenge.map(t => t.id ?? t.Id).filter(Boolean)
+      const savedScroll = window.scrollY || document.documentElement.scrollTop
+      
+      try {
+        // Refresh all tasks' submissions
+        await Promise.all(taskIds.map(taskId => loadSubmissionsByTask(taskId)))
+        
+        // Restore scroll position
+        window.scrollTo({ top: savedScroll, behavior: 'instant' })
+        
+        // Small delay to ensure server has processed all votes
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch (e) {
+        console.error('Error syncing votes:', e)
+      }
+    }
+    
     setMessage('Advancing...')
     const res = await advanceChallenge(challengeId, userId)
     if (!res.ok) {
@@ -784,7 +844,7 @@ export default function ChallengeRoom() {
                   No submissions yet
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: 24 }}>
+                <div ref={scrollContainerRef} style={{ display: 'grid', gap: 24 }}>
                   {submissions.map(s => (
                     <div key={s.id} style={{
                       background: 'rgba(100, 108, 255, 0.05)',
