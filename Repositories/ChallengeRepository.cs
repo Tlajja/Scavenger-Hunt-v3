@@ -82,6 +82,14 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge == null)
                 throw new EntityNotFoundException("Challenge not found.");
 
+            var taskIds = challenge.ChallengeTasks.Select(ct => ct.TaskId).Distinct().ToList();
+            var exclusiveTaskIds = await _dbContext.ChallengeTasks
+                .Where(ct => taskIds.Contains(ct.TaskId))
+                .GroupBy(ct => ct.TaskId)
+                .Where(g => g.Count() == 1 && g.Any(x => x.ChallengeId == challengeId))
+                .Select(g => g.Key)
+                .ToListAsync();
+
             var photos = await _dbContext.Photos.Where(p => p.ChallengeId == challengeId).ToListAsync();
             if (photos.Any())
             {
@@ -93,6 +101,15 @@ namespace PhotoScavengerHunt.Repositories
 
             if (challenge.ChallengeTasks != null && challenge.ChallengeTasks.Any())
                 _dbContext.ChallengeTasks.RemoveRange(challenge.ChallengeTasks);
+
+            if (exclusiveTaskIds.Any())
+            {
+                var tasks = await _dbContext.Tasks.Where(t => exclusiveTaskIds.Contains(t.Id)).ToListAsync();
+                if (tasks.Any())
+                {
+                    _dbContext.Tasks.RemoveRange(tasks);
+                }
+            }
 
             _dbContext.Challenges.Remove(challenge);
         }
