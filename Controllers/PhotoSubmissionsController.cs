@@ -92,9 +92,9 @@ namespace PhotoScavengerHunt.Controllers
         }
 
         [HttpPost("{id}/vote")]
-        public async Task<IActionResult> VoteOnSubmission(int id)
+        public async Task<IActionResult> VoteOnSubmission(int id, [FromQuery] int userId)
         {
-            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(id);
+            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(id, userId);
             if (!success)
             {
                 if (errorMessage?.Contains("not") ?? false)

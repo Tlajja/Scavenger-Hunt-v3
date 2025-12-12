@@ -111,15 +111,20 @@ export default function Vote() {
     try {
       const id = subId ?? (typeof subId === 'object' ? subId.id : null)
       if (!id) throw new Error('Invalid submission id')
-      const res = await fetch(`/api/photosubmissions/${id}/vote`, { method: 'POST' })
+      const res = await fetch(`/api/photosubmissions/${id}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
-        const txt = await res.text()
-        throw new Error(`Vote failed (${res.status}): ${txt}`)
+        const raw = await res.text()
+        let msg = raw
+        try {
+          const j = JSON.parse(raw)
+          msg = j.error || j.message || raw
+        } catch {}
+        throw new Error(`Vote failed: ${msg}`)
       }
       // refresh
       if (selected) await loadSubmissions(selected)
     } catch (e) {
-      setError(String(e))
+      setError(String(e.message || e))
     }
   }
 

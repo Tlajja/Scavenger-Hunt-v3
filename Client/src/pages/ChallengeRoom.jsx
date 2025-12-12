@@ -263,10 +263,15 @@ export default function ChallengeRoom() {
 
   async function handleVote(subId) {
     try {
-      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote`, { method: 'POST' })
+      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
-        const txt = await res.text()
-        setMessage(`Vote failed: ${txt}`)
+        const raw = await res.text()
+        let msg = raw
+        try {
+          const j = JSON.parse(raw)
+          msg = j.error || j.message || raw
+        } catch {}
+        setMessage(`Vote failed: ${msg}`)
         return
       }
       setMessage('Vote recorded!')
@@ -833,15 +838,22 @@ export default function ChallengeRoom() {
           {activeTab === 'leaderboard' && status === 2 && (
             <div>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Final Results</h3>
-              {leaderboard.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', padding: 40 }}>
-                  No results available
-                </div>
-              ) : (
-                <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {leaderboard.map((entry, index) => {
-                    const rank = entry.rank ?? (index + 1)
-                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
+              {(() => {
+                const hasAnyVotes = leaderboard.some(e => Number(e.votes ?? e.wins ?? e.totalVotes ?? 0) > 0)
+                if (!leaderboard.length || !hasAnyVotes) {
+                  return (
+                    <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', padding: 40 }}>
+                      No submissions received any votes. There are no winners.
+                    </div>
+                  )
+                }
+                return (
+                  <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {leaderboard.map((entry, index) => {
+                      const total = Number(entry.votes ?? entry.wins ?? entry.totalVotes ?? 0)
+                      if (total === 0) return null
+                      const rank = entry.rank ?? (index + 1)
+                      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
                     return (
                       <li key={entry.userId ?? index} style={{
                         background: 'rgba(100, 108, 255, 0.05)',
@@ -891,7 +903,7 @@ export default function ChallengeRoom() {
                     )
                   })}
                 </ol>
-              )}
+              )})()}
             </div>
           )}
         </div>

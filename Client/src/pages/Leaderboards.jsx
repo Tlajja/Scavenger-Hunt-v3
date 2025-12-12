@@ -136,9 +136,18 @@ export default function Leaderboards() {
 
       {loading && <div>Loading leaderboard…</div>}
 
-      {board && (
+      {board && board.entries.length === 0 ? (
+        <div style={{ textAlign: 'center', color: 'rgba(0, 0, 0, 0.6)', padding: 40 }}>
+          No submissions or all submissions have zero votes. There are no winners.
+        </div>
+      ) : board ? (
         <div>
           <h3>Leaderboard ({board.source})</h3>
+          {(Array.isArray(board.entries) ? board.entries : []).every(e => (e.votes ?? e.totalVotes ?? 0) === 0) ? (
+            <div style={{ textAlign: 'center', color: 'rgba(0, 0, 0, 0.6)', padding: 40 }}>
+              No submissions or all submissions have zero votes. There are no winners.
+            </div>
+          ) : (
           <ol style={{ paddingLeft: 18 }}>
             {(Array.isArray(board.entries) ? board.entries : []).map((e, i) => {
               const display = board.source === 'computed' ? (e.votes ?? 0) : (e.wins ?? e.totalVotes ?? 0)
@@ -162,8 +171,9 @@ export default function Leaderboards() {
               )
             })}
           </ol>
+          )}
         </div>
-      )}
+      ) : null}
 
       {!loading && !board && <div>No leaderboard selected.</div>}
     </div>
