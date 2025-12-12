@@ -128,6 +128,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Where(p => p.ChallengeId == challengeId)
                 .GroupBy(p => p.UserId)
                 .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.Votes) })
+                .Where(x => x.Total > 0)
                 .ToListAsync();
 
             if (grouped == null || grouped.Count == 0) return new List<int>();
