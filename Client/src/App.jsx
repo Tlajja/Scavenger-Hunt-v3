@@ -16,11 +16,13 @@ import MyChallenges from './pages/MyChallenges'
 import ChallengeRoom from './pages/ChallengeRoom'
 import Guide from './pages/Guide'
 import { useActiveUsers } from './context/ActiveUsersContext.jsx'
+import { deleteAccount } from './services/api.js'
 
 function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('userId'))
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const navigate = useNavigate()
   const { activeUsersCount } = useActiveUsers()
 
@@ -46,6 +48,40 @@ function Header() {
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [showProfileMenu, showGuide])
+
+  async function handleDeleteAccount() {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data.'
+    )
+    
+    if (!confirmed) return
+
+    setDeleting(true)
+    setShowProfileMenu(false)
+
+    try {
+      const res = await deleteAccount(userId)
+      if (res.ok) {
+        // Clear all user data
+        localStorage.removeItem('userId')
+        localStorage.removeItem('username')
+        localStorage.removeItem('challengeId')
+        localStorage.removeItem('challengeName')
+        window.dispatchEvent(new Event('auth-changed'))
+        navigate('/login')
+      } else {
+        const errorMsg = res.data?.message || res.text || 'Failed to delete account'
+        alert(`Error: ${errorMsg}`)
+      }
+    } catch (error) {
+      alert('An error occurred while deleting your account. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <header style={{
@@ -215,6 +251,35 @@ function Header() {
                     onMouseLeave={(e) => e.target.style.background = 'transparent'}
                   >
                     Log Out
+                  </button>
+                  <div style={{
+                    width: '100%',
+                    height: 1,
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    margin: '4px 0'
+                  }} />
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#ff6b6b',
+                      padding: '12px 20px',
+                      textAlign: 'left',
+                      cursor: deleting ? 'not-allowed' : 'pointer',
+                      fontSize: 15,
+                      opacity: deleting ? 0.6 : 1,
+                      transition: 'background 0.2s',
+                      boxShadow: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!deleting) e.target.style.background = 'rgba(255, 107, 107, 0.1)'
+                    }}
+                    onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                  >
+                    {deleting ? 'Deleting...' : 'Delete Account'}
                   </button>
                 </div>
               )}

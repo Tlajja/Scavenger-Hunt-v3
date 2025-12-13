@@ -190,3 +190,10 @@ export async function deleteComment(submissionId, commentId) {
     method: 'DELETE'
   })
 }
+
+// User account endpoints
+export async function deleteAccount(userId) {
+  return await safeFetch(`/api/users/${Number(userId)}`, {
+    method: 'DELETE'
+  })
+}
