@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Exceptions;
@@ -10,6 +10,7 @@ namespace PhotoScavengerHunt.Services
 {
     public class CommentService : ICommentService
     {
+        private const int MaxCommentLength = 500;
         private readonly IPhotoRepository _photoRepo;
         private readonly IUserRepository _userRepo;
         private readonly ILogger<CommentService> _logger;
@@ -49,6 +50,9 @@ namespace PhotoScavengerHunt.Services
             {
                 if (string.IsNullOrWhiteSpace(request.Text))
                     return (false, "Comment text cannot be empty.", null);
+
+                if (request.Text.Length > MaxCommentLength)
+                    return (false, $"Comment cannot exceed {MaxCommentLength} characters.", null);
 
                 var submission = await _photoRepo.GetSubmissionWithCommentsAsync(submissionId);
                 if (submission == null)
