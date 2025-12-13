@@ -269,13 +269,25 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task AddCommentAsync_LongText_AcceptsFullText()
         {
-            var longText = new string('X', 1000);
+            var longText = new string('X', 500);
             var request = new AddCommentRequest(100, longText);
 
             var result = await _service.AddCommentAsync(400, request);
 
             Assert.True(result.Success);
             Assert.Equal(longText, result.Comments![0].Text);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ExceedsMaxLength_ReturnsError()
+        {
+            var tooLongText = new string('X', 501);
+            var request = new AddCommentRequest(100, tooLongText);
+
+            var result = await _service.AddCommentAsync(400, request);
+
+            Assert.False(result.Success);
+            Assert.Contains("cannot exceed 500 characters", result.Error);
         }
     }
 }
