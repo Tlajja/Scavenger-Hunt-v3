@@ -33,31 +33,6 @@ namespace PhotoScavengerHunt.Repositories
             return await _dbContext.Tasks.ToListAsync();
         }
 
-        public async Task<List<HuntTask>> GetAllNonExpiredAsync()
-        {
-            return await _dbContext.Tasks
-                .Where(t => t.Deadline == null || t.Deadline > DateTime.UtcNow)
-                .ToListAsync();
-        }
-
-        public async Task<HuntTask?> GetRandomAsync(int? excludeAuthorId = null)
-        {
-            // Only consider tasks that are not expired (no deadline or deadline in the future)
-            var query = _dbContext.Tasks
-                .Where(t => t.Deadline == null || t.Deadline > DateTime.UtcNow);
-
-            if (excludeAuthorId.HasValue)
-            {
-                query = query.Where(t => t.AuthorId != excludeAuthorId.Value);
-            }
-
-            // Order by NEWID() for SQL Server randomness; fallback to client-side for in-memory
-            // EF Core will translate OrderBy(Guid.NewGuid()) to NEWID() on SQL Server
-            return await query
-                .OrderBy(_ => Guid.NewGuid())
-                .FirstOrDefaultAsync();
-        }
-
         public async Task<HuntTask?> GetRandomForUserAsync(int userId)
         {
             // Only consider tasks that are not expired (no deadline or deadline in the future)
