@@ -8,6 +8,7 @@ export default function CreateChallenge() {
 
     const [challengeName, setChallengeName] = useState('')
     const [isPrivate, setIsPrivate] = useState(false)
+    const [maxParticipants, setMaxParticipants] = useState('')
     const [tasks, setTasks] = useState([])
     const [selectedTaskIds, setSelectedTaskIds] = useState([])
     const [deadline, setDeadline] = useState('')
@@ -143,8 +144,9 @@ export default function CreateChallenge() {
         try {
             const iso = toIsoForServer(deadline)
             const ids = selectedTaskIds.map(Number)
+            const maxParts = maxParticipants.trim() ? Number(maxParticipants) : null
 
-            const res = await createChallenge(challengeName.trim(), userId, ids, iso, isPrivate)
+            const res = await createChallenge(challengeName.trim(), userId, ids, iso, isPrivate, maxParts)
             if (!res.ok) {
                 setError(res.data?.error || res.data?.message || res.text || 'Failed to create challenge')
                 return
@@ -453,6 +455,18 @@ export default function CreateChallenge() {
                         >
                             Leave blank for 7 days from now
                         </div>
+                    </div>
+
+                    <div style={{ marginBottom: 20 }}>
+                        <label>Max Participants (optional, default: 10)</label>
+                        <input
+                            type="number"
+                            min="1"
+                            value={maxParticipants}
+                            onChange={e => setMaxParticipants(e.target.value)}
+                            placeholder="Leave empty for default (10)"
+                            disabled={creating}
+                        />
                     </div>
 
                     <div style={{ marginBottom: 24 }}>

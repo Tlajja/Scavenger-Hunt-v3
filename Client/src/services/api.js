@@ -134,7 +134,7 @@ export async function getChallengeById(id) {
  return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false) {
+export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false, maxParticipants = null) {
  const payload = {
  Name: name,
  CreatorId: Number(creatorId),
@@ -142,6 +142,7 @@ export async function createChallenge(name, creatorId, taskIds, deadlineIso = nu
  IsPrivate: !!isPrivate,
  }
  if (deadlineIso) payload.Deadline = deadlineIso
+ if (maxParticipants !== null && maxParticipants !== undefined) payload.MaxParticipants = Number(maxParticipants)
  return await safeFetch('/api/challenge', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },

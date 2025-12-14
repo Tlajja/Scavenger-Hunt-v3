@@ -94,7 +94,8 @@ namespace PhotoScavengerHunt.Services
                 taskIds: taskIdList,
                 isPrivate: request.IsPrivate,
                 joinCode: joinCode,
-                deadline: request.Deadline);
+                deadline: request.Deadline,
+                maxParticipants: request.MaxParticipants);
 
             await _challengeRepo.AddAsync(challenge);
             await _challengeRepo.SaveChangesAsync();
@@ -140,7 +141,7 @@ namespace PhotoScavengerHunt.Services
 
             var challenge = await _challengeRepo.GetByJoinCodeAsync(code);
 
-            await _participantRepo.EnsureUserCanJoinChallengeAsync(request.UserId, challenge.Id);
+            await _participantRepo.EnsureUserCanJoinChallengeAsync(request.UserId, challenge.Id, challenge.MaxParticipants ?? 10);
 
             var participant = new ChallengeParticipant
             {

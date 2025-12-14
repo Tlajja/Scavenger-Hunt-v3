@@ -45,7 +45,7 @@ namespace PhotoScavengerHunt.Repositories
             return Task.CompletedTask;
         }
 
-        public async Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId)
+        public async Task EnsureUserCanJoinChallengeAsync(int userId, int challengeId, int maxParticipants)
         {
             // check if user exists
             var exists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
@@ -61,6 +61,13 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync(cp => cp.UserId == userId && cp.ChallengeId == challengeId);
             if (existingAny != null)
                 throw new ValidationException("User is already a participant in this challenge.");
+
+            // Check participant limit
+            var participantCount = await _dbContext.ChallengeParticipants
+                .Where(cp => cp.ChallengeId == challengeId)
+                .CountAsync();
+            if (participantCount >= maxParticipants)
+                throw new LimitExceededException($"This challenge is full. Maximum {maxParticipants} participant(s) allowed.");
         }
 
         public async Task<ChallengeParticipant> EnsureParticipantExistsAsync(int challengeId, int userId)
