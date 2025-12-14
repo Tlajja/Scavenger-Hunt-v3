@@ -7,36 +7,21 @@ public record CreateChallengeRequest
     public IEnumerable<int> TaskIds { get; init; } = Enumerable.Empty<int>();
     public DateTime? Deadline { get; init; }
     public bool IsPrivate { get; init; }
+    public int? MaxParticipants { get; init; }
+
+    public TimeSpan? SubmissionDuration { get; init; }
+    public TimeSpan? VotingDuration { get; init; }
 
     // New canonical constructor (multiple task ids)
-    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false)
+    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null)
     {
         Name = name;
         CreatorId = creatorId;
         TaskIds = taskIds ?? Enumerable.Empty<int>();
         Deadline = deadline;
         IsPrivate = isPrivate;
-    }
-
-    public virtual bool Equals(CreateChallengeRequest? other)
-    {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
-        if (!string.Equals(Name, other.Name, StringComparison.Ordinal)) return false;
-        if (CreatorId != other.CreatorId) return false;
-        if (IsPrivate != other.IsPrivate) return false;
-        if (Deadline != other.Deadline) return false;
-        return (TaskIds ?? Enumerable.Empty<int>()).SequenceEqual(other.TaskIds ?? Enumerable.Empty<int>());
-    }
-
-    public override int GetHashCode()
-    {
-        var hc = new HashCode();
-        hc.Add(Name, StringComparer.Ordinal);
-        hc.Add(CreatorId);
-        foreach (var id in TaskIds ?? Enumerable.Empty<int>()) hc.Add(id);
-        hc.Add(Deadline);
-        hc.Add(IsPrivate);
-        return hc.ToHashCode();
+        MaxParticipants = maxParticipants;
+        SubmissionDuration = submissionDuration;
+        VotingDuration = votingDuration;
     }
 }

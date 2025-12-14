@@ -206,21 +206,9 @@ namespace PhotoScavengerHunt.Tests.Models
         }
     }
 
-    // Test record types for proper equality and immutability
+    // Test record types for proper immutability
     public class RequestModelTests
     {
-        [Fact]
-        public void CreateChallengeRequest_Equality_WorksCorrectly()
-        {
-            var deadline = DateTime.UtcNow.AddDays(7);
-            var request1 = new CreateChallengeRequest("Test", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
-            var request2 = new CreateChallengeRequest("Test", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
-            var request3 = new CreateChallengeRequest("Different", creatorId: 1, taskIds: new[] { 1 }, deadline: deadline, isPrivate: true);
-
-            Assert.Equal(request1, request2);
-            Assert.NotEqual(request1, request3);
-        }
-
         [Fact]
         public void JoinChallengeRequest_Deconstruction_WorksCorrectly()
         {

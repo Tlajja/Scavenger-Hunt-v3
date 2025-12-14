@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using PhotoScavengerHunt.Features.Photos;
 using PhotoScavengerHunt.Services.Interfaces;
@@ -19,9 +19,16 @@ namespace PhotoScavengerHunt.Controllers
         [HttpPost("{submissionId}")]
         public async Task<IActionResult> AddComment(int submissionId, [FromBody] AddCommentRequest request)
         {
+            const int MaxCommentLength = 500;
+            
             if (string.IsNullOrWhiteSpace(request.Text))
             {
                 return BadRequest("Comment text cannot be empty.");
+            }
+
+            if (request.Text.Length > MaxCommentLength)
+            {
+                return BadRequest($"Comment cannot exceed {MaxCommentLength} characters.");
             }
 
             var result = await _commentService.AddCommentAsync(submissionId, request);

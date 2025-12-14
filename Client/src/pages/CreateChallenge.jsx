@@ -8,6 +8,7 @@ export default function CreateChallenge() {
 
     const [challengeName, setChallengeName] = useState('')
     const [isPrivate, setIsPrivate] = useState(false)
+    const [maxParticipants, setMaxParticipants] = useState('')
     const [tasks, setTasks] = useState([])
     const [selectedTaskIds, setSelectedTaskIds] = useState([])
     const [deadline, setDeadline] = useState('')
@@ -21,6 +22,25 @@ export default function CreateChallenge() {
     const [taskDeadlineMode, setTaskDeadlineMode] = useState('none')
     const [creatingTask, setCreatingTask] = useState(false)
     const [generating, setGenerating] = useState(false)
+    const [submissionMinutes, setSubmissionMinutes] = useState('1440') // default 1 day
+    const [votingMinutes, setVotingMinutes] = useState('1440') // default 1 day
+    const [submissionValue, setSubmissionValue] = useState('1')
+    const [submissionUnit, setSubmissionUnit] = useState('days')
+    const [votingValue, setVotingValue] = useState('1')
+    const [votingUnit, setVotingUnit] = useState('days')
+
+   // Update minutes when value or unit changes
+   React.useEffect(() => {
+       const val = Number(submissionValue) || 0
+       const mins = submissionUnit === 'days' ? val * 1440 : submissionUnit === 'hours' ? val * 60 : val
+       setSubmissionMinutes(String(mins))
+   }, [submissionValue, submissionUnit])
+
+   React.useEffect(() => {
+       const val = Number(votingValue) || 0
+       const mins = votingUnit === 'days' ? val * 1440 : votingUnit === 'hours' ? val * 60 : val
+       setVotingMinutes(String(mins))
+   }, [votingValue, votingUnit])
 
     function toIsoForServer(dtLocal) {
         if (!dtLocal) return null
@@ -143,8 +163,11 @@ export default function CreateChallenge() {
         try {
             const iso = toIsoForServer(deadline)
             const ids = selectedTaskIds.map(Number)
+            const maxParts = maxParticipants.trim() ? Number(maxParticipants) : null
+            const subMinutes = Math.max(1, Math.min(10080, Number(submissionMinutes) || 60))
+            const voteMinutes = Math.max(1, Math.min(10080, Number(votingMinutes) || 60))
 
-            const res = await createChallenge(challengeName.trim(), userId, ids, iso, isPrivate)
+            const res = await createChallenge(challengeName.trim(), userId, ids, iso, isPrivate, maxParts, subMinutes, voteMinutes)
             if (!res.ok) {
                 setError(res.data?.error || res.data?.message || res.text || 'Failed to create challenge')
                 return
@@ -304,9 +327,9 @@ export default function CreateChallenge() {
                             </div>
 
                             <div style={{ marginBottom: 16 }}>
-                                <label>Task Deadline Mode</label>
+                                <label>Task Timer</label>
 
-                                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'nowrap' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <input
                                             type="radio"
@@ -316,19 +339,7 @@ export default function CreateChallenge() {
                                             onChange={() => setTaskDeadlineMode('none')}
                                             disabled={creatingTask}
                                         />
-                                        <span>No deadline</span>
-                                    </label>
-
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <input
-                                            type="radio"
-                                            name="dlmode"
-                                            value="absolute"
-                                            checked={taskDeadlineMode === 'absolute'}
-                                            onChange={() => setTaskDeadlineMode('absolute')}
-                                            disabled={creatingTask}
-                                        />
-                                        <span>Fixed deadline</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>No timer</span>
                                     </label>
 
                                     <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -340,30 +351,9 @@ export default function CreateChallenge() {
                                             onChange={() => setTaskDeadlineMode('timer')}
                                             disabled={creatingTask}
                                         />
-                                        <span>Timer</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>Timer</span>
                                     </label>
                                 </div>
-
-                                {taskDeadlineMode === 'absolute' && (
-                                    <div style={{ marginTop: 10 }}>
-                                        <label>Task Deadline</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={taskDeadline}
-                                            onChange={e => setTaskDeadline(e.target.value)}
-                                            disabled={creatingTask}
-                                        />
-                                        <div
-                                            style={{
-                                                fontSize: 12,
-                                                color: 'rgba(255,255,255,0.6)',
-                                                marginTop: 6,
-                                            }}
-                                        >
-                                            Pick a specific deadline date/time
-                                        </div>
-                                    </div>
-                                )}
 
                                 {taskDeadlineMode === 'timer' && (
                                     <div
@@ -437,22 +427,75 @@ export default function CreateChallenge() {
                     )}
 
                     <div style={{ marginBottom: 20 }}>
-                        <label>Challenge Deadline (Optional)</label>
+                        <label>Submission Phase Duration</label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                            <div style={{ flex: 1 }}>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={submissionValue}
+                                    onChange={e => setSubmissionValue(e.target.value)}
+                                    disabled={creating}
+                                    placeholder="Enter duration"
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <select
+                                value={submissionUnit}
+                                onChange={e => setSubmissionUnit(e.target.value)}
+                                disabled={creating}
+                                style={{ padding: '8px', width: '100px', flexShrink: 0 }}
+                            >
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                            </select>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+                            How long participants have to submit photos (max: 7 days)
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 20 }}>
+                        <label>Voting Phase Duration</label>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                            <div style={{ flex: 1 }}>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={votingValue}
+                                    onChange={e => setVotingValue(e.target.value)}
+                                    disabled={creating}
+                                    placeholder="Enter duration"
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                            <select
+                                value={votingUnit}
+                                onChange={e => setVotingUnit(e.target.value)}
+                                disabled={creating}
+                                style={{ padding: '8px', width: '100px', flexShrink: 0 }}
+                            >
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                            </select>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>
+                            How long participants have to vote (max: 7 days)
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 20 }}>
+                        <label>Max Participants (optional, default: 10)</label>
                         <input
-                            type="datetime-local"
-                            value={deadline}
-                            onChange={e => setDeadline(e.target.value)}
+                            type="number"
+                            min="1"
+                            value={maxParticipants}
+                            onChange={e => setMaxParticipants(e.target.value)}
+                            placeholder="Leave empty for default (10)"
                             disabled={creating}
                         />
-                        <div
-                            style={{
-                                fontSize: 12,
-                                color: 'rgba(255,255,255,0.6)',
-                                marginTop: 6,
-                            }}
-                        >
-                            Leave blank for 7 days from now
-                        </div>
                     </div>
 
                     <div style={{ marginBottom: 24 }}>

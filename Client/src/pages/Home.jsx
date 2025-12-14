@@ -26,6 +26,11 @@ export default function Home() {
   const isAuthenticated = !!localStorage.getItem('userId')
 
   useEffect(() => {
+    // Always start at the top when landing on Home
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/register')
       return

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 import { API_BASE, getComments, addComment, deleteComment } from '../services/api.js'
 
+const MAX_COMMENT_LENGTH = 500
+
 export default function CommentSection({ submissionId, currentUserId }) {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(false)
@@ -96,6 +98,11 @@ export default function CommentSection({ submissionId, currentUserId }) {
   async function handleAddComment(e) {
     e.preventDefault()
     if (!newComment.trim() || !currentUserId) return
+    
+    if (newComment.length > MAX_COMMENT_LENGTH) {
+      setError(`Comment cannot exceed ${MAX_COMMENT_LENGTH} characters.`)
+      return
+    }
 
     setSubmitting(true)
     setError('')
@@ -247,38 +254,63 @@ export default function CommentSection({ submissionId, currentUserId }) {
 
           {currentUserId && (
             <form onSubmit={handleAddComment} style={{ marginTop: 8 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  disabled={submitting}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: 6,
-                    color: 'white',
-                    fontSize: 14
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || submitting}
-                  style={{
-                    padding: '8px 16px',
-                    background: submitting ? 'rgba(100, 108, 255, 0.5)' : '#646cff',
-                    border: 'none',
-                    borderRadius: 6,
-                    color: 'white',
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    fontSize: 14
-                  }}
-                >
-                  {submitting ? '...' : 'Post'}
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={e => {
+                      if (e.target.value.length <= MAX_COMMENT_LENGTH) {
+                        setNewComment(e.target.value)
+                      }
+                    }}
+                    placeholder="Add a comment..."
+                    disabled={submitting}
+                    maxLength={MAX_COMMENT_LENGTH}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: newComment.length > MAX_COMMENT_LENGTH 
+                        ? '1px solid #ff6b6b' 
+                        : '1px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: 6,
+                      color: 'white',
+                      fontSize: 14
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim() || submitting || newComment.length > MAX_COMMENT_LENGTH}
+                    style={{
+                      padding: '8px 16px',
+                      background: submitting || !newComment.trim() || newComment.length > MAX_COMMENT_LENGTH
+                        ? 'rgba(100, 108, 255, 0.5)' 
+                        : '#646cff',
+                      border: 'none',
+                      borderRadius: 6,
+                      color: 'white',
+                      cursor: submitting || !newComment.trim() || newComment.length > MAX_COMMENT_LENGTH
+                        ? 'not-allowed' 
+                        : 'pointer',
+                      fontSize: 14
+                    }}
+                  >
+                    {submitting ? '...' : 'Post'}
+                  </button>
+                </div>
+                <div style={{ 
+                  fontSize: 12, 
+                  color: newComment.length > MAX_COMMENT_LENGTH 
+                    ? '#ff6b6b' 
+                    : newComment.length > MAX_COMMENT_LENGTH * 0.9
+                    ? 'rgba(255, 255, 255, 0.7)'
+                    : 'rgba(255, 255, 255, 0.5)',
+                  textAlign: 'right',
+                  paddingRight: 4
+                }}>
+                  {newComment.length} / {MAX_COMMENT_LENGTH}
+                </div>
               </div>
             </form>
           )}

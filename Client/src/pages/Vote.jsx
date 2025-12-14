@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { API_BASE } from '../services/api.js'
 import CommentSection from '../components/CommentSection.jsx'
 
@@ -11,6 +11,8 @@ export default function Vote() {
   const [tasksForChallenge, setTasksForChallenge] = useState([])
   const [selectedTask, setSelectedTask] = useState(null)
   const userId = Number(localStorage.getItem('userId') || 0)
+  const scrollContainerRef = useRef(null)
+  const refreshTimeoutRef = useRef(null)
 
   useEffect(() => {
     async function load() {
@@ -28,7 +30,8 @@ export default function Vote() {
   }, [])
 
   async function loadSubmissionsByTask(taskId) {
-    setLoading(true); setError(''); setSubs([])
+    setLoading(true); setError('')
+    // Don't clear immediately - keep list visible to prevent scroll jump
     try {
       const res = await fetch(`/api/photosubmissions?taskId=${taskId}`)
       if (!res.ok) throw new Error(`Failed to load submissions (${res.status})`)
@@ -107,19 +110,51 @@ export default function Vote() {
     else setSubs([])
   }
 
+
   async function vote(subId) {
     try {
       const id = subId ?? (typeof subId === 'object' ? subId.id : null)
       if (!id) throw new Error('Invalid submission id')
-      const res = await fetch(`/api/photosubmissions/${id}/vote`, { method: 'POST' })
+      
+      // Optimistically update the vote count immediately (like YouTube)
+      setSubs(prev => prev.map(s => 
+        s.id === id ? { ...s, votes: (s.votes ?? 0) + 1 } : s
+      ))
+      
+      const res = await fetch(`/api/photosubmissions/${id}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
-        const txt = await res.text()
-        throw new Error(`Vote failed (${res.status}): ${txt}`)
+        // Revert optimistic update on error
+        setSubs(prev => prev.map(s => 
+          s.id === id ? { ...s, votes: Math.max(0, (s.votes ?? 1) - 1) } : s
+        ))
+        const raw = await res.text()
+        let msg = raw
+        try {
+          const j = JSON.parse(raw)
+          msg = j.error || j.message || raw
+        } catch {}
+        throw new Error(`Vote failed: ${msg}`)
       }
-      // refresh
-      if (selected) await loadSubmissions(selected)
+      
+      // Refresh in background after a delay to sync with server (so other users see updates)
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+      refreshTimeoutRef.current = setTimeout(async () => {
+        if (selectedTask) {
+          const savedScroll = window.scrollY || document.documentElement.scrollTop
+          await loadSubmissionsByTask(selectedTask)
+          // Restore scroll position after refresh
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: savedScroll, behavior: 'instant' })
+            setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 100)
+          })
+        }
+        refreshTimeoutRef.current = null
+      }, 1500) // Refresh after 1.5 seconds
     } catch (e) {
-      setError(String(e))
+      setError(String(e.message || e))
     }
   }
 
@@ -156,7 +191,7 @@ export default function Vote() {
 
       {!loading && subs.length === 0 && selected && <div>No submissions yet for this challenge.</div>}
 
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div ref={scrollContainerRef} style={{ display: 'grid', gap: 12 }}>
         {subs.map(s => (
           <div key={s.id} style={{ border: '1px solid #ddd', padding: 8, maxWidth: 620 }}>
             <div>

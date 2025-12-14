@@ -13,8 +13,14 @@ namespace PhotoScavengerHunt.Services
             _photoRepo = photoRepo;
         }
 
-        public async Task<(bool Success, string? ErrorMessage, PhotoSubmission? Result)> UpvotePhotoAsync(int submissionId)
+        public async Task<(bool Success, string? ErrorMessage, PhotoSubmission? Result)> UpvotePhotoAsync(int submissionId, int userId)
         {
+            var submission = await _photoRepo.FindByIdAsync(submissionId);
+            if (submission == null)
+                return (false, "Submission not found.", null);
+            if (submission.UserId == userId)
+                return (false, "You cannot vote for your own submission.", null);
+
             var result = await _photoRepo.UpvoteAsync(submissionId);
             if (!result.Success) 
                 return result;

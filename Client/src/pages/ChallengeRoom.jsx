@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getChallengeById, getTaskById, leaveChallenge, advanceChallenge, API_BASE } from '../services/api.js'
 import CommentSection from '../components/CommentSection.jsx'
@@ -36,6 +36,7 @@ export default function ChallengeRoom() {
   const [tasksForChallenge, setTasksForChallenge] = useState([])
   const [challengeTasksMeta, setChallengeTasksMeta] = useState([])
   const [countdownByTask, setCountdownByTask] = useState({})
+  const [stageCountdown, setStageCountdown] = useState('')
   const [submitTaskId, setSubmitTaskId] = useState('')
   const [voteTaskId, setVoteTaskId] = useState('')
   
@@ -43,6 +44,9 @@ export default function ChallengeRoom() {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  
+  const scrollContainerRef = useRef(null)
+  const refreshTimeoutRef = useRef(null)
 
   const fmtVilnius = new Intl.DateTimeFormat(undefined, {
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -59,6 +63,8 @@ export default function ChallengeRoom() {
   }
 
   const participants = challenge?.members ?? challenge?.Participants ?? challenge?.participants ?? challenge?.participantsList ?? []
+  const participantCount = Array.isArray(participants) ? participants.length : 0
+  const maxParticipants = challenge?.maxParticipants ?? challenge?.MaxParticipants ?? 10
   const isAdmin = Array.isArray(participants) && participants.some(p => 
     Number(p.userId ?? p.UserId ?? p.id ?? p.Id) === userId && Number(p.role ?? p.Role ?? 0) === 1)
 
@@ -74,6 +80,61 @@ export default function ChallengeRoom() {
       else if (status === 2) setActiveTab('leaderboard')
     }
   }, [challenge])
+
+  // Poll challenge status to detect auto-advance
+ useEffect(() => {
+   const timer = setInterval(async () => {
+     try {
+       const res = await fetch(`${API_BASE}/api/challenge/${challengeId}`)
+       if (res.ok) {
+         const data = await res.json()
+         setChallenge(data)
+       }
+     } catch {}
+   }, 15000) // check every 15 seconds
+   return () => clearInterval(timer)
+ }, [challengeId])
+
+ // Stage countdown updater
+ useEffect(() => {
+   function parseAsMs(s) {
+     if (!s) return null
+     const str = String(s)
+     const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(str)
+     const normalized = hasTz ? str : (str.endsWith('Z') ? str : str + 'Z')
+     const ms = Date.parse(normalized)
+     return Number.isFinite(ms) ? ms : null
+   }
+   
+   function fmtCountdown(endMs) {
+     const diff = endMs - Date.now()
+     if (diff <= 0) return 'Stage ended'
+     const total = Math.floor(diff / 1000)
+     const d = Math.floor(total / 86400)
+     const h = Math.floor((total % 86400) / 3600)
+     const m = Math.floor((total % 3600) / 60)
+     const s = total % 60
+     return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`
+   }
+
+   function update() {
+     const status = Number(challenge?.status ?? 0)
+     if (status === 0) {
+       const endMs = parseAsMs(challenge?.submissionEndsAt ?? challenge?.SubmissionEndsAt)
+       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+     } else if (status === 1) {
+       const endMs = parseAsMs(challenge?.votingEndsAt ?? challenge?.VotingEndsAt)
+       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+     } else {
+       setStageCountdown('')
+     }
+   }
+    if (challenge) {
+     update()
+     const timerId = setInterval(update, 1000)
+     return () => clearInterval(timerId)
+   }
+ }, [challenge])
 
   async function loadChallengeData() {
     setLoading(true)
@@ -167,7 +228,6 @@ export default function ChallengeRoom() {
 // load submissions for a specific task (used in voting)
   async function loadSubmissionsByTask(taskId) {
     try {
-      setSubmissions([])
       const tid = Number(taskId)
       if (!tid) { setSubmissions([]); return }
       // use explicit task route to avoid ambiguity
@@ -236,19 +296,12 @@ export default function ChallengeRoom() {
       arr.forEach(s => {
         const uid = s.userId ?? s.UserId ?? 0
         const votes = Number(s.votes ?? s.Votes ?? 0)
-        const rawPhoto = s.photoUrl ?? s.PhotoUrl ?? ''
-        const photoUrl = rawPhoto
-          ? (rawPhoto.startsWith('http://') || rawPhoto.startsWith('https://')
-              ? rawPhoto
-              : ((API_BASE || '').replace(/\/$/, '') + (rawPhoto.startsWith('/') ? rawPhoto : '/' + rawPhoto)))
-          : null
 
         if (!map.has(uid)) {
           map.set(uid, {
             userId: uid,
             userName: s.userName ?? s.UserName ?? `User ${uid}`,
-            votes,
-            photoUrl
+            votes
           })
         } else {
           const item = map.get(uid)
@@ -261,19 +314,51 @@ export default function ChallengeRoom() {
     } catch {}
   }
 
+
   async function handleVote(subId) {
     try {
-      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote`, { method: 'POST' })
+      // Optimistically update the vote count immediately (like YouTube)
+      setSubmissions(prev => prev.map(s => 
+        s.id === subId ? { ...s, votes: (s.votes ?? 0) + 1 } : s
+      ))
+      
+      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote?userId=${userId}`, { method: 'POST' })
       if (!res.ok) {
-        const txt = await res.text()
-        setMessage(`Vote failed: ${txt}`)
+        // Revert optimistic update on error
+        setSubmissions(prev => prev.map(s => 
+          s.id === subId ? { ...s, votes: Math.max(0, (s.votes ?? 1) - 1) } : s
+        ))
+        const raw = await res.text()
+        let msg = raw
+        try {
+          const j = JSON.parse(raw)
+          msg = j.error || j.message || raw
+        } catch {}
+        setMessage(`Vote failed: ${msg}`)
         return
       }
       setMessage('Vote recorded!')
       setTimeout(() => setMessage(''), 2000)
-      // refresh current task votes if any
-      if (voteTaskId) await loadSubmissionsByTask(voteTaskId)
-      else await loadSubmissions()
+      
+      // Refresh in background after a delay to sync with server (so other users see updates)
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+      refreshTimeoutRef.current = setTimeout(async () => {
+        const savedScroll = window.scrollY || document.documentElement.scrollTop
+        if (voteTaskId) {
+          await loadSubmissionsByTask(voteTaskId)
+        } else {
+          await loadSubmissions()
+        }
+        // Restore scroll position after refresh
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedScroll, behavior: 'instant' })
+          setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 100)
+        })
+        refreshTimeoutRef.current = null
+      }, 1500) // Refresh after 1.5 seconds
     } catch (e) {
       setMessage(String(e))
     }
@@ -292,6 +377,37 @@ export default function ChallengeRoom() {
 
   async function handleAdvance() {
     if (!confirm('Advance to next stage?')) return
+    
+    const status = Number(challenge?.status ?? 0)
+    
+    // If we're in voting stage (status 1), sync all votes before advancing
+    if (status === 1) {
+      setMessage('Syncing votes...')
+      
+      // Cancel any pending refresh timeouts
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = null
+      }
+      
+      // Refresh submissions for all tasks to ensure votes are synced
+      const taskIds = tasksForChallenge.map(t => t.id ?? t.Id).filter(Boolean)
+      const savedScroll = window.scrollY || document.documentElement.scrollTop
+      
+      try {
+        // Refresh all tasks' submissions
+        await Promise.all(taskIds.map(taskId => loadSubmissionsByTask(taskId)))
+        
+        // Restore scroll position
+        window.scrollTo({ top: savedScroll, behavior: 'instant' })
+        
+        // Small delay to ensure server has processed all votes
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch (e) {
+        console.error('Error syncing votes:', e)
+      }
+    }
+    
     setMessage('Advancing...')
     const res = await advanceChallenge(challengeId, userId)
     if (!res.ok) {
@@ -470,6 +586,12 @@ export default function ChallengeRoom() {
               }}>
                 {statusInfo.text}
               </div>
+              {stageCountdown && (
+               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
+                 {stageCountdown}
+               </div>
+             )}
+
               {(challenge?.isPrivate ?? challenge?.IsPrivate ?? challenge?.private ?? false) && (challenge?.joinCode ?? challenge?.JoinCode) && (
                 <div style={{
                   background: 'rgba(100, 108, 255, 0.2)',
@@ -502,16 +624,37 @@ export default function ChallengeRoom() {
                   <span>Public</span>
                 </div>
               )}
+              <div style={{
+                background: 'rgba(100, 108, 255, 0.2)',
+                color: '#646cff',
+                padding: '6px 16px',
+                borderRadius: 16,
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span>👥</span>
+                <span>{participantCount} / {maxParticipants}</span>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             {isAdmin && status < 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button onClick={handleAdvance} style={{
                 background: '#51cf66',
                 padding: '10px 20px'
               }}>
                 {status === 0 ? '→ Move to Voting' : 'Complete Challenge'}
               </button>
+              {stageCountdown && (
+                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+                   Auto-advances when phase timer ends
+                 </div>
+               )}
+             </div>
             )}
             <button onClick={handleLeave} style={{
               background: '#ff6b6b',
@@ -786,7 +929,7 @@ export default function ChallengeRoom() {
                   No submissions yet
                 </div>
               ) : (
-                <div style={{ display: 'grid', gap: 24 }}>
+                <div ref={scrollContainerRef} style={{ display: 'grid', gap: 24 }}>
                   {submissions.map(s => (
                     <div key={s.id} style={{
                       background: 'rgba(100, 108, 255, 0.05)',
@@ -833,15 +976,22 @@ export default function ChallengeRoom() {
           {activeTab === 'leaderboard' && status === 2 && (
             <div>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Final Results</h3>
-              {leaderboard.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', padding: 40 }}>
-                  No results available
-                </div>
-              ) : (
-                <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {leaderboard.map((entry, index) => {
-                    const rank = entry.rank ?? (index + 1)
-                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
+              {(() => {
+                const hasAnyVotes = leaderboard.some(e => Number(e.votes ?? e.wins ?? e.totalVotes ?? 0) > 0)
+                if (!leaderboard.length || !hasAnyVotes) {
+                  return (
+                    <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)', padding: 40 }}>
+                      No submissions received any votes. There are no winners.
+                    </div>
+                  )
+                }
+                return (
+                  <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {leaderboard.map((entry, index) => {
+                      const total = Number(entry.votes ?? entry.wins ?? entry.totalVotes ?? 0)
+                      if (total === 0) return null
+                      const rank = entry.rank ?? (index + 1)
+                      const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
                     return (
                       <li key={entry.userId ?? index} style={{
                         background: 'rgba(100, 108, 255, 0.05)',
@@ -860,25 +1010,6 @@ export default function ChallengeRoom() {
                         }}>
                           {medal || `#${index + 1}`}
                         </div>
-                        {entry.photoUrl && (
-                          <div style={{
-                            width: 80,
-                            height: 80,
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}>
-                            <img
-                              src={entry.photoUrl}
-                              alt={entry.userName}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover'
-                              }}
-                            />
-                          </div>
-                        )}
                         <div style={{ flex: 1 }}>
                           <div style={{ color: 'white', fontWeight: 600, fontSize: 18 }}>
                             {entry.userName}
@@ -891,7 +1022,7 @@ export default function ChallengeRoom() {
                     )
                   })}
                 </ol>
-              )}
+              )})()}
             </div>
           )}
         </div>

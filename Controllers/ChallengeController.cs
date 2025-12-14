@@ -29,7 +29,7 @@ namespace PhotoScavengerHunt.Controllers
                         var doc = System.Text.Json.JsonDocument.Parse(body);
                         if (doc.RootElement.TryGetProperty("TaskId", out var tidProp) && tidProp.TryGetInt32(out var singleId))
                         {
-                            request = new CreateChallengeRequest(request.Name, request.CreatorId, new[] { singleId }, request.Deadline, request.IsPrivate);
+                            request = new CreateChallengeRequest(request.Name, request.CreatorId, new[] { singleId }, request.Deadline, request.IsPrivate, request.MaxParticipants);
                         }
                     }
                 }

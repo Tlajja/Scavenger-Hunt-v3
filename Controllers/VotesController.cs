@@ -15,9 +15,9 @@ namespace PhotoScavengerHunt.Controllers
         }
 
         [HttpPost("{submissionId}")]
-        public async Task<IActionResult> UpvotePhoto(int submissionId)
+        public async Task<IActionResult> UpvotePhoto(int submissionId, [FromQuery] int userId)
         {
-            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(submissionId);
+            var (success, errorMessage, result) = await _votesService.UpvotePhotoAsync(submissionId, userId);
 
             if (!success)
                 return BadRequest(new { error = errorMessage });

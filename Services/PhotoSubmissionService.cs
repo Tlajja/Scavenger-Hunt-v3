@@ -141,7 +141,9 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsForTaskAsync(taskId);
+                var submissions = await _photoRepo.GetSubmissionsForTaskAsync(taskId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
@@ -153,7 +155,9 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsByUserAsync(userId);
+                var submissions = await _photoRepo.GetSubmissionsByUserAsync(userId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
@@ -190,11 +194,30 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsForChallengeAsync(challengeId);
+                var submissions = await _photoRepo.GetSubmissionsForChallengeAsync(challengeId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
                 throw new Exception($"Error fetching submissions for challenge {challengeId}: {ex.Message}");
+            }
+        }
+
+        private async Task PopulateUserNamesAsync(List<PhotoSubmission> submissions)
+        {
+            if (submissions == null || submissions.Count == 0)
+                return;
+
+            var userIds = submissions.Select(s => s.UserId);
+            var names = await _userRepo.GetUserNamesAsync(userIds);
+
+            foreach (var submission in submissions)
+            {
+                if (names.TryGetValue(submission.UserId, out var name))
+                {
+                    submission.UserName = name;
+                }
             }
         }
     }
