@@ -16,6 +16,7 @@ public class PhotoScavengerHuntDbContext : DbContext
     public DbSet<Challenge> Challenges => Set<Challenge>();
     public DbSet<ChallengeParticipant> ChallengeParticipants => Set<ChallengeParticipant>();
     public DbSet<ChallengeTask> ChallengeTasks => Set<ChallengeTask>();
+    public DbSet<Vote> Votes => Set<Vote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,22 @@ public class PhotoScavengerHuntDbContext : DbContext
             .WithMany(s => s.Comments)
             .HasForeignKey(c => c.PhotoSubmissionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Vote>()
+            .HasOne(v => v.PhotoSubmission)
+            .WithMany()
+            .HasForeignKey(v => v.PhotoSubmissionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Vote>()
+            .HasOne(v => v.User)
+            .WithMany()
+            .HasForeignKey(v => v.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Vote>()
+            .HasIndex(v => new { v.PhotoSubmissionId, v.UserId })
+            .IsUnique();
 
         modelBuilder.Entity<ChallengeParticipant>()
             .HasOne(cp => cp.Challenge)

@@ -8,7 +8,7 @@ function assignDenseRanks(items, valueSelector) {
   const arr = [...items].sort((a,b) => (valueSelector(b) || 0) - (valueSelector(a) || 0))
   let prevVal = null
   let prevRank = 0
- let nextRank = 1
+  let nextRank = 1
   return arr.map(it => {
     const val = valueSelector(it) ?? 0
     if (prevVal === null || val !== prevVal) {
@@ -28,6 +28,7 @@ export default function ChallengeRoom() {
   const [challenge, setChallenge] = useState(null)
   const [task, setTask] = useState(null)
   const [submissions, setSubmissions] = useState([])
+  const [userVotes, setUserVotes] = useState({})
   const [leaderboard, setLeaderboard] = useState([])
   const [activeTab, setActiveTab] = useState('submit')
   const [loading, setLoading] = useState(true)
@@ -81,60 +82,58 @@ export default function ChallengeRoom() {
     }
   }, [challenge])
 
-  // Poll challenge status to detect auto-advance
- useEffect(() => {
-   const timer = setInterval(async () => {
-     try {
-       const res = await fetch(`${API_BASE}/api/challenge/${challengeId}`)
-       if (res.ok) {
-         const data = await res.json()
-         setChallenge(data)
-       }
-     } catch {}
-   }, 15000) // check every 15 seconds
-   return () => clearInterval(timer)
- }, [challengeId])
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/challenge/${challengeId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setChallenge(data)
+        }
+      } catch {}
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [challengeId])
 
- // Stage countdown updater
- useEffect(() => {
-   function parseAsMs(s) {
-     if (!s) return null
-     const str = String(s)
-     const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(str)
-     const normalized = hasTz ? str : (str.endsWith('Z') ? str : str + 'Z')
-     const ms = Date.parse(normalized)
-     return Number.isFinite(ms) ? ms : null
-   }
-   
-   function fmtCountdown(endMs) {
-     const diff = endMs - Date.now()
-     if (diff <= 0) return 'Stage ended'
-     const total = Math.floor(diff / 1000)
-     const d = Math.floor(total / 86400)
-     const h = Math.floor((total % 86400) / 3600)
-     const m = Math.floor((total % 3600) / 60)
-     const s = total % 60
-     return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`
-   }
+  useEffect(() => {
+    function parseAsMs(s) {
+      if (!s) return null
+      const str = String(s)
+      const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(str)
+      const normalized = hasTz ? str : (str.endsWith('Z') ? str : str + 'Z')
+      const ms = Date.parse(normalized)
+      return Number.isFinite(ms) ? ms : null
+    }
+    
+    function fmtCountdown(endMs) {
+      const diff = endMs - Date.now()
+      if (diff <= 0) return 'Stage ended'
+      const total = Math.floor(diff / 1000)
+      const d = Math.floor(total / 86400)
+      const h = Math.floor((total % 86400) / 3600)
+      const m = Math.floor((total % 3600) / 60)
+      const s = total % 60
+      return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`
+    }
 
-   function update() {
-     const status = Number(challenge?.status ?? 0)
-     if (status === 0) {
-       const endMs = parseAsMs(challenge?.submissionEndsAt ?? challenge?.SubmissionEndsAt)
-       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
-     } else if (status === 1) {
-       const endMs = parseAsMs(challenge?.votingEndsAt ?? challenge?.VotingEndsAt)
-       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
-     } else {
-       setStageCountdown('')
-     }
-   }
+    function update() {
+      const status = Number(challenge?.status ?? 0)
+      if (status === 0) {
+        const endMs = parseAsMs(challenge?.submissionEndsAt ?? challenge?.SubmissionEndsAt)
+        setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+      } else if (status === 1) {
+        const endMs = parseAsMs(challenge?.votingEndsAt ?? challenge?.VotingEndsAt)
+        setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+      } else {
+        setStageCountdown('')
+      }
+    }
     if (challenge) {
-     update()
-     const timerId = setInterval(update, 1000)
-     return () => clearInterval(timerId)
-   }
- }, [challenge])
+      update()
+      const timerId = setInterval(update, 1000)
+      return () => clearInterval(timerId)
+    }
+  }, [challenge])
 
   async function loadChallengeData() {
     setLoading(true)
@@ -149,7 +148,6 @@ export default function ChallengeRoom() {
       const challengeData = cRes.data
       setChallenge(challengeData)
 
-      // load all tasks for this challenge (ChallengeTasks relation)
       const refs = Array.isArray(challengeData?.challengeTasks ?? challengeData?.ChallengeTasks)
         ? (challengeData.challengeTasks ?? challengeData.ChallengeTasks)
         : []
@@ -159,7 +157,6 @@ export default function ChallengeRoom() {
         const fetched = await Promise.all(ids.map(id => getTaskById(id)))
         const valid = fetched.filter(r => r?.ok).map(r => r.data)
         setTasksForChallenge(valid)
-        // default preview/task card to the first task
         setTask(valid[0] ?? null)
         setSubmitTaskId(String(valid[0]?.id ?? valid[0]?.Id ?? ''))
       } else {
@@ -170,7 +167,6 @@ export default function ChallengeRoom() {
 
       const status = Number(challengeData.status ?? 0)
       if (status === 1) {
-        // If voting stage, default voteTaskId to first task and load its submissions
         if (ids.length > 0) {
           setVoteTaskId(String(ids[0]))
           await loadSubmissionsByTask(ids[0])
@@ -187,7 +183,6 @@ export default function ChallengeRoom() {
     }
   }
 
-  // Countdown updater for each task in the challenge
   useEffect(() => {
     let timerId = null
     function parseDeadlineUtc(dl) {
@@ -225,12 +220,10 @@ export default function ChallengeRoom() {
     return () => { if (timerId) clearInterval(timerId) }
   }, [challengeTasksMeta])
 
-// load submissions for a specific task (used in voting)
   async function loadSubmissionsByTask(taskId) {
     try {
       const tid = Number(taskId)
       if (!tid) { setSubmissions([]); return }
-      // use explicit task route to avoid ambiguity
       const res = await fetch(`${API_BASE}/api/photosubmissions/task/${tid}`)
       if (!res.ok) return
       const data = await res.json()
@@ -251,7 +244,14 @@ export default function ChallengeRoom() {
       }))
       setSubmissions(normalized)
 
-      // fetch blobs and patch submissions by id (safer than using the index)
+      try {
+        const votesRes = await fetch(`${API_BASE}/api/votes/task/${tid}?userId=${userId}`)
+        if (votesRes.ok) {
+          const votesData = await votesRes.json()
+          setUserVotes(votesData)
+        }
+      } catch {}
+
       normalized.forEach(async (item) => {
         if (!item.photoUrl) return
         try {
@@ -272,7 +272,6 @@ export default function ChallengeRoom() {
   }
 
   async function loadSubmissions() {
-    // require a selected vote task — show empty until user picks one
     if (!voteTaskId) { setSubmissions([]); return }
     await loadSubmissionsByTask(Number(voteTaskId))
   }
@@ -317,27 +316,46 @@ export default function ChallengeRoom() {
 
   async function handleVote(subId) {
     try {
-      // Optimistically update the vote count immediately (like YouTube)
-      setSubmissions(prev => prev.map(s => 
-        s.id === subId ? { ...s, votes: (s.votes ?? 0) + 1 } : s
-      ))
+      const hasVoted = userVotes[subId]
       
-      const res = await fetch(`${API_BASE}/api/photosubmissions/${subId}/vote?userId=${userId}`, { method: 'POST' })
-      if (!res.ok) {
-        // Revert optimistic update on error
+      if (hasVoted) {
+        const res = await fetch(`${API_BASE}/api/votes/${subId}?userId=${userId}`, { method: 'DELETE' })
+        if (!res.ok) {
+          const raw = await res.text()
+          let msg = raw
+          try {
+            const j = JSON.parse(raw)
+            msg = j.error || j.message || raw
+          } catch {}
+          setMessage(`Remove vote failed: ${msg}`)
+          return
+        }
+        
         setSubmissions(prev => prev.map(s => 
           s.id === subId ? { ...s, votes: Math.max(0, (s.votes ?? 1) - 1) } : s
         ))
-        const raw = await res.text()
-        let msg = raw
-        try {
-          const j = JSON.parse(raw)
-          msg = j.error || j.message || raw
-        } catch {}
-        setMessage(`Vote failed: ${msg}`)
-        return
+        setUserVotes(prev => ({ ...prev, [subId]: false }))
+        setMessage('Vote removed!')
+      } else {
+        const res = await fetch(`${API_BASE}/api/votes/${subId}?userId=${userId}`, { method: 'POST' })
+        if (!res.ok) {
+          const raw = await res.text()
+          let msg = raw
+          try {
+            const j = JSON.parse(raw)
+            msg = j.error || j.message || raw
+          } catch {}
+          setMessage(`Vote failed: ${msg}`)
+          return
+        }
+        
+        setSubmissions(prev => prev.map(s => 
+          s.id === subId ? { ...s, votes: (s.votes ?? 0) + 1 } : s
+        ))
+        setUserVotes(prev => ({ ...prev, [subId]: true }))
+        setMessage('Vote recorded!')
       }
-      setMessage('Vote recorded!')
+      
       setTimeout(() => setMessage(''), 2000)
       
       // Refresh in background after a delay to sync with server (so other users see updates)
@@ -507,7 +525,6 @@ export default function ChallengeRoom() {
       setPhotoFile(null)
       setPreviewUrl(null)
       setTimeout(() => setMessage(''), 3000)
-      // refresh submissions if currently in vote tab for this task
       if (activeTab === 'vote' && submitTaskId) {
         setVoteTaskId(submitTaskId)
         await loadSubmissionsByTask(submitTaskId)
@@ -587,10 +604,10 @@ export default function ChallengeRoom() {
                 {statusInfo.text}
               </div>
               {stageCountdown && (
-               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
-                 {stageCountdown}
-               </div>
-             )}
+                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
+                  {stageCountdown}
+                </div>
+              )}
 
               {(challenge?.isPrivate ?? challenge?.IsPrivate ?? challenge?.private ?? false) && (challenge?.joinCode ?? challenge?.JoinCode) && (
                 <div style={{
@@ -604,7 +621,7 @@ export default function ChallengeRoom() {
                   alignItems: 'center',
                   gap: 8
                 }}>
-                  <span>🔑</span>
+                  <span>🔒</span>
                   <span>Code: {challenge?.joinCode ?? challenge?.JoinCode}</span>
                 </div>
               )}
@@ -643,18 +660,18 @@ export default function ChallengeRoom() {
           <div style={{ display: 'flex', gap: 12 }}>
             {isAdmin && status < 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button onClick={handleAdvance} style={{
-                background: '#51cf66',
-                padding: '10px 20px'
-              }}>
-                {status === 0 ? '→ Move to Voting' : 'Complete Challenge'}
-              </button>
-              {stageCountdown && (
-                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
-                   Auto-advances when phase timer ends
-                 </div>
-               )}
-             </div>
+                <button onClick={handleAdvance} style={{
+                  background: '#51cf66',
+                  padding: '10px 20px'
+                }}>
+                  {status === 0 ? '→ Move to Voting' : 'Complete Challenge'}
+                </button>
+                {stageCountdown && (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+                    Auto-advances when phase timer ends
+                  </div>
+                )}
+              </div>
             )}
             <button onClick={handleLeave} style={{
               background: '#ff6b6b',
@@ -665,10 +682,6 @@ export default function ChallengeRoom() {
           </div>
         </div>
 
-        {/* Task summary / list
-              - show single task preview in submit/vote phases
-              - in leaderboard phase show all tasks that were part of the challenge
-        */}
         {activeTab === 'leaderboard' ? (
           tasksForChallenge && tasksForChallenge.length > 0 ? (
             <div className="card" style={{ marginBottom: 32 }}>
@@ -678,7 +691,6 @@ export default function ChallengeRoom() {
                   <li key={t.id ?? t.Id} style={{ marginBottom: 8 }}>
                     <div style={{ color: 'white', fontWeight: 600 }}>{t.description ?? t.Description}</div>
                     {(() => {
-                      // Prefer per-challenge deadline
                       const meta = challengeTasksMeta.find(ct => String(ct.taskId ?? ct.TaskId) === String(t.id ?? t.Id))
                       const dl = meta?.deadline ?? meta?.Deadline
                       if (dl) {
@@ -698,7 +710,6 @@ export default function ChallengeRoom() {
                       }
                       const tdl = t.deadline ?? t.Deadline
                       if (tdl) {
-                        // Global deadline fallback
                         const normalizedTask = (() => {
                           const s = String(tdl)
                           const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(s)
@@ -830,7 +841,6 @@ export default function ChallengeRoom() {
             <form onSubmit={handleSubmitPhoto}>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Upload Your Photo</h3>
               
-              {/* Task selector for submit */}
               {tasksForChallenge.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: 'block', marginBottom: 6 }}>Choose Task</label>
@@ -907,7 +917,6 @@ export default function ChallengeRoom() {
           {activeTab === 'vote' && status === 1 && (
             <div>
               <h3 style={{ color: 'white', marginBottom: 24 }}>Vote for Submissions</h3>
-              {/* task selector for voting */}
               {tasksForChallenge.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: 'block', marginBottom: 6 }}>Select Task to Vote</label>
@@ -961,9 +970,27 @@ export default function ChallengeRoom() {
                         <div style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                           Votes: {s.votes}
                         </div>
-                        <button onClick={() => handleVote(s.id)}>
-                          Vote
-                        </button>
+                        {s.userId === userId ? (
+                          <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 14, fontStyle: 'italic' }}>
+                            You can't vote for your own submission
+                          </span>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <button 
+                              onClick={() => handleVote(s.id)}
+                              style={{
+                                background: userVotes[s.id] ? '#ff6b6b' : '#646cff'
+                              }}
+                            >
+                              {userVotes[s.id] ? 'Remove Vote' : 'Vote'}
+                            </button>
+                            {userVotes[s.id] && (
+                              <span style={{ color: '#51cf66', fontSize: 14, fontWeight: 600 }}>
+                                ✓ Voted
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <CommentSection submissionId={s.id} currentUserId={userId} />
                     </div>
@@ -992,37 +1019,38 @@ export default function ChallengeRoom() {
                       if (total === 0) return null
                       const rank = entry.rank ?? (index + 1)
                       const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`
-                    return (
-                      <li key={entry.userId ?? index} style={{
-                        background: 'rgba(100, 108, 255, 0.05)',
-                        borderRadius: 12,
-                        padding: 20,
-                        marginBottom: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 20
-                      }}>
-                        <div style={{
-                          fontSize: 32,
-                          fontWeight: 700,
-                          width: 60,
-                          textAlign: 'center'
+                      return (
+                        <li key={entry.userId ?? index} style={{
+                          background: 'rgba(100, 108, 255, 0.05)',
+                          borderRadius: 12,
+                          padding: 20,
+                          marginBottom: 12,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 20
                         }}>
-                          {medal || `#${index + 1}`}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ color: 'white', fontWeight: 600, fontSize: 18 }}>
-                            {entry.userName}
+                          <div style={{
+                            fontSize: 32,
+                            fontWeight: 700,
+                            width: 60,
+                            textAlign: 'center'
+                          }}>
+                            {medal || `#${index + 1}`}
                           </div>
-                          <div style={{ color: '#51cf66', fontWeight: 600, fontSize: 20, marginTop: 4 }}>
-                            {entry.votes ?? entry.wins ?? entry.totalVotes ?? 0} votes
+                          <div style={{ flex: 1 }}>
+                            <div style={{ color: 'white', fontWeight: 600, fontSize: 18 }}>
+                              {entry.userName}
+                            </div>
+                            <div style={{ color: '#51cf66', fontWeight: 600, fontSize: 20, marginTop: 4 }}>
+                              {entry.votes ?? entry.wins ?? entry.totalVotes ?? 0} votes
+                            </div>
                           </div>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ol>
-              )})()}
+                        </li>
+                      )
+                    })}
+                  </ol>
+                )
+              })()}
             </div>
           )}
         </div>
