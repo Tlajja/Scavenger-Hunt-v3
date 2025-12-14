@@ -39,12 +39,10 @@ namespace PhotoScavengerHunt.Services
                 {
                     await _challengeRepo.EnsureChallengeExistsAsync(challengeId.Value);
                     var challenge = await _challengeRepo.GetByIdAsync(challengeId.Value);
-                    // If the challenge itself has a deadline and it's expired, block submission
                     if (challenge?.Deadline != null && challenge.Deadline <= DateTime.UtcNow)
                     {
                         return (false, "Challenge deadline has expired. Submissions are closed.", null, null);
                     }
-                    // If challenge status is not Open (submission phase), block submission
                     if (challenge != null && challenge.Status != Features.Challenges.ChallengeStatus.Open)
                     {
                         return (false, "Challenge is not in submission phase.", null, null);
@@ -58,7 +56,6 @@ namespace PhotoScavengerHunt.Services
                 if(!await _taskRepo.ExistsAsync(taskId.Value))
                     throw new EntityNotFoundException("Task does not exist.");
 
-                // Enforce task/challenge task deadline constraints
                 DateTime? effectiveDeadline = null;
                 if (challengeId.HasValue)
                 {
@@ -67,7 +64,6 @@ namespace PhotoScavengerHunt.Services
                     effectiveDeadline = meta?.Deadline;
                 }
 
-                // Fallback to the task's own deadline if per-challenge deadline is not set
                 if (effectiveDeadline == null)
                 {
                     var task = await _taskRepo.GetByIdAsync(taskId.Value);
@@ -92,7 +88,7 @@ namespace PhotoScavengerHunt.Services
                 }
                 
                 if(!await _userRepo.ExistsAsync(userId))
-                throw new EntityNotFoundException("User does not exist.");
+                    throw new EntityNotFoundException("User does not exist.");
 
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                 var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -141,7 +137,9 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsForTaskAsync(taskId);
+                var submissions = await _photoRepo.GetSubmissionsForTaskAsync(taskId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
@@ -153,7 +151,9 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsByUserAsync(userId);
+                var submissions = await _photoRepo.GetSubmissionsByUserAsync(userId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
@@ -190,11 +190,34 @@ namespace PhotoScavengerHunt.Services
         {
             try
             {
-                return await _photoRepo.GetSubmissionsForChallengeAsync(challengeId);
+                var submissions = await _photoRepo.GetSubmissionsForChallengeAsync(challengeId);
+                await PopulateUserNamesAsync(submissions);
+                return submissions;
             }
             catch (Exception ex)
             {
                 throw new Exception($"Error fetching submissions for challenge {challengeId}: {ex.Message}");
+            }
+        }
+
+        private async Task PopulateUserNamesAsync(List<PhotoSubmission> submissions)
+        {
+            if (submissions == null || submissions.Count == 0)
+                return;
+
+            var userIds = submissions.Select(s => s.UserId).Distinct().ToList();
+            var names = await _userRepo.GetUserNamesAsync(userIds);
+
+            foreach (var submission in submissions)
+            {
+                if (names.TryGetValue(submission.UserId, out var name))
+                {
+                    submission.UserName = name;
+                }
+                else
+                {
+                    submission.UserName = $"User {submission.UserId}";
+                }
             }
         }
     }

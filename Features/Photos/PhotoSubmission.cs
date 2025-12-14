@@ -1,4 +1,6 @@
-﻿namespace PhotoScavengerHunt.Features.Photos
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace PhotoScavengerHunt.Features.Photos
 {
     public record PhotoSubmission
     {
@@ -9,5 +11,8 @@
         public string PhotoUrl { get; set; } = string.Empty;
         public int Votes { get; set; }
         public List<Comment> Comments { get; set; } = new();
+
+        [NotMapped]
+        public string? UserName { get; set; }
     }
 }
