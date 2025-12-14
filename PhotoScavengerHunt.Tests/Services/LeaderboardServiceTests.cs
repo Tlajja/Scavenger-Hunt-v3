@@ -157,5 +157,106 @@ namespace PhotoScavengerHunt.Tests.Services
 
             Assert.Contains(result, e => e.UserId == 102 && e.TotalVotes == 0);
         }
+
+        [Fact]
+        public async Task GetLeaderboardAsync_RepositoryThrowsException_ThrowsApplicationException()
+        {
+            _mockRepo.Setup(r => r.GetLeaderboardAsync())
+                .ThrowsAsync(new Exception("Database error"));
+
+            var exception = await Assert.ThrowsAsync<ApplicationException>(
+                async () => await _service.GetLeaderboardAsync());
+
+            Assert.Equal("Unable to retrieve leaderboard data at this time.", exception.Message);
+        }
+
+        [Fact]
+        public async Task GetHallOfFameAsync_DefaultTop10_ReturnsTopEntries()
+        {
+            var mockEntries = new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(1, "User1", 100),
+                new LeaderboardEntry(2, "User2", 90),
+                new LeaderboardEntry(3, "User3", 80),
+                new LeaderboardEntry(4, "User4", 70),
+                new LeaderboardEntry(5, "User5", 60),
+                new LeaderboardEntry(6, "User6", 50),
+                new LeaderboardEntry(7, "User7", 40),
+                new LeaderboardEntry(8, "User8", 30),
+                new LeaderboardEntry(9, "User9", 20),
+                new LeaderboardEntry(10, "User10", 10)
+            };
+
+            _mockRepo.Setup(r => r.GetHallOfFameAsync(10))
+                .ReturnsAsync(mockEntries);
+
+            var result = await _service.GetHallOfFameAsync();
+
+            Assert.NotNull(result);
+            Assert.Equal(10, result.Count);
+            Assert.Equal(100, result[0].TotalVotes);
+            Assert.Equal(10, result[9].TotalVotes);
+        }
+
+        [Fact]
+        public async Task GetHallOfFameAsync_CustomTop_ReturnsCorrectNumber()
+        {
+            var mockEntries = new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(1, "User1", 100),
+                new LeaderboardEntry(2, "User2", 90),
+                new LeaderboardEntry(3, "User3", 80),
+                new LeaderboardEntry(4, "User4", 70),
+                new LeaderboardEntry(5, "User5", 60)
+            };
+
+            _mockRepo.Setup(r => r.GetHallOfFameAsync(5))
+                .ReturnsAsync(mockEntries);
+
+            var result = await _service.GetHallOfFameAsync(5);
+
+            Assert.NotNull(result);
+            Assert.Equal(5, result.Count);
+        }
+
+        [Fact]
+        public async Task GetHallOfFameAsync_EmptyDatabase_ReturnsEmpty()
+        {
+            _mockRepo.Setup(r => r.GetHallOfFameAsync(10))
+                .ReturnsAsync(new List<LeaderboardEntry>());
+
+            var result = await _service.GetHallOfFameAsync();
+
+            Assert.NotNull(result);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetHallOfFameAsync_RepositoryThrowsException_Rethrows()
+        {
+            _mockRepo.Setup(r => r.GetHallOfFameAsync(It.IsAny<int>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            await Assert.ThrowsAsync<Exception>(
+                async () => await _service.GetHallOfFameAsync());
+        }
+
+        [Fact]
+        public async Task GetHallOfFameAsync_FewerEntriesThanRequested_ReturnsAll()
+        {
+            var mockEntries = new List<LeaderboardEntry>
+            {
+                new LeaderboardEntry(1, "User1", 100),
+                new LeaderboardEntry(2, "User2", 90)
+            };
+
+            _mockRepo.Setup(r => r.GetHallOfFameAsync(10))
+                .ReturnsAsync(mockEntries);
+
+            var result = await _service.GetHallOfFameAsync(10);
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+        }
     }
 }
