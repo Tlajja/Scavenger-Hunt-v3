@@ -163,7 +163,12 @@ namespace PhotoScavengerHunt.Services
             var challenges = await _challengeRepo.GetAllAsync(publicOnly, sortBy);
 
             foreach (var c in challenges)
+            {
                 c.Participants = null;
+                // Load participant count for display
+                var participants = await _participantRepo.GetByChallengeAsync(c.Id);
+                c.Participants = participants; // Temporarily set for count, will be cleared if needed
+            }
 
             return challenges;
         }

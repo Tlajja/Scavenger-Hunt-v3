@@ -71,6 +71,11 @@ export default function JoinChallenge() {
           }
         }
         
+        // If challenge is full or any limit error, refresh the challenge list to show accurate counts
+        if (/full|limit|maximum/i.test(errMsg)) {
+          await loadPublicChallenges()
+        }
+        
         setError(errMsg)
         return
       }
@@ -98,6 +103,8 @@ export default function JoinChallenge() {
         localStorage.setItem('challengeName', challengeName)
         
         setMessage('Successfully joined challenge!')
+        // Refresh challenge list to update participant counts
+        await loadPublicChallenges()
         await loadMyChallenges()
         setTimeout(() => {
           navigate(`/challenge-room/${finalChallengeId}`)
@@ -250,6 +257,9 @@ export default function JoinChallenge() {
               const challengeId = c.id ?? c.Id
               const name = c.name ?? c.Name ?? 'Unnamed Challenge'
               const alreadyJoined = myChallengeIds.has(challengeId)
+              const participants = c.participants ?? c.Participants ?? []
+              const participantCount = Array.isArray(participants) ? participants.length : 0
+              const maxParticipants = c.maxParticipants ?? c.MaxParticipants ?? 10
               
               return (
                 <div
@@ -284,18 +294,37 @@ export default function JoinChallenge() {
                     gap: 8,
                     color: 'rgba(255, 255, 255, 0.6)',
                     fontSize: 14,
-                    marginBottom: 16
+                    marginBottom: 8
                   }}>
                     <span>🌍</span>
                     <span>Public Challenge</span>
                   </div>
 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    color: participantCount >= maxParticipants ? '#ff6b6b' : 'rgba(255, 255, 255, 0.6)',
+                    fontSize: 14,
+                    marginBottom: 16,
+                    fontWeight: participantCount >= maxParticipants ? 600 : 400
+                  }}>
+                    <span>👥</span>
+                    <span>{participantCount} / {maxParticipants} participants</span>
+                    {participantCount >= maxParticipants && <span style={{ color: '#ff6b6b' }}>• Full</span>}
+                  </div>
+
                   <button
                     onClick={() => alreadyJoined ? navigate(`/challenge-room/${challengeId}`) : handleQuickJoin(c)}
-                    disabled={joining}
-                    style={{ width: '100%', padding: '10px' }}
+                    disabled={joining || (!alreadyJoined && participantCount >= maxParticipants)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '10px',
+                      opacity: (!alreadyJoined && participantCount >= maxParticipants) ? 0.5 : 1,
+                      cursor: (!alreadyJoined && participantCount >= maxParticipants) ? 'not-allowed' : 'pointer'
+                    }}
                   >
-                    {joining ? 'Joining...' : alreadyJoined ? 'Enter' : 'Join Now'}
+                    {joining ? 'Joining...' : alreadyJoined ? 'Enter' : participantCount >= maxParticipants ? 'Full' : 'Join Now'}
                   </button>
                 </div>
               )

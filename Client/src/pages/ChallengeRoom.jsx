@@ -62,6 +62,8 @@ export default function ChallengeRoom() {
   }
 
   const participants = challenge?.members ?? challenge?.Participants ?? challenge?.participants ?? challenge?.participantsList ?? []
+  const participantCount = Array.isArray(participants) ? participants.length : 0
+  const maxParticipants = challenge?.maxParticipants ?? challenge?.MaxParticipants ?? 10
   const isAdmin = Array.isArray(participants) && participants.some(p => 
     Number(p.userId ?? p.UserId ?? p.id ?? p.Id) === userId && Number(p.role ?? p.Role ?? 0) === 1)
 
@@ -560,6 +562,20 @@ export default function ChallengeRoom() {
                   <span>Public</span>
                 </div>
               )}
+              <div style={{
+                background: 'rgba(100, 108, 255, 0.2)',
+                color: '#646cff',
+                padding: '6px 16px',
+                borderRadius: 16,
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span>👥</span>
+                <span>{participantCount} / {maxParticipants}</span>
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
