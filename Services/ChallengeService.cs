@@ -86,6 +86,13 @@ namespace PhotoScavengerHunt.Services
             if (adminCount >= 1)
                 throw new LimitExceededException("A user can create only one challenge at a time.");
             
+            TimeSpan subDur = request.SubmissionDuration ?? TimeSpan.FromDays(1);
+            TimeSpan voteDur = request.VotingDuration ?? TimeSpan.FromDays(1);
+            TimeSpan min = TimeSpan.FromMinutes(1);
+            TimeSpan max = TimeSpan.FromDays(7);
+            if (subDur < min || subDur > max) throw new ValidationException("Submission duration must be between 1 minute and 7 days.");
+            if (voteDur < min || voteDur > max) throw new ValidationException("Voting duration must be between 1 minute and 7 days.");
+
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
             var challenge = ChallengeFactory.Create(
@@ -94,7 +101,10 @@ namespace PhotoScavengerHunt.Services
                 taskIds: taskIdList,
                 isPrivate: request.IsPrivate,
                 joinCode: joinCode,
-                deadline: request.Deadline);
+                deadline: request.Deadline,
+                maxParticipants: request.MaxParticipants,
+                submissionDuration: subDur,
+                votingDuration: voteDur);
 
             await _challengeRepo.AddAsync(challenge);
             await _challengeRepo.SaveChangesAsync();
@@ -140,7 +150,7 @@ namespace PhotoScavengerHunt.Services
 
             var challenge = await _challengeRepo.GetByJoinCodeAsync(code);
 
-            await _participantRepo.EnsureUserCanJoinChallengeAsync(request.UserId, challenge.Id);
+            await _participantRepo.EnsureUserCanJoinChallengeAsync(request.UserId, challenge.Id, challenge.MaxParticipants ?? 10);
 
             var participant = new ChallengeParticipant
             {
@@ -162,7 +172,12 @@ namespace PhotoScavengerHunt.Services
             var challenges = await _challengeRepo.GetAllAsync(publicOnly, sortBy);
 
             foreach (var c in challenges)
+            {
                 c.Participants = null;
+                // Load participant count for display
+                var participants = await _participantRepo.GetByChallengeAsync(c.Id);
+                c.Participants = participants; // Temporarily set for count, will be cleared if needed
+            }
 
             return challenges;
         }

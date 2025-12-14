@@ -23,7 +23,7 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var initialVotes = (await DbContext.Photos.FindAsync(400))!.Votes;
 
-            var result = await _service.UpvotePhotoAsync(400);
+            var result = await _service.UpvotePhotoAsync(400, 101);
 
             Assert.True(result.Success);
             Assert.Null(result.ErrorMessage);
@@ -36,9 +36,9 @@ namespace PhotoScavengerHunt.Tests.Services
         {
             var initialVotes = (await DbContext.Photos.FindAsync(400))!.Votes;
 
-            await _service.UpvotePhotoAsync(400);
-            await _service.UpvotePhotoAsync(400);
-            var result = await _service.UpvotePhotoAsync(400);
+            await _service.UpvotePhotoAsync(400, 101);
+            await _service.UpvotePhotoAsync(400, 101);
+            var result = await _service.UpvotePhotoAsync(400, 101);
 
             Assert.Equal(initialVotes + 3, result.Result!.Votes);
         }
@@ -46,7 +46,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UpvotePhotoAsync_NonExistentSubmission_ReturnsError()
         {
-            var result = await _service.UpvotePhotoAsync(99999);
+            var result = await _service.UpvotePhotoAsync(99999, 100);
 
             Assert.False(result.Success);
             Assert.Equal("Submission not found.", result.ErrorMessage);
@@ -56,7 +56,7 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UpvotePhotoAsync_PersistsToDatabase()
         {
-            await _service.UpvotePhotoAsync(400);
+            await _service.UpvotePhotoAsync(400, 101);
 
             var submission = await DbContext.Photos.FindAsync(400);
 
@@ -67,12 +67,21 @@ namespace PhotoScavengerHunt.Tests.Services
         [Fact]
         public async Task UpvotePhotoAsync_ReturnsUpdatedSubmission()
         {
-            var result = await _service.UpvotePhotoAsync(400);
+            var result = await _service.UpvotePhotoAsync(400, 101);
 
             Assert.NotNull(result.Result);
             Assert.Equal(400, result.Result.Id);
             Assert.Equal(200, result.Result.TaskId);
             Assert.Equal(100, result.Result.UserId);
+        }
+
+        [Fact]
+        public async Task UpvotePhotoAsync_SelfVote_ReturnsError()
+        {
+            var result = await _service.UpvotePhotoAsync(400, 100);
+
+            Assert.False(result.Success);
+            Assert.Equal("You cannot vote for your own submission.", result.ErrorMessage);
         }
     }
 }

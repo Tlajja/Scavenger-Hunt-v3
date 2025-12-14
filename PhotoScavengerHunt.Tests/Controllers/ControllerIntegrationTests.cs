@@ -369,7 +369,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task UpvotePhoto_ValidSubmission_ReturnsOk()
         {
-            var result = await _controller.UpvotePhoto(400);
+            var result = await _controller.UpvotePhoto(400, 101);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult.Value);
@@ -378,7 +378,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task UpvotePhoto_InvalidSubmission_ReturnsBadRequest()
         {
-            var result = await _controller.UpvotePhoto(99999);
+            var result = await _controller.UpvotePhoto(99999, 100);
 
             Assert.IsType<BadRequestObjectResult>(result);
         }

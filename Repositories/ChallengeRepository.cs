@@ -21,13 +21,6 @@ namespace PhotoScavengerHunt.Repositories
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public async Task<Challenge?> GetWithParticipantsAsync(int id)
-        {
-            return await _dbContext.Challenges
-                .Include(c => c.Participants)
-                .Include(c => c.ChallengeTasks)
-                .FirstOrDefaultAsync(c => c.Id == id);
-        }
         public async Task<List<Challenge>> GetByIdsAsync(IEnumerable<int> ids)
         {
             return await _dbContext.Challenges
@@ -82,6 +75,14 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge == null)
                 throw new EntityNotFoundException("Challenge not found.");
 
+            var taskIds = challenge.ChallengeTasks.Select(ct => ct.TaskId).Distinct().ToList();
+            var exclusiveTaskIds = await _dbContext.ChallengeTasks
+                .Where(ct => taskIds.Contains(ct.TaskId))
+                .GroupBy(ct => ct.TaskId)
+                .Where(g => g.Count() == 1 && g.Any(x => x.ChallengeId == challengeId))
+                .Select(g => g.Key)
+                .ToListAsync();
+
             var photos = await _dbContext.Photos.Where(p => p.ChallengeId == challengeId).ToListAsync();
             if (photos.Any())
             {
@@ -94,21 +95,16 @@ namespace PhotoScavengerHunt.Repositories
             if (challenge.ChallengeTasks != null && challenge.ChallengeTasks.Any())
                 _dbContext.ChallengeTasks.RemoveRange(challenge.ChallengeTasks);
 
+            if (exclusiveTaskIds.Any())
+            {
+                var tasks = await _dbContext.Tasks.Where(t => exclusiveTaskIds.Contains(t.Id)).ToListAsync();
+                if (tasks.Any())
+                {
+                    _dbContext.Tasks.RemoveRange(tasks);
+                }
+            }
+
             _dbContext.Challenges.Remove(challenge);
-        }
-
-        public async Task<(int WinnerId, int TotalVotes)?> GetTopUserByVotesAsync(int challengeId)
-        {
-            var top = await _dbContext.Photos
-                .Where(p => p.ChallengeId == challengeId)
-                .GroupBy(p => p.UserId)
-                .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.Votes) })
-                .OrderByDescending(x => x.Total)
-                .ThenBy(x => x.UserId)
-                .FirstOrDefaultAsync();
-
-            if (top == null) return null;
-            return (top.UserId, top.Total);
         }
 
         public async Task<Challenge> EnsureChallengeExistsAsync(int challengeId)
@@ -128,6 +124,7 @@ namespace PhotoScavengerHunt.Repositories
                 .Where(p => p.ChallengeId == challengeId)
                 .GroupBy(p => p.UserId)
                 .Select(g => new { UserId = g.Key, Total = g.Sum(p => p.Votes) })
+                .Where(x => x.Total > 0)
                 .ToListAsync();
 
             if (grouped == null || grouped.Count == 0) return new List<int>();

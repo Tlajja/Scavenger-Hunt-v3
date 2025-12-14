@@ -32,6 +32,7 @@ export default function Vote() {
 
   async function loadSubmissionsByTask(taskId) {
     setLoading(true); setError('')
+    // Don't clear immediately - keep list visible to prevent scroll jump
     try {
       const res = await fetch(`/api/photosubmissions?taskId=${taskId}`)
       if (!res.ok) throw new Error(`Failed to load submissions (${res.status})`)
@@ -160,6 +161,7 @@ export default function Vote() {
         if (selectedTask) {
           const savedScroll = window.scrollY || document.documentElement.scrollTop
           await loadSubmissionsByTask(selectedTask)
+          // Restore scroll position after refresh
           requestAnimationFrame(() => {
             window.scrollTo({ top: savedScroll, behavior: 'instant' })
             setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 100)

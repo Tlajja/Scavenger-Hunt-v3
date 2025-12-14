@@ -120,7 +120,7 @@ namespace PhotoScavengerHunt.Tests.Controllers
         [Fact]
         public async Task VoteOnSubmission_ValidId_ReturnsOk()
         {
-            var result = await _controller.VoteOnSubmission(400);
+            var result = await _controller.VoteOnSubmission(400, 101);
 
             Assert.IsType<OkObjectResult>(result);
         }

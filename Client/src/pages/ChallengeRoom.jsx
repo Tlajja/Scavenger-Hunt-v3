@@ -313,6 +313,7 @@ export default function ChallengeRoom() {
     } catch {}
   }
 
+
   async function handleVote(subId) {
     try {
       const hasVoted = userVotes[subId]
@@ -357,6 +358,8 @@ export default function ChallengeRoom() {
       
       setTimeout(() => setMessage(''), 2000)
       
+      // Refresh in background after a delay to sync with server (so other users see updates)
+      // Clear any existing timeout
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
       }
@@ -367,12 +370,13 @@ export default function ChallengeRoom() {
         } else {
           await loadSubmissions()
         }
+        // Restore scroll position after refresh
         requestAnimationFrame(() => {
           window.scrollTo({ top: savedScroll, behavior: 'instant' })
           setTimeout(() => window.scrollTo({ top: savedScroll, behavior: 'instant' }), 100)
         })
         refreshTimeoutRef.current = null
-      }, 1500)
+      }, 1500) // Refresh after 1.5 seconds
     } catch (e) {
       setMessage(String(e))
     }
@@ -394,20 +398,28 @@ export default function ChallengeRoom() {
     
     const status = Number(challenge?.status ?? 0)
     
+    // If we're in voting stage (status 1), sync all votes before advancing
     if (status === 1) {
       setMessage('Syncing votes...')
       
+      // Cancel any pending refresh timeouts
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
         refreshTimeoutRef.current = null
       }
       
+      // Refresh submissions for all tasks to ensure votes are synced
       const taskIds = tasksForChallenge.map(t => t.id ?? t.Id).filter(Boolean)
       const savedScroll = window.scrollY || document.documentElement.scrollTop
       
       try {
+        // Refresh all tasks' submissions
         await Promise.all(taskIds.map(taskId => loadSubmissionsByTask(taskId)))
+        
+        // Restore scroll position
         window.scrollTo({ top: savedScroll, behavior: 'instant' })
+        
+        // Small delay to ensure server has processed all votes
         await new Promise(resolve => setTimeout(resolve, 500))
       } catch (e) {
         console.error('Error syncing votes:', e)
