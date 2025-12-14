@@ -188,5 +188,96 @@ namespace PhotoScavengerHunt.Tests.Services
                 () => HuntTaskFactory.Create("", 100));
             Assert.Contains("Task description cannot be empty", exception.Message);
         }
+
+        [Fact]
+        public async Task GetRandomTaskForUserAsync_ValidUser_ReturnsTask()
+        {
+            var result = await _service.GetRandomTaskForUserAsync(100);
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetRandomTaskForUserAsync_NonExistentUser_ThrowsArgumentException()
+        {
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.GetRandomTaskForUserAsync(99999));
+            Assert.Contains("User does not exist", exception.Message);
+        }
+
+        [Fact]
+        public async Task CreateTaskAsync_WithDeadline_SavesDeadline()
+        {
+            var deadline = DateTime.UtcNow.AddDays(7);
+            var request = new CreateTaskRequest(
+                Description: "Task with deadline",
+                AuthorId: 100,
+                Deadline: deadline
+            );
+
+            var result = await _service.CreateTaskAsync(request);
+
+            Assert.NotNull(result);
+            Assert.NotNull(result.Deadline);
+            Assert.Equal(deadline.Date, result.Deadline.Value.Date);
+        }
+
+        [Fact]
+        public async Task CreateTaskAsync_WithTimerSeconds_SavesTimer()
+        {
+            var request = new CreateTaskRequest(
+                Description: "Task with timer",
+                AuthorId: 100,
+                TimerSeconds: 300
+            );
+
+            var result = await _service.CreateTaskAsync(request);
+
+            Assert.NotNull(result);
+            Assert.Equal(300, result.TimerSeconds);
+        }
+
+        [Fact]
+        public async Task CreateUserTaskAsync_EmptyDescription_ThrowsArgumentException()
+        {
+            var request = new CreateTaskRequest(
+                Description: "",
+                AuthorId: 100
+            );
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.CreateUserTaskAsync(request));
+            Assert.Contains("Task description cannot be empty", exception.Message);
+        }
+
+        [Fact]
+        public async Task CreateUserTaskAsync_WhitespaceDescription_ThrowsArgumentException()
+        {
+            var request = new CreateTaskRequest(
+                Description: "   ",
+                AuthorId: 100
+            );
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.CreateUserTaskAsync(request));
+            Assert.Contains("Task description cannot be empty", exception.Message);
+        }
+
+        [Fact]
+        public async Task CreateUserTaskAsync_IsPersisted()
+        {
+            var request = new CreateTaskRequest(
+                Description: "User's Persistent Task",
+                AuthorId: 100
+            );
+
+            var created = await _service.CreateUserTaskAsync(request);
+            
+            var retrieved = await _service.GetTaskByIdAsync(created.Id);
+
+            Assert.NotNull(retrieved);
+            Assert.Equal(created.Id, retrieved.Id);
+            Assert.Equal("User's Persistent Task", retrieved.Description);
+        }
     }
 }
