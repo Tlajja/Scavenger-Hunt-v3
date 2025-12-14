@@ -36,6 +36,8 @@ builder.Services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHostedService<ChallengeDeadlineWorker>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SignalR", policy =>

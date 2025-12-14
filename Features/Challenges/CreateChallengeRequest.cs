@@ -9,8 +9,11 @@ public record CreateChallengeRequest
     public bool IsPrivate { get; init; }
     public int? MaxParticipants { get; init; }
 
+    public TimeSpan? SubmissionDuration { get; init; }
+    public TimeSpan? VotingDuration { get; init; }
+
     // New canonical constructor (multiple task ids)
-    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false, int? maxParticipants = null)
+    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null)
     {
         Name = name;
         CreatorId = creatorId;
@@ -18,5 +21,7 @@ public record CreateChallengeRequest
         Deadline = deadline;
         IsPrivate = isPrivate;
         MaxParticipants = maxParticipants;
+        SubmissionDuration = submissionDuration;
+        VotingDuration = votingDuration;
     }
 }

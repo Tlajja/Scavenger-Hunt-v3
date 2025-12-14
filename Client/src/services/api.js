@@ -134,7 +134,7 @@ export async function getChallengeById(id) {
  return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false, maxParticipants = null) {
+export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false, maxParticipants = null, submissionMinutes = 60, votingMinutes = 60) {
  const payload = {
  Name: name,
  CreatorId: Number(creatorId),
@@ -143,6 +143,18 @@ export async function createChallenge(name, creatorId, taskIds, deadlineIso = nu
  }
  if (deadlineIso) payload.Deadline = deadlineIso
  if (maxParticipants !== null && maxParticipants !== undefined) payload.MaxParticipants = Number(maxParticipants)
+  // Convert minutes to TimeSpan format: "d.hh:mm:ss"
+  const subMins = Math.floor(submissionMinutes)
+  const voteMins = Math.floor(votingMinutes)
+  const formatTimeSpan = (totalMins) => {
+    const days = Math.floor(totalMins / 1440)
+    const hrs = Math.floor((totalMins % 1440) / 60)
+    const mins = totalMins % 60
+    return `${days}.${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`
+  }
+  
+  payload.SubmissionDuration = formatTimeSpan(subMins)
+  payload.VotingDuration = formatTimeSpan(voteMins)
  return await safeFetch('/api/challenge', {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },

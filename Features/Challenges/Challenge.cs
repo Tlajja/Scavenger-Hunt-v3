@@ -11,6 +11,8 @@ public class Challenge : IHasCreatedAt, IHasDeadline
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? Deadline { get; set; }
+    public DateTime? SubmissionEndsAt { get; set; }
+    public DateTime? VotingEndsAt { get; set; }
 
     public bool IsPrivate { get; set; }
     public string JoinCode { get; set; } = "";

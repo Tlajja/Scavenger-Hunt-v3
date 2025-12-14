@@ -36,6 +36,7 @@ export default function ChallengeRoom() {
   const [tasksForChallenge, setTasksForChallenge] = useState([])
   const [challengeTasksMeta, setChallengeTasksMeta] = useState([])
   const [countdownByTask, setCountdownByTask] = useState({})
+  const [stageCountdown, setStageCountdown] = useState('')
   const [submitTaskId, setSubmitTaskId] = useState('')
   const [voteTaskId, setVoteTaskId] = useState('')
   
@@ -77,6 +78,61 @@ export default function ChallengeRoom() {
       else if (status === 2) setActiveTab('leaderboard')
     }
   }, [challenge])
+
+  // Poll challenge status to detect auto-advance
+ useEffect(() => {
+   const timer = setInterval(async () => {
+     try {
+       const res = await fetch(`${API_BASE}/api/challenge/${challengeId}`)
+       if (res.ok) {
+         const data = await res.json()
+         setChallenge(data)
+       }
+     } catch {}
+   }, 15000) // check every 15 seconds
+   return () => clearInterval(timer)
+ }, [challengeId])
+
+ // Stage countdown updater
+ useEffect(() => {
+   function parseAsMs(s) {
+     if (!s) return null
+     const str = String(s)
+     const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(str)
+     const normalized = hasTz ? str : (str.endsWith('Z') ? str : str + 'Z')
+     const ms = Date.parse(normalized)
+     return Number.isFinite(ms) ? ms : null
+   }
+   
+   function fmtCountdown(endMs) {
+     const diff = endMs - Date.now()
+     if (diff <= 0) return 'Stage ended'
+     const total = Math.floor(diff / 1000)
+     const d = Math.floor(total / 86400)
+     const h = Math.floor((total % 86400) / 3600)
+     const m = Math.floor((total % 3600) / 60)
+     const s = total % 60
+     return d > 0 ? `${d}d ${h}h ${m}m` : h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`
+   }
+
+   function update() {
+     const status = Number(challenge?.status ?? 0)
+     if (status === 0) {
+       const endMs = parseAsMs(challenge?.submissionEndsAt ?? challenge?.SubmissionEndsAt)
+       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+     } else if (status === 1) {
+       const endMs = parseAsMs(challenge?.votingEndsAt ?? challenge?.VotingEndsAt)
+       setStageCountdown(endMs ? `This phase ends in: ${fmtCountdown(endMs)}` : '')
+     } else {
+       setStageCountdown('')
+     }
+   }
+    if (challenge) {
+     update()
+     const timerId = setInterval(update, 1000)
+     return () => clearInterval(timerId)
+   }
+ }, [challenge])
 
   async function loadChallengeData() {
     setLoading(true)
@@ -528,6 +584,12 @@ export default function ChallengeRoom() {
               }}>
                 {statusInfo.text}
               </div>
+              {stageCountdown && (
+               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14 }}>
+                 {stageCountdown}
+               </div>
+             )}
+
               {(challenge?.isPrivate ?? challenge?.IsPrivate ?? challenge?.private ?? false) && (challenge?.joinCode ?? challenge?.JoinCode) && (
                 <div style={{
                   background: 'rgba(100, 108, 255, 0.2)',
@@ -564,12 +626,19 @@ export default function ChallengeRoom() {
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             {isAdmin && status < 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button onClick={handleAdvance} style={{
                 background: '#51cf66',
                 padding: '10px 20px'
               }}>
                 {status === 0 ? '→ Move to Voting' : 'Complete Challenge'}
               </button>
+              {stageCountdown && (
+                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textAlign: 'center' }}>
+                   Auto-advances when phase timer ends
+                 </div>
+               )}
+             </div>
             )}
             <button onClick={handleLeave} style={{
               background: '#ff6b6b',

@@ -86,6 +86,13 @@ namespace PhotoScavengerHunt.Services
             if (adminCount >= 1)
                 throw new LimitExceededException("A user can create only one challenge at a time.");
             
+            TimeSpan subDur = request.SubmissionDuration ?? TimeSpan.FromDays(1);
+            TimeSpan voteDur = request.VotingDuration ?? TimeSpan.FromDays(1);
+            TimeSpan min = TimeSpan.FromMinutes(1);
+            TimeSpan max = TimeSpan.FromDays(7);
+            if (subDur < min || subDur > max) throw new ValidationException("Submission duration must be between 1 minute and 7 days.");
+            if (voteDur < min || voteDur > max) throw new ValidationException("Voting duration must be between 1 minute and 7 days.");
+
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
             var challenge = ChallengeFactory.Create(
@@ -95,7 +102,9 @@ namespace PhotoScavengerHunt.Services
                 isPrivate: request.IsPrivate,
                 joinCode: joinCode,
                 deadline: request.Deadline,
-                maxParticipants: request.MaxParticipants);
+                maxParticipants: request.MaxParticipants,
+                submissionDuration: subDur,
+                votingDuration: voteDur);
 
             await _challengeRepo.AddAsync(challenge);
             await _challengeRepo.SaveChangesAsync();
