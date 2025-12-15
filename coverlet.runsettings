@@ -4,8 +4,37 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
-          <Format>cobertura</Format>
-          <Exclude>[PhotoScavengerHunt.Tests]*,[PhotoScavengerHunt]PhotoScavengerHunt.Migrations.*</Exclude>
+          <Format>cobertura,opencover</Format>
+          
+          <!-- Exclude by assembly and namespace -->
+          <Exclude>
+            [*.Tests]*,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Migrations.*,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Services.ActiveUsersService,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Services.ChallengeDeadlineWorker,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Services.CloudinaryStorageService,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Features.Users.CustomUserIdProvider,
+            [PhotoScavengerHunt]ActiveUsersHub,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Features.Photos.CommentsHub,
+            [PhotoScavengerHunt]PhotoScavengerHunt.Middleware.GlobalExceptionHandlerMiddleware,
+            [PhotoScavengerHunt]Program
+          </Exclude>
+          
+          <!-- Exclude by file path -->
+          <ExcludeByFile>
+            **/Migrations/**/*.cs,
+            **/Program.cs,
+            **/GlobalExceptionHandlerMiddleware.cs,
+            **/ActiveUsersHub.cs,
+            **/CommentsHub.cs,
+            **/ActiveUsersService.cs,
+            **/ChallengeDeadlineWorker.cs,
+            **/CloudinaryStorageService.cs,
+            **/CustomUserIdProvider.cs
+          </ExcludeByFile>
+          
+          <!-- Exclude auto-generated code -->
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
         </Configuration>
       </DataCollector>
     </DataCollectors>
