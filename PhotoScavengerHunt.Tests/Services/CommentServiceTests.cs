@@ -154,48 +154,6 @@ namespace PhotoScavengerHunt.Tests.Services
         }
 
         [Fact]
-        public async Task GetCommentsAsync_IncludesProcessedData()
-        {
-            var longText = new string('A', 60); // > 50 characters
-            await _service.AddCommentAsync(400, new AddCommentRequest(100, longText));
-
-            var result = await _service.GetCommentsAsync(400);
-
-            var comment = result.Comments![0];
-            
-            // Use reflection to access anonymous type properties
-            var commentType = comment.GetType();
-            var isRecentProp = commentType.GetProperty("IsRecent");
-            var previewProp = commentType.GetProperty("Preview");
-            
-            Assert.NotNull(isRecentProp);
-            Assert.NotNull(previewProp);
-            
-            var preview = (string)previewProp.GetValue(comment)!;
-            Assert.NotNull(preview);
-            Assert.True(preview.Length <= 53); // 50 + "..."
-            Assert.EndsWith("...", preview);
-        }
-
-        [Fact]
-        public async Task GetCommentsAsync_RecentComment_MarkedAsRecent()
-        {
-            await _service.AddCommentAsync(400, new AddCommentRequest(100, "Recent comment"));
-
-            var result = await _service.GetCommentsAsync(400);
-
-            var comment = result.Comments![0];
-            
-            // Use reflection to access anonymous type properties
-            var commentType = comment.GetType();
-            var isRecentProp = commentType.GetProperty("IsRecent");
-            Assert.NotNull(isRecentProp);
-            
-            var isRecent = (bool)isRecentProp.GetValue(comment)!;
-            Assert.True(isRecent);
-        }
-
-        [Fact]
         public async Task DeleteCommentAsync_ValidComment_ReturnsSuccess()
         {
             var addResult = await _service.AddCommentAsync(400, new AddCommentRequest(100, "To be deleted"));
@@ -252,18 +210,8 @@ namespace PhotoScavengerHunt.Tests.Services
             // Re-query from database
             var getResult = await _service.GetCommentsAsync(400);
 
-            var comment = getResult.Comments!.First();
-            
-            // Use reflection to access anonymous type properties
-            var commentType = comment.GetType();
-            var idProp = commentType.GetProperty("Id");
-            var textProp = commentType.GetProperty("Text");
-            
-            var id = (int)idProp!.GetValue(comment)!;
-            var text = (string)textProp!.GetValue(comment)!;
-            
-            Assert.Equal(commentId, id);
-            Assert.Equal("Persistent comment", text);
+            Assert.Equal(commentId, getResult.Comments![0].Id);
+            Assert.Equal("Persistent comment", getResult.Comments[0].Text);
         }
 
         [Fact]
@@ -288,6 +236,118 @@ namespace PhotoScavengerHunt.Tests.Services
 
             Assert.False(result.Success);
             Assert.Contains("cannot exceed 500 characters", result.Error);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_PopulatesUserNames()
+        {
+            var request = new AddCommentRequest(100, "Test comment");
+
+            var result = await _service.AddCommentAsync(400, request);
+
+            Assert.NotNull(result.Comments);
+            Assert.All(result.Comments, c => Assert.NotNull(c.UserName));
+            Assert.Equal("User 100", result.Comments[0].UserName);
+        }
+
+        [Fact]
+        public async Task GetCommentsAsync_PopulatesUserNames()
+        {
+            await _service.AddCommentAsync(400, new AddCommentRequest(100, "Comment by 100"));
+            await _service.AddCommentAsync(400, new AddCommentRequest(101, "Comment by 101"));
+
+            var result = await _service.GetCommentsAsync(400);
+
+            Assert.NotNull(result.Comments);
+            Assert.All(result.Comments, c => Assert.NotNull(c.UserName));
+            Assert.Contains(result.Comments, c => c.UserName == "User 100");
+            Assert.Contains(result.Comments, c => c.UserName == "User 101");
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_MultipleUsersOnSameSubmission_Success()
+        {
+            await _service.AddCommentAsync(400, new AddCommentRequest(100, "User 100 comment"));
+            await _service.AddCommentAsync(400, new AddCommentRequest(101, "User 101 comment"));
+            await _service.AddCommentAsync(400, new AddCommentRequest(102, "User 102 comment"));
+
+            var result = await _service.GetCommentsAsync(400);
+
+            Assert.Equal(3, result.Comments!.Count);
+            Assert.Equal(3, result.Comments.Select(c => c.UserId).Distinct().Count());
+        }
+
+        [Fact]
+        public async Task GetCommentsAsync_NullCommentsList_ReturnsEmpty()
+        {
+            // Test with a submission that has no comments
+            var result = await _service.GetCommentsAsync(401); // Different submission with no comments
+
+            Assert.True(result.Success);
+            Assert.NotNull(result.Comments);
+            Assert.Empty(result.Comments);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_SetsPhotoSubmissionId()
+        {
+            var request = new AddCommentRequest(100, "Test comment");
+
+            var result = await _service.AddCommentAsync(400, request);
+
+            Assert.Equal(400, result.Comments![0].PhotoSubmissionId);
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_OnlyDeletesSpecifiedComment()
+        {
+            var comment1 = await _service.AddCommentAsync(400, new AddCommentRequest(100, "Comment 1"));
+            var comment2 = await _service.AddCommentAsync(400, new AddCommentRequest(101, "Comment 2"));
+            var comment3 = await _service.AddCommentAsync(400, new AddCommentRequest(102, "Comment 3"));
+
+            var commentToDelete = comment2.Comments![1].Id;
+
+            await _service.DeleteCommentAsync(400, commentToDelete);
+
+            var remaining = await _service.GetCommentsAsync(400);
+            Assert.Equal(2, remaining.Comments!.Count);
+            Assert.DoesNotContain(remaining.Comments, c => c.Id == commentToDelete);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ExactlyMaxLength_Succeeds()
+        {
+            var maxLengthText = new string('X', 500);
+            var request = new AddCommentRequest(100, maxLengthText);
+
+            var result = await _service.AddCommentAsync(400, request);
+
+            Assert.True(result.Success);
+            Assert.Equal(500, result.Comments![0].Text.Length);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_OneCharacterOverMax_ReturnsError()
+        {
+            var overMaxText = new string('X', 501);
+            var request = new AddCommentRequest(100, overMaxText);
+
+            var result = await _service.AddCommentAsync(400, request);
+
+            Assert.False(result.Success);
+            Assert.Contains("500", result.Error);
+        }
+
+        [Fact]
+        public async Task GetCommentsAsync_MultipleCallsSameSubmission_ConsistentResults()
+        {
+            await _service.AddCommentAsync(400, new AddCommentRequest(100, "Comment"));
+
+            var result1 = await _service.GetCommentsAsync(400);
+            var result2 = await _service.GetCommentsAsync(400);
+
+            Assert.Equal(result1.Comments!.Count, result2.Comments!.Count);
+            Assert.Equal(result1.Comments[0].Text, result2.Comments[0].Text);
         }
     }
 }

@@ -215,6 +215,136 @@ namespace PhotoScavengerHunt.Tests.Services
             Assert.Empty(submission.Comments);
         }
 
+        [Fact]
+        public async Task UploadPhotoAsync_EmptyFile_ReturnsError()
+        {
+            var file = CreateMockFile("empty.jpg", "", "image/jpeg");
+            var mockFile = new Mock<IFormFile>();
+            mockFile.Setup(f => f.FileName).Returns("empty.jpg");
+            mockFile.Setup(f => f.Length).Returns(0);
+            mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
+
+            var result = await _service.UploadPhotoAsync(200, 100, mockFile.Object);
+
+            Assert.False(result.Success);
+            Assert.Equal("No file uploaded.", result.Message);
+        }
+
+        [Fact]
+        public async Task GetSubmissionsForChallengeAsync_ReturnsSubmissions()
+        {
+            var result = await _service.GetSubmissionsForChallengeAsync(300);
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetSubmissionsForTaskAsync_PopulatesUserNames()
+        {
+            var result = await _service.GetSubmissionsForTaskAsync(200);
+
+            Assert.NotNull(result);
+            Assert.All(result, s => Assert.NotNull(s.UserName));
+        }
+
+        [Fact]
+        public async Task GetSubmissionsByUserAsync_PopulatesUserNames()
+        {
+            var result = await _service.GetSubmissionsByUserAsync(100);
+
+            Assert.NotNull(result);
+            Assert.All(result, s => Assert.NotNull(s.UserName));
+        }
+
+        [Fact]
+        public async Task GetSubmissionsForChallengeAsync_PopulatesUserNames()
+        {
+            var result = await _service.GetSubmissionsForChallengeAsync(300);
+
+            Assert.NotNull(result);
+            Assert.All(result, s => Assert.NotNull(s.UserName));
+        }
+
+        [Fact]
+        public async Task DeleteSubmissionAsync_CallsStorageService()
+        {
+            await _service.DeleteSubmissionAsync(400);
+
+            _mockStorage.Verify(s => s.DeleteFileAsync(It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UploadPhotoAsync_WithChallengeId_IncludesInSubmission()
+        {
+            var file = CreateMockFile("test.jpg", "content", "image/jpeg");
+
+            var result = await _service.UploadPhotoAsync(200, 101, file, challengeId: 300);
+
+            Assert.True(result.Success);
+            
+            var submission = await DbContext.Photos.FindAsync(result.SubmissionId);
+            Assert.NotNull(submission);
+            Assert.Equal(300, submission.ChallengeId);
+        }
+
+        [Fact]
+        public async Task UploadPhotoAsync_DuplicateSubmissionInChallenge_ReturnsError()
+        {
+            var file = CreateMockFile("test.jpg", "content", "image/jpeg");
+
+            // First submission
+            await _service.UploadPhotoAsync(200, 101, file, challengeId: 300);
+
+            // Try duplicate submission
+            var result = await _service.UploadPhotoAsync(200, 101, file, challengeId: 300);
+
+            Assert.False(result.Success);
+            Assert.Contains("already submitted a photo for this task in this challenge", result.Message);
+        }
+
+        [Fact]
+        public async Task UploadPhotoAsync_NullTaskIdWithoutChallenge_ReturnsError()
+        {
+            var file = CreateMockFile("test.jpg", "content", "image/jpeg");
+
+            var result = await _service.UploadPhotoAsync(null, 100, file);
+
+            Assert.False(result.Success);
+            Assert.Equal("Task does not exist.", result.Message);
+        }
+
+        [Fact]
+        public async Task DeleteSubmissionAsync_StorageThrowsException_ReturnsError()
+        {
+            _mockStorage.Setup(s => s.DeleteFileAsync(It.IsAny<string>()))
+                .ThrowsAsync(new Exception("Storage error"));
+
+            var result = await _service.DeleteSubmissionAsync(400);
+
+            Assert.False(result.Success);
+            Assert.Contains("Error deleting submission", result.Message);
+        }
+
+        [Fact]
+        public async Task UploadPhotoAsync_UppercaseFileExtension_IsAccepted()
+        {
+            var file = CreateMockFile("test.JPG", "content", "image/jpeg");
+
+            var result = await _service.UploadPhotoAsync(200, 100, file);
+
+            Assert.True(result.Success);
+        }
+
+        [Fact]
+        public async Task UploadPhotoAsync_MixedCaseFileExtension_IsAccepted()
+        {
+            var file = CreateMockFile("test.JpG", "content", "image/jpeg");
+
+            var result = await _service.UploadPhotoAsync(200, 100, file);
+
+            Assert.True(result.Success);
+        }
+
         public override void Dispose()
         {
             base.Dispose();
