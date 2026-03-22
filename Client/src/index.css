@@ -1,5 +1,19 @@
+/* Load Google's Noto Color Emoji from CDN */
+@font-face {
+  font-family: 'Noto Color Emoji';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/noto-color-emoji@latest/emoji-400-normal.woff2) format('woff2');
+}
+
+/* Force Noto Color Emoji for all emoji rendering */
+*, *::before, *::after {
+  font-family: inherit;
+}
+
 :root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, 'Noto Color Emoji', sans-serif;
   line-height: 1.6;
   font-weight: 400;
 
@@ -33,6 +47,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, 'Noto Color Emoji', sans-serif;
+}
+
+/* Force emoji font inside emoji-picker-element's shadow DOM */
+emoji-picker {
+  --emoji-font-family: 'Noto Color Emoji';
 }
 
 h1, h2, h3 {
