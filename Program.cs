@@ -34,7 +34,7 @@ builder.Services.AddScoped<IPhotoRepository, PhotoRepository>();
 builder.Services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
 
 builder.Services.AddDbContext<PhotoScavengerHuntDbContext>(options =>
- options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+ options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHostedService<ChallengeDeadlineWorker>();
 
