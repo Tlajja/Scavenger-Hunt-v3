@@ -630,6 +630,17 @@ namespace PhotoScavengerHunt.Migrations
                     b.Navigation("PhotoSubmission");
                 });
 
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.CommentReaction", b =>
+                {
+                    b.HasOne("PhotoScavengerHunt.Features.Photos.Comment", "Comment")
+                        .WithMany("Reactions")
+                        .HasForeignKey("CommentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Comment");
+                });
+
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Vote", b =>
                 {
                     b.HasOne("PhotoScavengerHunt.Features.Photos.PhotoSubmission", "PhotoSubmission")
@@ -654,6 +665,11 @@ namespace PhotoScavengerHunt.Migrations
                     b.Navigation("ChallengeTasks");
 
                     b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.Comment", b =>
+                {
+                    b.Navigation("Reactions");
                 });
 
             modelBuilder.Entity("PhotoScavengerHunt.Features.Photos.PhotoSubmission", b =>
