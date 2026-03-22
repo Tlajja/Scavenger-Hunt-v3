@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react": "^19.2.4",
+    "signalr": "^2.4.3"
+  }
+}
