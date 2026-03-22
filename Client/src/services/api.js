@@ -204,6 +204,27 @@ export async function deleteComment(submissionId, commentId) {
   })
 }
 
+// Comment reactions endpoints
+export async function addReaction(commentId, userId, emoji) {
+  return await safeFetch(`/api/comments/${Number(commentId)}/reactions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ UserId: Number(userId), Emoji: emoji })
+  })
+}
+
+export async function removeReaction(commentId, userId, emoji) {
+  return await safeFetch(`/api/comments/${Number(commentId)}/reactions?userId=${Number(userId)}&emoji=${encodeURIComponent(emoji)}`, {
+    method: 'DELETE'
+  })
+}
+
+export async function getReactions(commentId) {
+  return await safeFetch(`/api/comments/${Number(commentId)}/reactions`, {
+    method: 'GET'
+  })
+}
+
 // User account endpoints
 export async function deleteAccount(userId) {
   return await safeFetch(`/api/users/${Number(userId)}`, {

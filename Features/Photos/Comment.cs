@@ -18,6 +18,9 @@ namespace PhotoScavengerHunt.Features.Photos
         [JsonIgnore]
         public PhotoSubmission? PhotoSubmission { get; set; }
 
+        [JsonIgnore]
+        public ICollection<CommentReaction> Reactions { get; set; } = new List<CommentReaction>();
+
         [NotMapped]
         public bool IsRecent => Timestamp > DateTime.UtcNow.AddHours(-24);
 

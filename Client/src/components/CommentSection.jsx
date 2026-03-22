@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
+import ReactDOM from 'react-dom'
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
-import { API_BASE, getComments, addComment, deleteComment } from '../services/api.js'
+import { API_BASE, getComments, addComment, deleteComment, addReaction, removeReaction, getReactions } from '../services/api.js'
+import EmojiPicker from './EmojiPicker.jsx'
 
 const MAX_COMMENT_LENGTH = 500
 
@@ -11,6 +13,9 @@ export default function CommentSection({ submissionId, currentUserId }) {
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(null) // commentId or null
+  const [commentReactions, setCommentReactions] = useState({}) // { commentId: [reactions] }
+  const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 })
   const connectionRef = useRef(null)
 
   useEffect(() => {
@@ -53,6 +58,10 @@ export default function CommentSection({ submissionId, currentUserId }) {
         }
       })
 
+      conn.on('ReactionsUpdated', updatedCommentId => {
+        loadReactionsForComment(updatedCommentId)
+      })
+
       try {
         await conn.start()
         if (disposed) {
@@ -88,10 +97,30 @@ export default function CommentSection({ submissionId, currentUserId }) {
       }
       const data = Array.isArray(res.data) ? res.data : []
       setComments(data)
+      
+      // Load reactions for all comments
+      for (const comment of data) {
+        const commentId = comment.id ?? comment.Id
+        await loadReactionsForComment(commentId)
+      }
     } catch (e) {
       setError('Error loading comments')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadReactionsForComment(commentId) {
+    try {
+      const res = await getReactions(commentId)
+      if (res.ok && Array.isArray(res.data)) {
+        setCommentReactions(prev => ({
+          ...prev,
+          [commentId]: res.data
+        }))
+      }
+    } catch (e) {
+      console.error('Error loading reactions:', e)
     }
   }
 
@@ -145,6 +174,96 @@ export default function CommentSection({ submissionId, currentUserId }) {
     } catch (e) {
       setError('Error deleting comment')
     }
+  }
+
+  async function handleAddReaction(commentId, emoji) {
+    try {
+      const res = await addReaction(commentId, currentUserId, emoji)
+      if (res.ok) {
+        await loadReactionsForComment(commentId)
+      } else {
+        console.error('Failed to add reaction:', res.text)
+      }
+    } catch (e) {
+      console.error('Error adding reaction:', e)
+    }
+  }
+
+  async function handleRemoveReaction(commentId, emoji) {
+    try {
+      const res = await removeReaction(commentId, currentUserId, emoji)
+      if (res.ok) {
+        await loadReactionsForComment(commentId)
+      } else {
+        console.error('Failed to remove reaction:', res.text)
+      }
+    } catch (e) {
+      console.error('Error removing reaction:', e)
+    }
+  }
+
+  function handleReactionButtonClick(commentId, event) {
+    // Toggle off if already showing for this comment
+    if (showEmojiPicker === commentId) {
+      setShowEmojiPicker(null)
+      return
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect()
+    const PICKER_QUICK_H = 80   // quick picker is ~1 row, roughly 80px
+    const PICKER_W = 360        // max width (full picker is 350)
+    const MARGIN = 8
+
+    // Default: position below the button, aligned to its left edge
+    let top = rect.bottom + MARGIN
+    let left = rect.left
+
+    // If not enough space below for even the quick picker, position above
+    const spaceBelow = window.innerHeight - rect.bottom
+    if (spaceBelow < PICKER_QUICK_H + MARGIN) {
+      top = rect.top - PICKER_QUICK_H - MARGIN
+    }
+
+    // Clamp horizontally so it doesn't go off the right edge
+    if (left + PICKER_W > window.innerWidth) {
+      left = window.innerWidth - PICKER_W - MARGIN
+    }
+    // Don't go off the left edge either
+    if (left < MARGIN) {
+      left = MARGIN
+    }
+
+    // Clamp vertically — never go above the viewport
+    if (top < MARGIN) {
+      top = MARGIN
+    }
+
+    setPickerPosition({ top, left })
+    setShowEmojiPicker(commentId)
+  }
+
+  function getReactionSummary(commentId) {
+    const reactions = commentReactions[commentId] || []
+    const summary = {}
+    
+    reactions.forEach(r => {
+      const emoji = r.emoji ?? r.Emoji
+      if (!summary[emoji]) {
+        summary[emoji] = { count: 0, users: [] }
+      }
+      summary[emoji].count++
+      summary[emoji].users.push(r.userName ?? r.UserName ?? `User ${r.userId ?? r.UserId}`)
+    })
+    
+    return summary
+  }
+
+  function hasUserReacted(commentId, emoji) {
+    const reactions = commentReactions[commentId] || []
+    return reactions.some(r => 
+      (r.userId ?? r.UserId) === currentUserId && 
+      (r.emoji ?? r.Emoji) === emoji
+    )
   }
 
   function formatTimestamp(timestamp) {
@@ -210,6 +329,7 @@ export default function CommentSection({ submissionId, currentUserId }) {
                 const text = comment.text ?? comment.Text ?? ''
                 const timestamp = comment.timestamp ?? comment.Timestamp
                 const isOwner = Number(userId) === Number(currentUserId)
+                const reactionSummary = getReactionSummary(commentId)
 
                 return (
                   <div
@@ -218,7 +338,8 @@ export default function CommentSection({ submissionId, currentUserId }) {
                       background: 'rgba(100, 108, 255, 0.1)',
                       borderRadius: 8,
                       padding: 12,
-                      marginBottom: 8
+                      marginBottom: 8,
+                      position: 'relative'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -246,10 +367,91 @@ export default function CommentSection({ submissionId, currentUserId }) {
                         </button>
                       )}
                     </div>
+
+                    {/* Reactions section */}
+                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      {/* Add reaction button */}
+                      <button
+                        onClick={(e) => handleReactionButtonClick(commentId, e)}
+                        title="Add reaction"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: 4,
+                          padding: 2,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s',
+                          width: 24,
+                          height: 24
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 160 160" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="72" cy="72" r="68"/>
+                          <circle cx="52" cy="62" r="7" fill="currentColor" stroke="none"/>
+                          <circle cx="92" cy="62" r="7" fill="currentColor" stroke="none"/>
+                          <path d="M50 92 Q72 116 94 92"/>
+                          <line x1="128" y1="140" x2="148" y2="140" strokeWidth="4"/>
+                          <line x1="138" y1="130" x2="138" y2="150" strokeWidth="4"/>
+                        </svg>
+                      </button>
+
+                      {/* Display reactions */}
+                      {Object.entries(reactionSummary).map(([emoji, data]) => {
+                        const userReacted = hasUserReacted(commentId, emoji)
+                        return (
+                          <button
+                            key={emoji}
+                            onClick={() => userReacted ? handleRemoveReaction(commentId, emoji) : handleAddReaction(commentId, emoji)}
+                            title={data.users.join(', ')}
+                            style={{
+                              background: userReacted ? 'rgba(100, 108, 255, 0.3)' : 'rgba(255, 255, 255, 0.05)',
+                              border: userReacted ? '1px solid rgba(100, 108, 255, 0.5)' : '1px solid rgba(255, 255, 255, 0.2)',
+                              borderRadius: 6,
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 14,
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.transform = 'scale(1.05)'
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.transform = 'scale(1)'
+                            }}
+                          >
+                            <span>{emoji}</span>
+                            <span style={{ fontSize: 12 }}>{data.count}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
             </div>
+          )}
+
+          {/* Portal the emoji picker to document.body so it escapes all overflow clipping */}
+          {showEmojiPicker != null && ReactDOM.createPortal(
+            <EmojiPicker
+              position={pickerPosition}
+              onSelect={(emoji) => handleAddReaction(showEmojiPicker, emoji)}
+              onClose={() => setShowEmojiPicker(null)}
+            />,
+            document.body
           )}
 
           {currentUserId && (
@@ -320,3 +522,4 @@ export default function CommentSection({ submissionId, currentUserId }) {
   )
 }
 
+// Made with Bob
