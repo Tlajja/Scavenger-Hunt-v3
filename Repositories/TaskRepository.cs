@@ -41,9 +41,9 @@ namespace PhotoScavengerHunt.Repositories
                 // Do not return tasks authored by the user to keep it fair
                 .Where(t => t.AuthorId != userId);
 
-            // Order by NEWID() for SQL Server randomness; fallback to client-side for in-memory
+            // Use SQLite's RANDOM() function for better performance
             return await query
-                .OrderBy(_ => Guid.NewGuid())
+                .OrderBy(t => EF.Functions.Random())
                 .FirstOrDefaultAsync();
         }
 
