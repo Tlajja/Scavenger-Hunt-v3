@@ -26,6 +26,8 @@ namespace PhotoScavengerHunt.Services
             _commentsHub = commentsHub;
         }
 
+        // test
+
         private async Task<List<CommentReaction>> ProcessReactionsWithUsernamesAsync(List<CommentReaction> reactions)
         {
             if (reactions == null || !reactions.Any())
