@@ -390,5 +390,11 @@ namespace PhotoScavengerHunt.Tests.Services
             Assert.Single(allReactions);
             Assert.Equal("😂", allReactions[0].Emoji);
         }
+        [Fact]
+        public async Task FailingTest_AssertTrueOnFalse()
+        {
+            // This test will always fail to demonstrate CI failure
+            Assert.True(false);
+        }
     }
 }
