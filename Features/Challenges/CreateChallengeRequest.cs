@@ -12,8 +12,12 @@ public record CreateChallengeRequest
     public TimeSpan? SubmissionDuration { get; init; }
     public TimeSpan? VotingDuration { get; init; }
 
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
+    public string? LocationName { get; init; }
+
     // New canonical constructor (multiple task ids)
-    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null)
+    public CreateChallengeRequest(string name, int creatorId, IEnumerable<int> taskIds, DateTime? deadline, bool isPrivate = false, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null, double? latitude = null, double? longitude = null, string? locationName = null)
     {
         Name = name;
         CreatorId = creatorId;
@@ -23,5 +27,8 @@ public record CreateChallengeRequest
         MaxParticipants = maxParticipants;
         SubmissionDuration = submissionDuration;
         VotingDuration = votingDuration;
+        Latitude = latitude;
+        Longitude = longitude;
+        LocationName = locationName;
     }
 }

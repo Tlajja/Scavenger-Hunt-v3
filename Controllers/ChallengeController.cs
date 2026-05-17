@@ -95,5 +95,72 @@ namespace PhotoScavengerHunt.Controllers
             var list = await _challengeService.GetChallengesForUserAsync(userId);
             return Ok(list);
         }
+
+        [HttpGet("map")]
+        public async Task<IActionResult> GetChallengesForMap()
+        {
+            var challenges = await _challengeService.GetChallengesAsync(publicOnly: true);
+            
+            var mapChallenges = challenges
+                .Where(c => c.Status == ChallengeStatus.Open &&
+                           c.Latitude.HasValue &&
+                           c.Longitude.HasValue)
+                .Select(c => new ChallengeMapDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    JoinCode = c.JoinCode,
+                    ParticipantCount = c.Participants?.Count ?? 0,
+                    MaxParticipants = c.MaxParticipants ?? 10,
+                    Location = new Location
+                    {
+                        Latitude = c.Latitude!.Value,
+                        Longitude = c.Longitude!.Value,
+                        LocationName = c.LocationName ?? ""
+                    }
+                })
+                .ToList();
+
+            return Ok(mapChallenges);
+        }
+
+        [HttpGet("nearby")]
+        public async Task<IActionResult> GetNearbyChallenges(
+            [FromQuery] double lat,
+            [FromQuery] double lng,
+            [FromQuery] double radiusKm = 10)
+        {
+            var challenges = await _challengeService.GetChallengesAsync(publicOnly: true);
+            
+            var nearbyChallenges = challenges
+                .Where(c => c.Status == ChallengeStatus.Open &&
+                           c.Latitude.HasValue &&
+                           c.Longitude.HasValue)
+                .Select(c => new
+                {
+                    Challenge = c,
+                    Distance = PhotoScavengerHunt.Services.GeoCalculator.CalculateDistanceKm(
+                        lat, lng, c.Latitude!.Value, c.Longitude!.Value)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Distance)
+                .Select(x => new ChallengeMapDto
+                {
+                    Id = x.Challenge.Id,
+                    Name = x.Challenge.Name,
+                    JoinCode = x.Challenge.JoinCode,
+                    ParticipantCount = x.Challenge.Participants?.Count ?? 0,
+                    MaxParticipants = x.Challenge.MaxParticipants ?? 10,
+                    Location = new Location
+                    {
+                        Latitude = x.Challenge.Latitude!.Value,
+                        Longitude = x.Challenge.Longitude!.Value,
+                        LocationName = x.Challenge.LocationName ?? ""
+                    }
+                })
+                .ToList();
+
+            return Ok(nearbyChallenges);
+        }
     }
 }

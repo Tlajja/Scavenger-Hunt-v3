@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { joinChallenge, getChallenges, getChallengeById, getMyChallenges } from '../services/api.js'
+import { joinChallenge, getChallenges, getChallengeById, getMyChallenges, getMapChallenges } from '../services/api.js'
+import ChallengeMap from '../components/ChallengeMap.jsx'
+import * as signalR from '@microsoft/signalr'
 
 export default function JoinChallenge() {
   const navigate = useNavigate()
@@ -13,12 +15,111 @@ export default function JoinChallenge() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [joining, setJoining] = useState(false)
+  const [mapChallenges, setMapChallenges] = useState([])
+  const [mapLoading, setMapLoading] = useState(true)
+  const [previewChallenge, setPreviewChallenge] = useState(null)
+  const [previewing, setPreviewing] = useState(false)
+  const connectionRef = useRef(null)
 
   useEffect(() => {
     loadPublicChallenges()
     loadMyChallenges()
+    loadMapChallenges()
+    
+    // Setup SignalR connection for real-time updates
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/challenges')
+      .withAutomaticReconnect()
+      .build()
+    
+    connection.on('ChallengeCreated', (challenge) => {
+      console.log('Challenge created:', challenge)
+      // Add new challenge to lists if it's public
+      if (!challenge.IsPrivate && !challenge.isPrivate) {
+        setPublicChallenges(prev => [challenge, ...prev])
+        
+        // Add to map if it has location
+        if (challenge.Latitude != null && challenge.Longitude != null) {
+          const mapChallenge = {
+            id: challenge.Id || challenge.id,
+            name: challenge.Name || challenge.name,
+            joinCode: challenge.JoinCode || challenge.joinCode,
+            participantCount: challenge.ParticipantCount || challenge.participantCount || 0,
+            maxParticipants: challenge.MaxParticipants || challenge.maxParticipants || 10,
+            isPrivate: challenge.IsPrivate || challenge.isPrivate || false,
+            deadline: challenge.Deadline || challenge.deadline,
+            location: {
+              latitude: challenge.Latitude || challenge.latitude,
+              longitude: challenge.Longitude || challenge.longitude,
+              locationName: challenge.LocationName || challenge.locationName || ''
+            }
+          }
+          setMapChallenges(prev => [...prev, mapChallenge])
+        }
+      }
+    })
+    
+    connection.on('ChallengeUpdated', (update) => {
+      console.log('Challenge updated:', update)
+      const challengeId = update.Id || update.id
+      
+      // Update participant count in public challenges
+      setPublicChallenges(prev => prev.map(c => {
+        const cId = c.id ?? c.Id
+        if (cId === challengeId) {
+          return {
+            ...c,
+            participants: Array(update.ParticipantCount || update.participantCount).fill(null)
+          }
+        }
+        return c
+      }))
+      
+      // Update participant count in map challenges
+      setMapChallenges(prev => prev.map(c => {
+        if (c.id === challengeId) {
+          return {
+            ...c,
+            participantCount: update.ParticipantCount || update.participantCount
+          }
+        }
+        return c
+      }))
+    })
+    
+    connection.on('ChallengeDeleted', (challengeId) => {
+      console.log('Challenge deleted:', challengeId)
+      setPublicChallenges(prev => prev.filter(c => (c.id ?? c.Id) !== challengeId))
+      setMapChallenges(prev => prev.filter(c => c.id !== challengeId))
+    })
+    
+    connection.start()
+      .then(() => console.log('Connected to ChallengesHub'))
+      .catch(err => console.error('SignalR connection error:', err))
+    
+    connectionRef.current = connection
+    
+    return () => {
+      if (connectionRef.current) {
+        connectionRef.current.stop()
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function loadMapChallenges() {
+    setMapLoading(true)
+    try {
+      const res = await getMapChallenges()
+      if (res.ok && Array.isArray(res.data)) {
+        setMapChallenges(res.data)
+      }
+    } catch (err) {
+      console.error('Failed to load map challenges:', err)
+    } finally {
+      setMapLoading(false)
+    }
+  }
 
   async function loadMyChallenges() {
     try {
@@ -117,6 +218,53 @@ export default function JoinChallenge() {
     }
   }
 
+  async function handlePreviewCode() {
+    if (!joinCode.trim()) {
+      setError('Please enter a join code')
+      return
+    }
+    
+    setPreviewing(true)
+    setError('')
+    setMessage('')
+    
+    try {
+      // Try to get challenge info by join code
+      const res = await getChallenges(false) // Get all challenges including private
+      if (res.ok && Array.isArray(res.data)) {
+        const challenge = res.data.find(c =>
+          (c.joinCode ?? c.JoinCode ?? '').toUpperCase() === joinCode.trim().toUpperCase()
+        )
+        
+        if (challenge && challenge.latitude != null && challenge.longitude != null) {
+          // Convert to map format
+          const mapChallenge = {
+            id: challenge.id ?? challenge.Id,
+            name: challenge.name ?? challenge.Name,
+            joinCode: challenge.joinCode ?? challenge.JoinCode,
+            participantCount: challenge.participants?.length ?? 0,
+            maxParticipants: challenge.maxParticipants ?? challenge.MaxParticipants ?? 10,
+            location: {
+              latitude: challenge.latitude,
+              longitude: challenge.longitude,
+              locationName: challenge.locationName ?? challenge.LocationName ?? ''
+            }
+          }
+          setPreviewChallenge(mapChallenge)
+          setMessage('Private challenge found! See the red marker on the map.')
+        } else if (challenge) {
+          setError('Challenge found but has no location set')
+        } else {
+          setError('No challenge found with that code')
+        }
+      }
+    } catch (err) {
+      setError('Failed to preview challenge')
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
   async function handleSubmitCode(e) {
     e.preventDefault()
     const code = (joinCode || '').trim()
@@ -124,6 +272,7 @@ export default function JoinChallenge() {
       setError('Please enter a join code')
       return
     }
+    setPreviewChallenge(null) // Clear preview when joining
     await performJoin(code)
   }
 
@@ -175,6 +324,22 @@ export default function JoinChallenge() {
               />
             </div>
 
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={handlePreviewCode}
+                disabled={!joinCode.trim() || previewing || joining}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  background: 'rgba(100, 108, 255, 0.2)',
+                  border: '1px solid #646cff'
+                }}
+              >
+                {previewing ? 'Loading...' : 'Preview on Map'}
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={!joinCode.trim() || joining}
@@ -208,28 +373,17 @@ export default function JoinChallenge() {
       )}
 
       <div className="card">
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24
-        }}>
-          <h2 style={{ color: 'white', fontSize: 24, margin: 0 }}>
-            Public Challenges
-          </h2>
-          <button
-            onClick={() => { loadPublicChallenges(); loadMyChallenges(); }}
-            disabled={loading || joining}
-            style={{
-              background: 'transparent',
-              border: '1px solid #646cff',
-              padding: '8px 16px',
-              boxShadow: 'none'
-            }}
-          >
-            ↻ Refresh
-          </button>
-        </div>
+        <h2 style={{ color: 'white', fontSize: 24, marginBottom: 24 }}>
+          Public Challenges
+          <span style={{
+            marginLeft: '12px',
+            fontSize: '14px',
+            color: 'rgba(100, 108, 255, 0.8)',
+            fontWeight: 'normal'
+          }}>
+            (Live Updates)
+          </span>
+        </h2>
 
         {loading ? (
           <div style={{ textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)', padding: 40 }}>
@@ -331,6 +485,21 @@ export default function JoinChallenge() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Map Section */}
+      <div className="card" style={{ marginTop: 32 }}>
+        <h2 style={{ color: 'white', fontSize: 24, marginBottom: 24 }}>
+          Challenge Map
+        </h2>
+        
+        <ChallengeMap
+          challenges={mapChallenges}
+          onJoin={handleQuickJoin}
+          myChallengeIds={myChallengeIds}
+          loading={mapLoading}
+          previewChallenge={previewChallenge}
+        />
       </div>
 
       <div style={{

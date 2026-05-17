@@ -1,3 +1,6 @@
+/* Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
 /* Load Google's Noto Color Emoji from CDN */
 @font-face {
   font-family: 'Noto Color Emoji';
@@ -171,4 +174,32 @@ label {
   .card {
     background: white;
   }
+}
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  height: 500px;
+  width: 100%;
+  border-radius: 8px;
+  z-index: 1;
+}
+
+.challenge-marker-popup {
+  min-width: 200px;
+}
+
+.challenge-marker-popup h3 {
+  margin: 0 0 8px 0;
+  color: #646cff;
+}
+
+.challenge-marker-popup button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Loading Spinner Animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

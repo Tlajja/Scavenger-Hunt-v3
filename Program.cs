@@ -5,6 +5,7 @@ using PhotoScavengerHunt.Repositories;
 using PhotoScavengerHunt.Middleware;
 using PhotoScavengerHunt.Features.Users;
 using PhotoScavengerHunt.Features.Photos;
+using PhotoScavengerHunt.Features.Challenges;
 using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,5 +77,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ActiveUsersHub>("/hubs/active-users");
 app.MapHub<CommentsHub>("/hubs/comments");
+app.MapHub<ChallengesHub>("/hubs/challenges");
 
 app.Run();

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createChallenge, createUserTask, getRandomTaskForUser } from '../services/api.js'
+import LocationPicker from '../components/LocationPicker.jsx'
 
 export default function CreateChallenge() {
     const navigate = useNavigate()
@@ -28,6 +29,9 @@ export default function CreateChallenge() {
     const [submissionUnit, setSubmissionUnit] = useState('days')
     const [votingValue, setVotingValue] = useState('1')
     const [votingUnit, setVotingUnit] = useState('days')
+    const [latitude, setLatitude] = useState(null)
+    const [longitude, setLongitude] = useState(null)
+    const [locationName, setLocationName] = useState('')
 
    // Update minutes when value or unit changes
    React.useEffect(() => {
@@ -145,6 +149,12 @@ export default function CreateChallenge() {
         }
     }
 
+    function handleLocationChange(location) {
+        setLatitude(location.latitude)
+        setLongitude(location.longitude)
+        setLocationName(location.locationName)
+    }
+
     async function handleSubmit(e) {
         e.preventDefault()
         setError('')
@@ -157,6 +167,14 @@ export default function CreateChallenge() {
             setError('Please add at least one task to this challenge')
             return
         }
+        if (!latitude || !longitude) {
+            setError('Please select a location for the challenge')
+            return
+        }
+        if (!locationName.trim()) {
+            setError('Please enter a location name')
+            return
+        }
 
         setCreating(true)
 
@@ -167,7 +185,19 @@ export default function CreateChallenge() {
             const subMinutes = Math.max(1, Math.min(10080, Number(submissionMinutes) || 60))
             const voteMinutes = Math.max(1, Math.min(10080, Number(votingMinutes) || 60))
 
-            const res = await createChallenge(challengeName.trim(), userId, ids, iso, isPrivate, maxParts, subMinutes, voteMinutes)
+            const res = await createChallenge(
+                challengeName.trim(),
+                userId,
+                ids,
+                iso,
+                isPrivate,
+                maxParts,
+                subMinutes,
+                voteMinutes,
+                latitude,
+                longitude,
+                locationName.trim()
+            )
             if (!res.ok) {
                 setError(res.data?.error || res.data?.message || res.text || 'Failed to create challenge')
                 return
@@ -518,6 +548,13 @@ export default function CreateChallenge() {
                             <span>Private Challenge (requires join code)</span>
                         </label>
                     </div>
+
+                    <LocationPicker
+                        latitude={latitude}
+                        longitude={longitude}
+                        locationName={locationName}
+                        onLocationChange={handleLocationChange}
+                    />
 
                     {error && <div className="error-message">{error}</div>}
 

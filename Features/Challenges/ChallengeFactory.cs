@@ -2,7 +2,7 @@ namespace PhotoScavengerHunt.Features.Challenges
 {
     public static class ChallengeFactory
     {
-        public static Challenge Create(string name, int creatorId, IEnumerable<int> taskIds, bool isPrivate = false, string joinCode = "", DateTime? deadline = null, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null)
+        public static Challenge Create(string name, int creatorId, IEnumerable<int> taskIds, bool isPrivate = false, string joinCode = "", DateTime? deadline = null, int? maxParticipants = null, TimeSpan? submissionDuration = null, TimeSpan? votingDuration = null, double? latitude = null, double? longitude = null, string? locationName = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Challenge name cannot be empty.", nameof(name));
@@ -17,6 +17,9 @@ namespace PhotoScavengerHunt.Features.Challenges
                 JoinCode = joinCode,
                 Status = ChallengeStatus.Open,
                 MaxParticipants = maxParticipants ?? 10,
+                Latitude = latitude,
+                Longitude = longitude,
+                LocationName = locationName,
                 ChallengeTasks = new List<ChallengeTask>()
             };
 
