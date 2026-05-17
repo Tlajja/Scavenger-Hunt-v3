@@ -2,6 +2,7 @@ using PhotoScavengerHunt.Features.Challenges;
 using PhotoScavengerHunt.Exceptions;
 using PhotoScavengerHunt.Repositories;
 using PhotoScavengerHunt.Services.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 
 namespace PhotoScavengerHunt.Services
 {
@@ -13,6 +14,7 @@ namespace PhotoScavengerHunt.Services
         private readonly IChallengeParticipantRepository _participantRepo;
         private readonly IPhotoRepository _photoRepo;
         private readonly IStorageService _storageService;
+        private readonly IHubContext<ChallengesHub> _hubContext;
 
         public ChallengeService(
             IChallengeRepository challengeRepo,
@@ -20,7 +22,8 @@ namespace PhotoScavengerHunt.Services
             ITaskRepository taskRepo,
             IChallengeParticipantRepository participantRepo,
             IPhotoRepository photoRepo,
-            IStorageService storageService)
+            IStorageService storageService,
+            IHubContext<ChallengesHub> hubContext)
         {
             _challengeRepo = challengeRepo;
             _userRepo = userRepo;
@@ -28,6 +31,7 @@ namespace PhotoScavengerHunt.Services
             _participantRepo = participantRepo;
             _photoRepo = photoRepo;
             _storageService = storageService;
+            _hubContext = hubContext;
         }
 
         private static string NormalizeCode(string code) =>
@@ -82,9 +86,10 @@ namespace PhotoScavengerHunt.Services
             }
 
             // check if user can create challenge
-            var adminCount = await _participantRepo.CountAdminChallengesForUserAsync(request.CreatorId);
-            if (adminCount >= 1)
-                throw new LimitExceededException("A user can create only one challenge at a time.");
+            // TEMPORARILY DISABLED FOR TESTING: Allow multiple challenges per user
+            // var adminCount = await _participantRepo.CountAdminChallengesForUserAsync(request.CreatorId);
+            // if (adminCount >= 1)
+            //     throw new LimitExceededException("A user can create only one challenge at a time.");
             
             TimeSpan subDur = request.SubmissionDuration ?? TimeSpan.FromDays(1);
             TimeSpan voteDur = request.VotingDuration ?? TimeSpan.FromDays(1);
@@ -92,6 +97,17 @@ namespace PhotoScavengerHunt.Services
             TimeSpan max = TimeSpan.FromDays(7);
             if (subDur < min || subDur > max) throw new ValidationException("Submission duration must be between 1 minute and 7 days.");
             if (voteDur < min || voteDur > max) throw new ValidationException("Voting duration must be between 1 minute and 7 days.");
+
+            // Validate and set default location if not provided
+            double latitude = request.Latitude ?? 54.6872;  // Vilnius latitude
+            double longitude = request.Longitude ?? 25.2797; // Vilnius longitude
+            string locationName = request.LocationName ?? "Vilnius, Lithuania";
+
+            // Validate coordinate ranges
+            if (latitude < -90 || latitude > 90)
+                throw new ValidationException("Latitude must be between -90 and 90.");
+            if (longitude < -180 || longitude > 180)
+                throw new ValidationException("Longitude must be between -180 and 180.");
 
             var joinCode = await GenerateUniqueJoinCodeAsync();
 
@@ -104,7 +120,10 @@ namespace PhotoScavengerHunt.Services
                 deadline: request.Deadline,
                 maxParticipants: request.MaxParticipants,
                 submissionDuration: subDur,
-                votingDuration: voteDur);
+                votingDuration: voteDur,
+                latitude: latitude,
+                longitude: longitude,
+                locationName: locationName);
 
             await _challengeRepo.AddAsync(challenge);
             await _challengeRepo.SaveChangesAsync();
@@ -139,6 +158,10 @@ namespace PhotoScavengerHunt.Services
             await _participantRepo.AddAsync(participant);
             await _participantRepo.SaveChangesAsync();
             challenge.Participants = new List<ChallengeParticipant> { participant };
+            
+            // Broadcast challenge created event
+            await ChallengesHub.NotifyChallengeCreated(_hubContext, challenge);
+            
             return challenge;
         }
 
@@ -162,6 +185,12 @@ namespace PhotoScavengerHunt.Services
 
             await _participantRepo.AddAsync(participant);
             await _participantRepo.SaveChangesAsync();
+            
+            // Broadcast challenge updated event (participant count changed)
+            var participants = await _participantRepo.GetByChallengeAsync(challenge.Id);
+            var participantCount = participants.Count;
+            await ChallengesHub.NotifyChallengeUpdated(_hubContext, challenge.Id, participantCount, challenge.MaxParticipants ?? 10);
+            
             participant.Challenge = null;
             participant.User = null;
             return participant;

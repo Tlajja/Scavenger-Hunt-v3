@@ -19,6 +19,10 @@ public class Challenge : IHasCreatedAt, IHasDeadline
     public ChallengeStatus Status { get; set; } = ChallengeStatus.Open;
     public int? MaxParticipants { get; set; }
 
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? LocationName { get; set; }
+
     public int? WinnerId { get; set; }
     public List<ChallengeParticipant>? Participants { get; set; }
     public List<ChallengeTask> ChallengeTasks { get; set; } = new();
