@@ -134,15 +134,18 @@ export async function getChallengeById(id) {
  return await safeFetch(`/api/challenge/${id}`, { method: 'GET' })
 }
 
-export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false, maxParticipants = null, submissionMinutes = 60, votingMinutes = 60) {
- const payload = {
- Name: name,
- CreatorId: Number(creatorId),
- TaskIds: Array.isArray(taskIds) ? taskIds.map(n => Number(n)) : [Number(taskIds)],
- IsPrivate: !!isPrivate,
- }
- if (deadlineIso) payload.Deadline = deadlineIso
- if (maxParticipants !== null && maxParticipants !== undefined) payload.MaxParticipants = Number(maxParticipants)
+export async function createChallenge(name, creatorId, taskIds, deadlineIso = null, isPrivate = false, maxParticipants = null, submissionMinutes = 60, votingMinutes = 60, latitude = null, longitude = null, locationName = null) {
+  const payload = {
+  Name: name,
+  CreatorId: Number(creatorId),
+  TaskIds: Array.isArray(taskIds) ? taskIds.map(n => Number(n)) : [Number(taskIds)],
+  IsPrivate: !!isPrivate,
+  }
+  if (deadlineIso) payload.Deadline = deadlineIso
+  if (maxParticipants !== null && maxParticipants !== undefined) payload.MaxParticipants = Number(maxParticipants)
+  if (latitude !== null && latitude !== undefined) payload.Latitude = Number(latitude)
+  if (longitude !== null && longitude !== undefined) payload.Longitude = Number(longitude)
+  if (locationName) payload.LocationName = locationName
   // Convert minutes to TimeSpan format: "d.hh:mm:ss"
   const subMins = Math.floor(submissionMinutes)
   const voteMins = Math.floor(votingMinutes)
@@ -183,6 +186,16 @@ export async function advanceChallenge(challengeId, userId) {
 // Get challenges the user participates in (private + public)
 export async function getMyChallenges(userId) {
  return await safeFetch(`/api/challenge/mine?userId=${Number(userId)}`, { method: 'GET' })
+}
+
+// Get challenges for map display (public only with location data)
+export async function getMapChallenges() {
+  return await safeFetch('/api/challenge/map', { method: 'GET' })
+}
+
+// Get challenges near a location
+export async function getNearbyChallenges(latitude, longitude, radiusKm = 10) {
+  return await safeFetch(`/api/challenge/nearby?latitude=${latitude}&longitude=${longitude}&radiusKm=${radiusKm}`, { method: 'GET' })
 }
 
 // Comments endpoints
