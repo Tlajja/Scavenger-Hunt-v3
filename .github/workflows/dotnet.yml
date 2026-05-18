@@ -14,4 +14,4 @@ jobs:
         dotnet-version: 9.0.x
     - run: dotnet restore
     - run: dotnet build --no-restore
-    - run: dotnet test --no-build
+    - run: dotnet test PhotoScavengerHunt.Tests/PhotoScavengerHunt.Tests.csproj
